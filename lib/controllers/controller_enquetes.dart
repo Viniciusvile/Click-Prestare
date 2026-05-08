@@ -1,0 +1,23 @@
+import 'dart:convert';
+import 'package:click/utils/local_storage.dart';
+import 'package:http/http.dart' as http;
+
+var link = "localhost:3003";
+
+apiFinishEnquete(String id) async {
+  try{
+    var url = Uri.http(link, '/assembleias/votacoes/finish');
+    Map data = {'id': id};
+    var body = json.encode(data);
+    var response = await http.post(url,headers: {"Content-Type": "application/json", "Authorization": getToken()},body: body,);
+    if (response.statusCode == 200) {
+      return;
+    } else {
+      var parsed = jsonDecode(response.body) as Map<String, dynamic>;
+      throw(parsed["message"]);
+    }
+  }catch(e){
+    throw("Houve um erro, tente novamente!");
+  }
+}
+

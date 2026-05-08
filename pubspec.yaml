@@ -1,0 +1,59 @@
+name: click
+description: A new Flutter project.
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+11
+
+environment:
+  sdk: ">=2.14.0-110.0.dev <3.0.0"
+
+dependencies:  
+  cupertino_icons: ^1.0.2
+
+  easy_mask: ^2.0.1
+  rflutter_alert: ^2.0.4
+  dotted_border: ^2.0.0
+  auto_size_text: ^3.0.0
+  mask_text_input_formatter: ^2.0.0
+  roundcheckbox: ^2.0.4
+  multiselect_formfield: ^0.1.6
+  intl: any
+  badges: any
+  syncfusion_flutter_charts: any
+  currency_text_input_formatter: any
+  in_app_purchase: ^3.1.10
+
+  flutter:
+    sdk: flutter
+  contained_tab_bar_view: ^0.8.0
+  image_picker: any
+  url_launcher: ^6.0.18
+  material_design_icons_flutter: any
+  localstorage: ^4.0.0+1
+  file_picker: ^5.0.0
+  open_file_plus: any
+  flutter_automation: ^2.0.0
+  flutter_speed_dial: any
+  table_calendar: ^3.0.6
+  permission_handler: any
+  package_info_plus: any
+  easy_localization: ^3.0.7
+  
+  flutter_localizations:
+    sdk: flutter 
+
+dev_dependencies:
+  flutter_lints: ^1.0.0
+
+  flutter_test:
+    sdk: flutter 
+
+# The following section is specific to Flutter.
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/
+    - assets/images/
+    - assets/icon/

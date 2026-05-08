@@ -1,0 +1,396 @@
+Sprache
+Brasilianisches Portugiesisch
+Portugiesisches Portugal
+Englisch
+Spanisch
+Deutsch
+Geben Sie das gewünschte Datum ein.
+Wählen Sie die gewünschte Zeit aus.
+Geben
+Zum
+Datum und Uhrzeit
+Tag und Uhrzeit
+Tag
+Tage
+Datum
+Termine
+Zeit
+Startdatum
+Startzeit
+Enddatum
+Endzeit
+DATUM UND UHRZEIT DER ERSTELLUNG
+Startdatum und -uhrzeit
+Zweite
+Dritte
+Vierte
+Fünfte
+Freitag
+Samstag
+Sonntag
+OK
+stornieren
+Schreiben Sie hier...
+Schreiben Sie Ihre Nachricht...
+Zu:
+von
+bis
+Hallo
+Empfänger
+Einwohner
+Mitarbeiter
+E-Mail
+Passwort
+Version:
+Name
+Vollständiger Name
+Ausweisdokument
+Geburtsdatum
+E-Mail
+Telefon
+Passwort
+Informationen bearbeiten
+Ausschluss!
+Soziale Bereiche
+Sozialer Bereich
+Finanziell
+Versammlungen und Abstimmungen
+Versammlungen
+Montage
+Umfragen
+Umfragen
+Ankündigungen
+Bekanntmachung
+Vorkommen
+Auftreten
+Mitarbeiter
+Personal für Eigentumswohnungen
+Geplante Wartung
+Geplante Wartung
+Dienstleister
+Zeitplanänderung
+Besucher registrieren
+Wohnungen
+Wohnung
+Dokumente
+Wohnung
+Ref.
+Gleichgewicht
+Status
+Kategorien
+Kategorie
+Anhänge
+Fügen Sie hier Ihre Fotos ein
+Typ
+Antwort
+Alle
+Anhänger
+Suchen
+Beachten
+Letztes Update
+Bewusst
+Ausstehend
+Gelöst
+Nicht informiert
+Akzeptieren
+Verweigern
+Beenden
+Titel
+Beschreibung
+BESCHREIBUNG (OPTIONAL)
+HINWEISE (OPTIONAL)
+Beobachtungen
+Start
+Beendigung
+Autorisiert von
+INFORMATIONEN ZUR WOHNUNG
+Block
+Ich habe die Regeln gelesen und bin damit einverstanden
+Add-ons
+Ausgehen
+SPEICHERN
+Löschen
+ZUM SENDEN
+NÄCHSTE
+VORHERIGE
+Maximale Anzahl an Dokumenten erreicht
+Alarm!
+Beachten
+Erfolg!
+Fehler!
+Hoppla!
+Ungültiger Wert eingegeben!
+Ja
+NEIN
+Kurz!
+Wir arbeiten daran, diesen Service so schnell wie möglich verfügbar zu machen.
+Sind Sie sicher, dass Sie dieses Element dauerhaft löschen möchten?
+Sind Sie sicher, dass Sie diesen Artikel stornieren möchten?
+Möchten Sie jetzt ein Foto machen oder ein Foto aus der Galerie auswählen?
+Möchten Sie ein Dokument oder Bild anhängen?
+Kamera
+Galerie
+Bild
+Dokumentieren
+Es ist ein Fehler aufgetreten, bitte versuchen Sie es erneut!
+Keine Datensätze gefunden!
+Fügen Sie das Bild ein.
+Daten erfolgreich geändert!
+Keine Blöcke gefunden!*Registrieren Sie die Einheiten zunächst im Menü „Wohnungen“.
+Keine Wohnungen gefunden!**Registrieren Sie die Einheiten zunächst im Menü „Wohnungen“ auf dem Startbildschirm.
+Ich bin Syndizier
+Ich bin ein Bewohner
+Ich bin Angestellter
+Sollen wir Ihre erste Eigentumswohnung anmelden?
+lasst uns registrieren
+Ich habe bereits eine Registrierung
+EINGEBEN
+Passwort vergessen?
+Falscher Login oder Passwort. Versuchen Sie es erneut
+Passwort vergessen
+Passwort vergessen?
+Machen Sie sich keine Sorgen, geben Sie unten Ihre E-Mail-Adresse ein und wir senden Ihnen einen Wiederherstellungslink.
+Der Wiederherstellungslink wurde an Ihre E-Mail-Adresse gesendet.
+Empfängerregistrierung
+Daten bearbeiten
+Registrierung erfolgreich abgeschlossen!
+Ungültiges Geburtsdatum!
+KONTAKTINFORMATIONEN
+Registrierung von Eigentumswohnungen
+Eigentumswohnung bearbeiten
+Eigentumswohnung bearbeiten
+Geben Sie den Namen der Eigentumswohnung ein.
+Legen Sie den Ausweis der Eigentumswohnung vor.
+Geben Sie den Namen des Stellvertreters ein.
+Geben Sie das Startdatum des Mandats ein
+Geben Sie das Enddatum des Mandats ein.
+Enddatum vor dem Startdatum.
+Geben Sie die Postleitzahl ein.
+Geben Sie das Land ein.
+Informieren Sie den Staat.
+Informieren Sie die Stadt.
+Informieren Sie die Nachbarschaft.
+Rua informieren.
+Geben Sie die Nummer ein.
+Name der Eigentumswohnung
+Name der Tochtergesellschaft
+Datum des Semesterbeginns
+Enddatum der Laufzeit
+PLZ
+Land
+UF
+Stadt
+Nachbarschaft
+Straße
+Nummer
+Ergänzen
+Gesamtwert:
+35,99 R$ / Monat
+Genießen Sie Ihre 45 Tage kostenlos!
+Kündigen Sie jederzeit!
+Eigentumswohnungsregistrierung ERFOLGREICH
+Sind Sie sicher, dass Sie diese Eigentumswohnung dauerhaft löschen möchten?
+Sind Sie sicher, dass Sie Ihr Konto dauerhaft löschen möchten?
+Eigentumswohnungsdaten bearbeiten
+Adresse aktualisieren
+Agenda-Termin bearbeiten
+Neues Engagement auf der Tagesordnung
+ÜBER DAS ENGAGEMENT
+Wartungsanfragen
+Anfrage bearbeiten
+Neue Anfrage
+Terminvereinbarung erforderlich
+Erfordert eine Genehmigung
+Zahlung erforderlich
+Termine
+Meine Zeitpläne
+Sie haben keine Termine
+Neuer sozialer Bereich
+ERSTE DATEN
+Maximale Kapazität
+Lassen Sie es leer, wenn nicht die maximale Kapazität vorhanden ist
+VERPFLICHTUNGEN
+Neuer Zeitplan
+Akzeptieren Sie die Regeln, bevor Sie fortfahren.
+Reservierung bearbeiten
+Buch
+Reservierungsdatum:
+Buchungszeit:
+Reserviert:
+MONTAGEINFORMATIONEN
+Standort
+Baugruppe bearbeiten
+Neue Versammlung
+ÜBER DATUM UND ORT
+Link (wenn die Versammlung online ist)
+Fügen Sie hier Dateien ein* (nur .PDF-Format)
+Geben Sie den ATA ein, um diese Montage abzuschließen
+Die Sitzung ist geschlossen!*Der ATA steht im Menü „Dokumente“ Ihrer Eigentumswohnung zur Beratung zur Verfügung.
+Beenden Sie die Montage.*Laden Sie das Protokoll hoch
+Fügen Sie hier das Protokoll der Versammlung ein
+Geben Sie Ihre Abstimmungsoptionen ein.
+Umfrage erstellen
+ABSTIMMUNGSINFORMATIONEN
+Einsendeschluss
+OPTIONEN
+Option
+Sind Sie sicher, dass Sie die Abstimmung vor dem geplanten Enddatum abschließen möchten?
+Umfrage
+UMFRAGEINFORMATIONEN
+Geplant
+Im Gange
+Fertig
+Abstimmung abschließen?
+Abstimmung außerhalb des zulässigen Zeitraums.
+Ankündigung bearbeiten
+Neue Ankündigung
+INFORMATIONEN ZUR VERÖFFENTLICHUNG
+Die Löschung Ihres Accounts wurde beantragt!*Das zuständige Team wird Sie über den Fortschritt informieren!
+Einstellungen
+Nutzungsbedingungen
+Datenschutzrichtlinie
+Kontaktieren Sie uns
+Kontaktieren Sie uns per E-Mail mit Ihren Fragen und/oder Anforderungen.**Und vergessen Sie nicht, sich auszuweisen.**contato@click-app.co*
+Kennwort ändern
+Eigentumswohnung ausschließen
+Mein Konto löschen
+Neues Passwort
+Neues Passwort bestätigen
+Passwort erfolgreich geändert!
+Unterschrift
+Unterschrift des Bewohners
+Eigentumswohnungsabonnement
+Bei Ihrem Kauf ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.
+Abonnement erfolgreich verlängert!
+Produkt nicht gefunden!
+Die App konnte nicht mit dem Store kommunizieren. Bitte versuchen Sie es später noch einmal!
+Verlängerungstyp:
+Monatlich
+Gültigkeit:
+Verbleibende Tage:
+Ihr Abonnement ist abgelaufen!
+Verlängern Sie jetzt um weitere 30 Tage und bleiben Sie über alles, was in Ihrer Eigentumswohnung passiert, auf dem Laufenden!
+Verlängern Sie jetzt um weitere 30 Tage und garantieren Sie sich mehr Sicherheit bei der Verwaltung Ihrer Eigentumswohnung!
+Kontaktieren Sie den Hausverwalter und informieren Sie ihn über die Erneuerung des App Click-Plans.
+Wenn Sie noch Tage übrig haben, beginnt die Verlängerung ab dem Ablaufdatum des aktuellen Plans.
+Jetzt für 3,49 R$ verlängern
+Jetzt für 35,99 R$ verlängern
+Später erneuern
+Sie können Ihren Plan noch 7 Tage vor dem Ablaufdatum verlängern!
+Minuten
+Unterlagen
+Neues Dokument
+Dokumenttitel
+Fügen Sie hier Ihr Dokument ein
+Säumiger
+Säumige
+MONATE GEÖFFNET
+Zusammenfassung
+ERGEBNIS
+Gesamtumsatz:
+Gesamtkosten:
+Ergebnis der Periode:
+Sammlungen
+In diesem Zeitraum gibt es keine Veröffentlichungen
+Keine Säumigen gefunden
+Kosten
+Kosten
+Sammlungen
+Rezept – Andere
+Einnahmen
+EMPFÄNGER
+Anbieter
+Kategorie
+Zahlungsdatum
+WERTE
+Wert
+Zahlungsart
+Anzahl der Raten
+Sollkonto
+BESCHREIBUNG UND NACHWEIS (OPTIONAL)
+Klicken Sie hier und fügen Sie ein Foto der Quittung oder NF bei
+Sammlung
+Start
+Referenzmonat
+Verfallsdatum
+Zahler
+Typ
+Lieferant / Kunde
+Empfangsdatum
+Bankkonto
+Version bearbeiten
+Neue Veröffentlichung
+Bilanz des Tages
+Verbrauch
+Wartung
+Jungs
+Steuern
+Administrativ
+Andere
+Girokonto
+Ersparnisse
+Andere
+Geld
+Pix
+Ticket
+Kreditkarte
+Debitkarte
+Andere
+Mitarbeiter bearbeiten
+Mitarbeiter registrieren
+PERSÖNLICHE INFORMATIONEN
+FUNKTIONSBEZOGENE INFORMATIONEN
+Funktion
+Arbeitszeit
+BERECHTIGUNGEN INNERHALB DER ANWENDUNG
+Indem Sie eine Berechtigung aktivieren, geben Sie diesem Mitarbeiter die Autonomie des Managers für das ausgewählte Menü!
+ZUSÄTZLICHE INFORMATIONEN (OPTIONAL)
+Zusätzliche Informationen 1
+Zusätzliche Informationen 2
+Zusätzliche Informationen 3
+Zusätzliche Informationen 4
+ZUGRIFFSINFORMATIONEN
+Klicken Sie auf Zugangspasswort
+Derzeit sind keine Bewohner registriert
+Um eine neue Wohnung anzumelden, geben Sie die folgenden Daten ein:
+Idealer Bruch
+Eigentümer:
+Mieter:
+Benutzer erstellt!*Informieren Sie darüber, dass das Standardkennwort die Dokumentnummer ist und dass das Kennwort beim Anmelden am Konto geändert werden kann.
+Zeitpläne ändern
+Änderung bearbeiten
+Änderung anfordern
+Für dieses Element steht die Genehmigung nicht mehr aus.*Sie können es nicht mehr bearbeiten.
+AWählen Sie die gewünschte Wohnung aus
+INFORMATIONEN ZUR ÄNDERUNG
+Grund für die Ablehnung
+ÜBER DAS VORGEHEN
+Beantwortet
+Schreiben Sie hier die Antwort an den Bewohner
+Status auswählen:
+Öffnung von Vorkommnissen
+Wählen Sie die Art des Ereignisses aus!
+Wählen Sie die Art des Ereignisses aus!
+Art des Ereignisses
+⚡ Elektriker
+🚰 Hydraulik / Sanitär
+🎨 Maler
+🏚 Maurer
+🧹 Reinigung
+🐜 Schädlingsbekämpfung
+Bearbeiten Sie den Dienstanbieter
+Registrieren Sie den Dienstanbieter
+ANBIETERINFORMATIONEN
+FUNKTIONEN
+Kategorie(n) auswählen:
+Oder geben Sie eine oder mehrere andere Kategorie(n) ein: (durch Komma getrennt)
+Besucherliste
+Neuen Besucher registrieren
+Besucher bearbeiten
+INFORMATIONEN ZUM BESUCH
+Datum und Uhrzeit des Veröffentlichungsstarts
+Enddatum und -uhrzeit der Veröffentlichung
+Gast
+Anbieter
+Dienstleister
+Wählen Sie zuerst den Block aus!
