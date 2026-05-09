@@ -5,7 +5,7 @@ module.exports = {
     const query = `select u.id, s.nome, u.photo                           
                     from Moradores s 
                     inner join Users u on u.id = s.id_user
-                    where u.login='${login}' and password=MD5('${password}')`;
+                    where u.login='${login}' and u.password=MD5('${password}')`;
     const result = await db.query(query);
     if (!result.results[0]) {
       throw new Error('Login ou Senha incorretos');

@@ -1,4 +1,4 @@
-﻿import 'package:click/controllers/controller_sindico.dart';
+import 'package:click/controllers/controller_sindico.dart';
 import 'package:click/pages/sindico/forgot_password.dart';
 import 'package:click/pages/sindico/list_condominiums.dart';
 import 'package:click/theme/app_colors.dart';

@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart';
+
 /// Configuração centralizada da API.
-/// Para trocar de servidor, altere apenas as constantes deste arquivo.
 class ApiConfig {
-  /// Host (sem protocolo, sem barra final)
-  static const String host = "localhost:3003";
+  /// Host dinâmico: localhost para Web/Desktop, 10.0.2.2 para Emulador Android.
+  static String get host {
+    if (kIsWeb) return "localhost:3003";
+    // Para testar em um aparelho físico, usamos o IP do seu computador na rede
+    return "192.168.3.74:3003";
+  }
 
   /// true para HTTPS (produção), false para HTTP (localhost)
   static const bool useHttps = false;

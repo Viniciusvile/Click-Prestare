@@ -4,7 +4,7 @@ import 'package:click/utils/localizable/localizable.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -268,7 +268,7 @@ sendSMS(String number, String text) async {
 
 openFile(String path) async {
   try {
-    OpenFile.open(path);
+    OpenFilex.open(path);
   } catch (e) {
     // falha silenciosa — arquivo pode não existir
   }
