@@ -55,8 +55,11 @@ module.exports = {
     extra2 = extra2.replaceAll("'","''");
 
     const query = `insert into Funcionarios (
-            nome, documento, email, telefone, funcao, ch, id_user, id_condominio, extra1, extra2)
-            values ('${nome}','${documento}','${email}','${telefone}','${funcao}', '${ch}', '${idUser}', '${idCondominio}', '${extra1 ?? ''}', '${extra2 ?? ''}')`;
+            nome, documento, email, telefone, funcao, ch, id_user, id_condominio, extra1, extra2,
+            areas_sociais, comunicados, ocorrencias, manutencoes_programadas, prestadores_servico, 
+            agendar_mudanca, cadastrar_visitante, apartamentos)
+            values ('${nome}','${documento}','${email}','${telefone}','${funcao}', '${ch}', '${idUser}', '${idCondominio}', '${extra1 ?? ''}', '${extra2 ?? ''}',
+            0, 0, 0, 0, 0, 0, 0, 0)`;
     await db.query(query);
   },
 
