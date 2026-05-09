@@ -36,17 +36,16 @@ module.exports = {
     const query = `insert into Users (login, password, is_funcionario)
                         values ('${email}',  MD5('${password}'), 1)`;
 
-    await db.query(query).then((response) => {  
-      if(response.status == 'Error'){
-        if (response.error.sqlMessage.includes('user_login')) {
-          throw new Error('E-mail já cadastrado!');
-        }
-        throw new Error('Houve um erro ao realizar o seu cadastro. Por favor, tente novamente!');
+    const response = await db.query(query);
+    
+    if(response.status == 'Error'){
+      if (response.error.sqlMessage && response.error.sqlMessage.includes('user_login')) {
+        throw new Error('E-mail já cadastrado!');
       }
-    });  
+      throw new Error('Houve um erro ao realizar o seu cadastro. Por favor, tente novamente!');
+    }
 
-    const result2 = await db.query("select Max(id) as id from Users");
-    return result2.results[0].id;
+    return response.results.insertId;
   },
 
   insertFuncionario: async function (nome, documento, email, telefone, funcao, ch, extra1, extra2, idUser, idCondominio) {
