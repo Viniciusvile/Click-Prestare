@@ -1,0 +1,37 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { API_BASE } from '../shared/api.config';
+import { AuthService } from '../auth/auth.service';
+
+export interface Prestador {
+  id: number;
+  nome: string;
+  telefone: string | null;
+  categorias: string | null;
+  id_condominio: number;
+}
+export interface CreatePrestador {
+  nome: string;
+  telefone?: string;
+  categorias?: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class PrestadoresApi {
+  private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  private get base() {
+    const cid = this.auth.porteiroInfo()?.id_condominio ?? 1;
+    return `${API_BASE}/condominios/${cid}/prestadores`;
+  }
+
+  list(search?: string): Observable<Prestador[]> {
+    let params = new HttpParams();
+    if (search) params = params.set('search', search);
+    return this.http.get<Prestador[]>(this.base, { params });
+  }
+  create(dto: CreatePrestador) { return this.http.post<Prestador>(this.base, dto); }
+  remove(id: number) { return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`); }
+}

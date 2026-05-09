@@ -1,0 +1,765 @@
+// Click Condominium — Schema Prisma fiel ao banco legado MySQL (click-cond-api/schema.sql)
+// + novas tabelas para a Portaria Web (Funcionarios_Portaria, Encomendas, Auditoria)
+//
+// Convenção: nomes de tabela mantidos EXATAMENTE iguais ao legado para que a Web
+// e o app mobile (Express legado) leiam/escrevam no mesmo banco sem conflito.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../apps/api/src/app/prisma/generated"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 1) Tabelas base (sem dependências)
+// ============================================================
+
+model Endereco {
+  id          Int       @id @default(autoincrement())
+  cep         String?   @db.VarChar(20)
+  rua         String?   @db.VarChar(255)
+  numero      String?   @db.VarChar(20)
+  complemento String?   @db.VarChar(255)
+  bairro      String?   @db.VarChar(255)
+  cidade      String?   @db.VarChar(255)
+  uf          String?   @db.VarChar(10)
+  pais        String?   @db.VarChar(100)
+  created_at  DateTime  @default(now()) @db.DateTime(0)
+  updated_at  DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  condominios Condominios[]
+}
+
+model Addresses {
+  id           Int      @id @default(autoincrement())
+  cep          String?  @db.VarChar(20)
+  street       String?  @db.VarChar(255)
+  number       Int?
+  complement   String?  @db.VarChar(255)
+  neighborhood String?  @db.VarChar(255)
+  city         String?  @db.VarChar(255)
+  uf           String?  @db.VarChar(10)
+  country      String?  @db.VarChar(100)
+  created_at   DateTime @default(now()) @db.DateTime(0)
+  updated_at   DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  users  Users[]
+  orders Orders[]
+}
+
+model Ocorrencias_Categorias {
+  id         Int      @id @default(autoincrement())
+  nome       String   @db.VarChar(255)
+  prioridade Int      @default(0)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  ocorrencias Ocorrencias[]
+}
+
+model Planos {
+  id         Int      @id @default(autoincrement())
+  nome       String   @db.VarChar(100)
+  dias       Int
+  valor      Decimal  @db.Decimal(10, 2)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @updatedAt @db.DateTime(0)
+}
+
+// ============================================================
+// 2) Users (referenciada por quase todas as tabelas)
+// ============================================================
+
+model Users {
+  id             Int       @id @default(autoincrement())
+  email          String?   @unique(map: "uni_email") @db.VarChar(255)
+  login          String?   @unique(map: "user_login") @db.VarChar(255)
+  password       String?   @db.VarChar(255)
+  name           String?   @db.VarChar(255)
+  cpf            String?   @unique(map: "uni_cpf") @db.VarChar(20)
+  phone          String?   @db.VarChar(50)
+  profile_image  String?   @db.VarChar(500)
+  photo          String?   @db.VarChar(500)
+  login_type     String?   @db.VarChar(50)
+  is_sindico     Int?      @default(0) @db.TinyInt
+  is_morador     Int?      @default(0) @db.TinyInt
+  is_funcionario Int?      @default(0) @db.TinyInt
+  address        Int?
+  created_at     DateTime  @default(now()) @db.DateTime(0)
+  updated_at     DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  endereco             Addresses?               @relation(fields: [address], references: [id], onDelete: SetNull, map: "fk_users_address")
+  sindicos             Sindicos[]
+  sindicosCondominios  Sindicos_Condominios[]
+  moradores            Moradores[]
+  apartamentosUsers    Apartamentos_Users[]
+  funcionarios         Funcionarios[]
+  agendamentosArea     Areas_Sociais_Agendamentos[]
+  assembleias          Assembleias[]            @relation("AssembleiaUser")
+  votacoesUsuarios     Votacoes_Usuarios[]
+  comunicados          Comunicados[]            @relation("ComunicadoUser")
+  manutencoes          Manutencoes[]            @relation("ManutencaoUser")
+  mudancas             Mudancas[]               @relation("MudancaUser")
+  visitantes           Visitantes[]             @relation("VisitanteUser")
+  agenda               Agenda[]                 @relation("AgendaUser")
+  ocorrencias          Ocorrencias[]            @relation("OcorrenciaUser")
+  assinaturas          Assinaturas_Moradores[]
+  productsFavorites    Products_Favorites[]
+  authorsFavorites     Authors_Favorites[]
+  shoppingCart         Shopping_Cart[]
+  orders               Orders[]
+  encomendasRecebidas  Encomendas[]             @relation("EncomendaRecebidaPor")
+  encomendasEntregues  Encomendas[]             @relation("EncomendaEntreguePor")
+  auditorias           Auditoria[]
+}
+
+// ============================================================
+// 3) Condominios (depende de Endereco)
+// ============================================================
+
+model Condominios {
+  id                   Int       @id @default(autoincrement())
+  nome                 String    @db.VarChar(255)
+  identificacao        String?   @db.VarChar(255)
+  subsindico_nome      String?   @db.VarChar(255)
+  data_inicio_mandato  DateTime? @db.Date
+  data_termino_mandato DateTime? @db.Date
+  num_blocos           Int?
+  num_aptos            Int?
+  vencimento           DateTime? @db.Date
+  endereco             Int?
+  photo                String?   @db.VarChar(500)
+  moeda                String?   @default("BRL") @db.VarChar(10)
+  ativo                Int       @default(1) @db.TinyInt
+  created_at           DateTime  @default(now()) @db.DateTime(0)
+  updated_at           DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  enderecoRel              Endereco?                    @relation(fields: [endereco], references: [id], onDelete: SetNull, map: "fk_cond_endereco")
+  apartamentos             Apartamentos[]
+  sindicosCondominios      Sindicos_Condominios[]
+  moradores                Moradores[]
+  funcionariosPortaria     Funcionarios_Portaria[]
+  funcionarios             Funcionarios[]
+  areasSociais             Areas_Sociais[]
+  assembleias              Assembleias[]
+  votacoes                 Votacoes[]
+  comunicados              Comunicados[]
+  documentos               Documentos[]
+  manutencoes              Manutencoes[]
+  mudancas                 Mudancas[]
+  visitantes               Visitantes[]
+  prestadores              Prestadores_servico[]
+  agenda                   Agenda[]
+  ocorrencias              Ocorrencias[]
+  financeiro               Financeiro[]
+  assinaturas              Assinaturas_Condominios[]
+  encomendas               Encomendas[]
+}
+
+// ============================================================
+// 4) Apartamentos
+// ============================================================
+
+model Apartamentos {
+  id            Int      @id @default(autoincrement())
+  bloco         String?  @db.VarChar(50)
+  apto          String?  @db.VarChar(50)
+  fracao        String?  @db.VarChar(50)
+  id_condominio Int
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio   Condominios                  @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_apto_cond")
+  users        Apartamentos_Users[]
+  agendamentos Areas_Sociais_Agendamentos[]
+  mudancas     Mudancas[]
+  visitantes   Visitantes[]
+
+  @@unique([id_condominio, bloco, apto], map: "un_apto_cond")
+}
+
+// ============================================================
+// 5) Pessoas vinculadas
+// ============================================================
+
+model Sindicos {
+  id                 Int      @id @default(autoincrement())
+  name               String   @db.VarChar(255)
+  email              String?  @db.VarChar(255)
+  date_birth         DateTime? @db.Date
+  phone              String?  @db.VarChar(50)
+  doc_identification String?  @db.VarChar(50)
+  id_user            Int
+  created_at         DateTime @default(now()) @db.DateTime(0)
+  updated_at         DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  user Users @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_sindico_user")
+}
+
+model Sindicos_Condominios {
+  id            Int      @id @default(autoincrement())
+  id_user       Int
+  id_condominio Int
+  created_at    DateTime @default(now()) @db.DateTime(0)
+
+  user       Users       @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_sc_user")
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_sc_cond")
+
+  @@index([id_user])
+  @@index([id_condominio])
+}
+
+model Moradores {
+  id              Int       @id @default(autoincrement())
+  nome            String    @db.VarChar(255)
+  documento       String?   @db.VarChar(50)
+  email           String?   @db.VarChar(255)
+  telefone        String?   @db.VarChar(50)
+  data_nascimento DateTime? @db.Date
+  id_user         Int
+  tipo            String?   @db.VarChar(50)
+  bloco           String?   @db.VarChar(50)
+  apartamento     String?   @db.VarChar(50)
+  id_condominio   Int?
+  extra1          String?   @db.VarChar(255)
+  extra2          String?   @db.VarChar(255)
+  extra3          String?   @db.VarChar(255)
+  extra4          String?   @db.VarChar(255)
+  created_at      DateTime  @default(now()) @db.DateTime(0)
+  updated_at      DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  user       Users        @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_mor_user")
+  condominio Condominios? @relation(fields: [id_condominio], references: [id], onDelete: SetNull, map: "fk_mor_cond")
+
+  @@index([id_user])
+  @@index([id_condominio])
+}
+
+model Apartamentos_Users {
+  id         Int       @id @default(autoincrement())
+  id_apto    Int
+  id_user    Int
+  tipo       String?   @db.VarChar(50)
+  vencimento DateTime? @db.Date
+  created_at DateTime  @default(now()) @db.DateTime(0)
+  updated_at DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  apartamento Apartamentos @relation(fields: [id_apto], references: [id], onDelete: Cascade, map: "fk_au_apto")
+  user        Users        @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_au_user")
+
+  @@index([id_apto])
+  @@index([id_user])
+}
+
+model Funcionarios {
+  id                       Int      @id @default(autoincrement())
+  nome                     String   @db.VarChar(255)
+  documento                String?  @db.VarChar(50)
+  email                    String?  @db.VarChar(255)
+  telefone                 String?  @db.VarChar(50)
+  funcao                   String?  @db.VarChar(255)
+  ch                       String?  @db.VarChar(50)
+  id_user                  Int
+  id_condominio            Int
+  areas_sociais            Int      @default(0) @db.TinyInt
+  comunicados              Int      @default(0) @db.TinyInt
+  ocorrencias              Int      @default(0) @db.TinyInt
+  manutencoes_programadas  Int      @default(0) @db.TinyInt
+  prestadores_servico      Int      @default(0) @db.TinyInt
+  agendar_mudanca          Int      @default(0) @db.TinyInt
+  cadastrar_visitante      Int      @default(0) @db.TinyInt
+  apartamentos             Int      @default(0) @db.TinyInt
+  extra1                   String?  @db.VarChar(255)
+  extra2                   String?  @db.VarChar(255)
+  created_at               DateTime @default(now()) @db.DateTime(0)
+  updated_at               DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  user       Users       @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_func_user")
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_func_cond")
+
+  @@index([id_user])
+  @@index([id_condominio])
+}
+
+// ============================================================
+// 5.1) Funcionarios_Portaria — NOVA TABELA (perfil de porteiro web)
+// Independente de Funcionarios (que é do app dos moradores).
+// ============================================================
+
+model Funcionarios_Portaria {
+  id            Int      @id @default(autoincrement())
+  nome          String   @db.VarChar(255)
+  login         String   @unique(map: "uni_portaria_login") @db.VarChar(120)
+  password      String   @db.VarChar(255) // MD5 (compatível com app legado)
+  email         String?  @db.VarChar(255)
+  telefone      String?  @db.VarChar(50)
+  turno         String?  @db.VarChar(20) // 'Diurno' | 'Noturno' | 'Madrugada'
+  ativo         Int      @default(1) @db.TinyInt
+  id_condominio Int
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_portaria_cond")
+
+  @@index([id_condominio])
+}
+
+// ============================================================
+// 6) Áreas Sociais
+// ============================================================
+
+model Areas_Sociais {
+  id                  Int      @id @default(autoincrement())
+  nome                String   @db.VarChar(255)
+  imagem              String?  @db.VarChar(500)
+  precisa_agendar     Int      @default(0) @db.TinyInt
+  precisa_autorizacao Int      @default(0) @db.TinyInt
+  precisa_pagamento   Int      @default(0) @db.TinyInt
+  horarios            String?  @db.Text
+  capacidade          Int?
+  id_condominio       Int
+  created_at          DateTime @default(now()) @db.DateTime(0)
+  updated_at          DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio   Condominios                  @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_areas_cond")
+  agendamentos Areas_Sociais_Agendamentos[]
+  manutencoes  Areas_Sociais_Manutencoes[]
+}
+
+model Areas_Sociais_Agendamentos {
+  id             Int      @id @default(autoincrement())
+  id_area_social Int
+  id_user        Int
+  id_apartamento Int
+  data           DateTime? @db.Date
+  hora_de        DateTime? @db.Time(0)
+  hora_ate       DateTime? @db.Time(0)
+  status         String   @default("pendente") @db.VarChar(50)
+  created_at     DateTime @default(now()) @db.DateTime(0)
+  updated_at     DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  area        Areas_Sociais @relation(fields: [id_area_social], references: [id], onDelete: Cascade, map: "fk_asa_area")
+  user        Users         @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_asa_user")
+  apartamento Apartamentos  @relation(fields: [id_apartamento], references: [id], onDelete: Cascade, map: "fk_asa_apto")
+}
+
+model Areas_Sociais_Manutencoes {
+  id             Int       @id @default(autoincrement())
+  id_area_social Int
+  descricao      String?   @db.Text
+  data_inicio    DateTime? @db.Date
+  hora_inicio    DateTime? @db.Time(0)
+  data_termino   DateTime? @db.Date
+  hora_termino   DateTime? @db.Time(0)
+  created_at     DateTime  @default(now()) @db.DateTime(0)
+  updated_at     DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  area Areas_Sociais @relation(fields: [id_area_social], references: [id], onDelete: Cascade, map: "fk_asm_area")
+}
+
+// ============================================================
+// 7) Assembleias e Votações
+// ============================================================
+
+model Assembleias {
+  id            Int       @id @default(autoincrement())
+  titulo        String    @db.VarChar(255)
+  descricao     String?   @db.Text
+  data          DateTime? @db.Date
+  hora          DateTime? @db.Time(0)
+  local         String?   @db.VarChar(255)
+  link          String?   @db.VarChar(500)
+  user          Int?
+  anexos        String?   @db.Text
+  id_condominio Int
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  updated_at    DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_assemb_cond")
+  criadoPor  Users?      @relation("AssembleiaUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_assemb_user")
+  votacoes   Votacoes[]
+}
+
+model Votacoes {
+  id            Int       @id @default(autoincrement())
+  titulo        String    @db.VarChar(255)
+  descricao     String?   @db.Text
+  data_inicio   DateTime? @db.Date
+  data_termino  DateTime? @db.Date
+  id_assembleia Int?
+  id_condominio Int
+  is_enquete    Int       @default(0) @db.TinyInt
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  updated_at    DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  assembleia Assembleias?     @relation(fields: [id_assembleia], references: [id], onDelete: Cascade, map: "fk_vot_assemb")
+  condominio Condominios      @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_vot_cond")
+  opcoes     Votacoes_Opcoes[]
+}
+
+model Votacoes_Opcoes {
+  id         Int      @id @default(autoincrement())
+  id_votacao Int
+  nome       String   @db.VarChar(255)
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  votacao Votacoes            @relation(fields: [id_votacao], references: [id], onDelete: Cascade, map: "fk_vo_vot")
+  votos   Votacoes_Usuarios[]
+}
+
+model Votacoes_Usuarios {
+  id         Int      @id @default(autoincrement())
+  id_opcao   Int
+  id_user    Int
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  opcao Votacoes_Opcoes @relation(fields: [id_opcao], references: [id], onDelete: Cascade, map: "fk_vu_op")
+  user  Users           @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_vu_user")
+}
+
+// ============================================================
+// 8) Comunicados / Documentos / Manutencoes / Mudancas /
+//    Visitantes / Prestadores / Agenda / Ocorrencias / Financeiro
+// ============================================================
+
+model Comunicados {
+  id            Int      @id @default(autoincrement())
+  titulo        String   @db.VarChar(255)
+  descricao     String?  @db.Text
+  user          Int?
+  id_condominio Int
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_comu_cond")
+  criadoPor  Users?      @relation("ComunicadoUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_comu_user")
+}
+
+model Documentos {
+  id            Int      @id @default(autoincrement())
+  id_condominio Int
+  is_ata        Int      @default(0) @db.TinyInt
+  nome          String   @db.VarChar(255)
+  link_doc      String?  @db.VarChar(500)
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_doc_cond")
+}
+
+model Manutencoes {
+  id            Int      @id @default(autoincrement())
+  descricao     String?  @db.Text
+  anexos        String?  @db.Text
+  user          Int?
+  id_condominio Int
+  status        String   @default("Pendente") @db.VarChar(50)
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_manut_cond")
+  criadoPor  Users?      @relation("ManutencaoUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_manut_user")
+}
+
+model Mudancas {
+  id             Int       @id @default(autoincrement())
+  data           DateTime? @db.Date
+  hora_inicio    DateTime? @db.Time(0)
+  user           Int?
+  id_apartamento Int
+  id_condominio  Int
+  status         String    @default("pendente") @db.VarChar(50)
+  motivo_recusa  String?   @db.Text
+  created_at     DateTime  @default(now()) @db.DateTime(0)
+  updated_at     DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  apartamento Apartamentos @relation(fields: [id_apartamento], references: [id], onDelete: Cascade, map: "fk_mud_apto")
+  condominio  Condominios  @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_mud_cond")
+  criadoPor   Users?       @relation("MudancaUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_mud_user")
+}
+
+model Visitantes {
+  id                Int       @id @default(autoincrement())
+  nome              String    @db.VarChar(255)
+  doc_identificacao String?   @db.VarChar(50)
+  data_hora_inicio  DateTime? @db.DateTime(0)
+  data_hora_termino DateTime? @db.DateTime(0)
+  is_visitante      Int       @default(0) @db.TinyInt
+  is_prestador      Int       @default(0) @db.TinyInt
+  user              Int?
+  id_apartamento    Int
+  id_condominio     Int
+  avisar            Int       @default(1) @db.TinyInt
+  // novos campos para a Portaria Web (Camada 4)
+  foto_documento    String?   @db.VarChar(500)
+  foto_pessoa       String?   @db.VarChar(500)
+  created_at        DateTime  @default(now()) @db.DateTime(0)
+  updated_at        DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  apartamento Apartamentos @relation(fields: [id_apartamento], references: [id], onDelete: Cascade, map: "fk_vis_apto")
+  condominio  Condominios  @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_vis_cond")
+  criadoPor   Users?       @relation("VisitanteUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_vis_user")
+
+  @@index([id_condominio])
+  @@index([id_apartamento])
+}
+
+model Prestadores_servico {
+  id            Int      @id @default(autoincrement())
+  nome          String   @db.VarChar(255)
+  telefone      String?  @db.VarChar(50)
+  categorias    String?  @db.VarChar(500)
+  id_condominio Int
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_prest_cond")
+
+  @@index([id_condominio])
+}
+
+model Agenda {
+  id                Int       @id @default(autoincrement())
+  titulo            String    @db.VarChar(255)
+  descricao         String?   @db.Text
+  data_inicio       DateTime? @db.Date
+  data_termino      DateTime? @db.Date
+  hora_inicio       DateTime? @db.Time(0)
+  hora_termino      DateTime? @db.Time(0)
+  alertar_moradores Int       @default(0) @db.TinyInt
+  user              Int?
+  id_condominio     Int
+  created_at        DateTime  @default(now()) @db.DateTime(0)
+  updated_at        DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_agenda_cond")
+  criadoPor  Users?      @relation("AgendaUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_agenda_user")
+}
+
+model Ocorrencias {
+  id            Int       @id @default(autoincrement())
+  descricao     String?   @db.Text
+  anexos        String?   @db.Text
+  user          Int?
+  id_condominio Int
+  tipo          Int?
+  status        String    @default("Pendente") @db.VarChar(50)
+  resposta      String?   @db.Text
+  resposta_at   DateTime? @db.DateTime(0)
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  updated_at    DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios             @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_oco_cond")
+  criadoPor  Users?                  @relation("OcorrenciaUser", fields: [user], references: [id], onDelete: SetNull, map: "fk_oco_user")
+  categoria  Ocorrencias_Categorias? @relation(fields: [tipo], references: [id], onDelete: SetNull, map: "fk_oco_cat")
+
+  @@index([id_condominio])
+}
+
+model Financeiro {
+  id              Int       @id @default(autoincrement())
+  nome            String?   @db.VarChar(255)
+  tipo            String?   @db.VarChar(100)
+  valor           Decimal?  @db.Decimal(10, 2)
+  data            DateTime? @db.Date
+  data_vencimento DateTime? @db.Date
+  categoria       String?   @db.VarChar(255)
+  conta           String?   @db.VarChar(255)
+  descricao       String?   @db.Text
+  cliente         String?   @db.VarChar(255)
+  forma_pagamento String?   @db.VarChar(100)
+  parcelas        String?   @db.VarChar(20)
+  nome_operador   String?   @db.VarChar(255)
+  id_condominio   Int
+  photo           String?   @db.VarChar(500)
+  pago            Int       @default(0) @db.TinyInt
+  created_at      DateTime  @default(now()) @db.DateTime(0)
+  updated_at      DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_fin_cond")
+
+  @@index([id_condominio, pago])
+}
+
+// ============================================================
+// 8.1) Encomendas — NOVA TABELA (Portaria Web)
+// ============================================================
+
+model Encomendas {
+  id                  Int       @id @default(autoincrement())
+  descricao           String    @db.VarChar(500)
+  destinatario_apto   String    @db.VarChar(50)
+  destinatario_bloco  String?   @db.VarChar(50)
+  recebido_de         String?   @db.VarChar(255)
+  recebido_em         DateTime  @default(now()) @db.DateTime(0)
+  retirado_em         DateTime? @db.DateTime(0)
+  retirado_por        String?   @db.VarChar(255)
+  status              String    @default("Aguardando") @db.VarChar(20) // Aguardando | Retirada
+  foto_volume         String?   @db.VarChar(500)
+  id_condominio       Int
+  recebido_por_user   Int?      // FK opcional para Users (porteiro que recebeu)
+  entregue_por_user   Int?      // FK opcional para Users (porteiro que entregou)
+  created_at          DateTime  @default(now()) @db.DateTime(0)
+  updated_at          DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  condominio   Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_enc_cond")
+  recebidoPor  Users?      @relation("EncomendaRecebidaPor", fields: [recebido_por_user], references: [id], onDelete: SetNull, map: "fk_enc_recebido")
+  entreguePor  Users?      @relation("EncomendaEntreguePor", fields: [entregue_por_user], references: [id], onDelete: SetNull, map: "fk_enc_entregue")
+
+  @@index([id_condominio, status])
+}
+
+// ============================================================
+// 8.2) Auditoria — NOVA TABELA (Camada 5)
+// ============================================================
+
+model Auditoria {
+  id          Int      @id @default(autoincrement())
+  id_user     Int?
+  acao        String   @db.VarChar(50) // CREATE | UPDATE | DELETE | LOGIN | etc
+  entidade    String   @db.VarChar(80) // Visitantes | Encomendas | etc
+  entidade_id Int?
+  detalhes    String?  @db.Text
+  ip          String?  @db.VarChar(45)
+  created_at  DateTime @default(now()) @db.DateTime(0)
+
+  user Users? @relation(fields: [id_user], references: [id], onDelete: SetNull, map: "fk_aud_user")
+
+  @@index([entidade, entidade_id])
+  @@index([created_at])
+}
+
+// ============================================================
+// 9) Assinaturas
+// ============================================================
+
+model Assinaturas_Moradores {
+  id         Int       @id @default(autoincrement())
+  id_user    Int
+  email_user String?   @db.VarChar(255)
+  codigo     String?   @db.VarChar(255)
+  data_ini   DateTime? @db.Date
+  data_fim   DateTime? @db.Date
+  dias       Int?
+  plano      String?   @db.VarChar(100)
+  plataforma String?   @db.VarChar(100)
+  valor      Decimal?  @db.Decimal(10, 2)
+  created_at DateTime  @default(now()) @db.DateTime(0)
+
+  user Users @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_am_user")
+}
+
+model Assinaturas_Condominios {
+  id            Int       @id @default(autoincrement())
+  id_condominio Int
+  email_user    String?   @db.VarChar(255)
+  codigo        String?   @db.VarChar(255)
+  data_ini      DateTime? @db.Date
+  data_fim      DateTime? @db.Date
+  dias          Int?
+  plano         String?   @db.VarChar(100)
+  plataforma    String?   @db.VarChar(100)
+  valor         Decimal?  @db.Decimal(10, 2)
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+
+  condominio Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_ac_cond")
+}
+
+// ============================================================
+// 10) Loja / e-commerce (legado — necessárias para o app mobile)
+// ============================================================
+
+model Authors {
+  id            Int      @id @default(autoincrement())
+  name          String?  @db.VarChar(255)
+  email         String?  @db.VarChar(255)
+  password      String?  @db.VarChar(255)
+  profile_image String?  @db.VarChar(500)
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  favorites Authors_Favorites[]
+}
+
+model Products {
+  id          Int      @id @default(autoincrement())
+  slug        String?  @db.VarChar(255)
+  title       String?  @db.VarChar(255)
+  description String?  @db.Text
+  price       Decimal? @db.Decimal(10, 2)
+  images      String?  @db.VarChar(500)
+  is_fisico   Int      @default(0) @db.TinyInt
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  updated_at  DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  favorites    Products_Favorites[]
+  shoppingCart Shopping_Cart[]
+  orders       Products_Orders[]
+}
+
+model Products_Favorites {
+  id         Int      @id @default(autoincrement())
+  id_user    Int
+  id_product Int
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  user    Users    @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_pf_user")
+  product Products @relation(fields: [id_product], references: [id], onDelete: Cascade, map: "fk_pf_prod")
+}
+
+model Authors_Favorites {
+  id         Int      @id @default(autoincrement())
+  id_user    Int
+  id_author  Int
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  user   Users   @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_af_user")
+  author Authors @relation(fields: [id_author], references: [id], onDelete: Cascade, map: "fk_af_author")
+}
+
+model Shopping_Cart {
+  id         Int      @id @default(autoincrement())
+  id_user    Int
+  id_product Int
+  quantity   Int      @default(1)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @updatedAt @db.DateTime(0)
+
+  user    Users    @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_shop_user")
+  product Products @relation(fields: [id_product], references: [id], onDelete: Cascade, map: "fk_shop_prod")
+}
+
+model Orders {
+  id            Int       @id @default(autoincrement())
+  id_user       Int
+  price         Decimal?  @db.Decimal(10, 2)
+  payment_id    String?   @db.VarChar(255)
+  address       Int?
+  received_at   DateTime? @db.DateTime(0)
+  dispatched_at DateTime? @db.DateTime(0)
+  transport_at  DateTime? @db.DateTime(0)
+  delivered_at  DateTime? @db.DateTime(0)
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  updated_at    DateTime  @default(now()) @updatedAt @db.DateTime(0)
+
+  user      Users      @relation(fields: [id_user], references: [id], onDelete: Cascade, map: "fk_ord_user")
+  endereco  Addresses? @relation(fields: [address], references: [id], onDelete: SetNull, map: "fk_ord_addr")
+  produtos  Products_Orders[]
+}
+
+model Products_Orders {
+  id         Int      @id @default(autoincrement())
+  id_order   Int
+  id_product Int
+  price      Decimal? @db.Decimal(10, 2)
+  quantity   Int      @default(1)
+  present    Int      @default(0) @db.TinyInt
+  created_at DateTime @default(now()) @db.DateTime(0)
+
+  order   Orders   @relation(fields: [id_order], references: [id], onDelete: Cascade, map: "fk_po_order")
+  product Products @relation(fields: [id_product], references: [id], onDelete: Cascade, map: "fk_po_prod")
+}

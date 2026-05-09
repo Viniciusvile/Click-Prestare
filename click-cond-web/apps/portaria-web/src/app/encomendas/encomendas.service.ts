@@ -1,0 +1,48 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { API_BASE } from '../shared/api.config';
+import { AuthService } from '../auth/auth.service';
+
+export type EncomendaStatus = 'Aguardando' | 'Retirada';
+
+export interface Encomenda {
+  id: number;
+  descricao: string;
+  destinatario_apto: string;
+  destinatario_bloco: string | null;
+  recebido_de: string | null;
+  recebido_em: string;
+  retirado_em: string | null;
+  retirado_por: string | null;
+  status: EncomendaStatus;
+}
+
+export interface CreateEncomenda {
+  descricao: string;
+  destinatario_apto: string;
+  destinatario_bloco?: string;
+  recebido_de?: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class EncomendasApi {
+  private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  private get base() {
+    const cid = this.auth.porteiroInfo()?.id_condominio ?? 1;
+    return `${API_BASE}/condominios/${cid}/encomendas`;
+  }
+
+  list(status?: string): Observable<Encomenda[]> {
+    let params = new HttpParams();
+    if (status) params = params.set('status', status);
+    return this.http.get<Encomenda[]>(this.base, { params });
+  }
+  create(dto: CreateEncomenda) { return this.http.post<Encomenda>(this.base, dto); }
+  retirar(id: number, retiradoPor: string) {
+    return this.http.patch<Encomenda>(`${this.base}/${id}/retirar`, { retirado_por: retiradoPor });
+  }
+  remove(id: number) { return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`); }
+}

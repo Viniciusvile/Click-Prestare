@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: click-cond-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: click_cond
+      MYSQL_USER: click
+      MYSQL_PASSWORD: click
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: click-cond-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  adminer:
+    image: adminer:latest
+    container_name: click-cond-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  mysql-data:

@@ -1,0 +1,48 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { API_BASE } from '../shared/api.config';
+import { AuthService } from '../auth/auth.service';
+
+export interface Morador {
+  id: number;
+  nome: string;
+  documento: string | null;
+  email: string | null;
+  telefone: string | null;
+  data_nascimento: string | null;
+  tipo: string | null;
+  bloco: string | null;
+  apartamento: string | null;
+  id_apartamento: number;
+  id_condominio: number;
+  photo: string | null;
+}
+
+export interface CreateMorador {
+  nome: string;
+  documento?: string;
+  email?: string;
+  telefone?: string;
+  tipo?: string;
+  id_apartamento: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class MoradoresApi {
+  private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  private get base() {
+    const cid = this.auth.porteiroInfo()?.id_condominio ?? 1;
+    return `${API_BASE}/condominios/${cid}/moradores`;
+  }
+
+  list(search?: string): Observable<Morador[]> {
+    let params = new HttpParams();
+    if (search) params = params.set('search', search);
+    return this.http.get<Morador[]>(this.base, { params });
+  }
+  create(dto: CreateMorador) { return this.http.post<Morador>(this.base, dto); }
+  remove(id: number) { return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`); }
+}

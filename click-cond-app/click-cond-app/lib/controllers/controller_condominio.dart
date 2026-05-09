@@ -1,0 +1,180 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:click/pages/sindico/signup/signup_%20condominium_1.dart';
+import 'package:click/utils/api_config.dart';
+import 'package:click/utils/local_storage.dart';
+import 'package:http/http.dart' as http;
+
+import '../pages/singleton.dart';
+
+final _kTimeout = ApiConfig.timeout;
+
+Uri _buildUri(String path, [Map<String, String>? params]) =>
+    ApiConfig.buildUri(path, params);
+
+Map<String, String> _authHeaders({bool withContentType = false}) {
+  final headers = <String, String>{"Authorization": getToken()};
+  if (withContentType) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+registerCondominio(CondominioRegister condominio) async {
+  final url = _buildUri('/condominio/register');
+  final body = json.encode({
+    "address": {
+      "cep": condominio.cep,
+      "rua": condominio.rua,
+      "numero": condominio.numero,
+      "complemento": condominio.complemento,
+      "bairro": condominio.bairro,
+      "cidade": condominio.cidade,
+      "uf": condominio.uf,
+      "pais": condominio.pais,
+    },
+    "condominio": {
+      "nome": condominio.nome,
+      "identificacao": condominio.documento,
+      "subsindico_nome": condominio.subsindico,
+      "inicio_mandato": condominio.inicioMandato,
+      "termino_mandato": condominio.terminoMandato,
+      "num_blocos": condominio.blocos,
+      "num_aptos": condominio.aptos,
+      "photo": condominio.photoBase64,
+    }
+  });
+  try {
+    final response = await http
+        .post(url, headers: _authHeaders(withContentType: true), body: body)
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) return "";
+    final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+    return parsed["message"] ?? "Houve um erro, tente novamente!";
+  } catch (e) {
+    return "Houve um erro, tente novamente!";
+  }
+}
+
+getCondominios() async {
+  final url = _buildUri('/sindico/list-condominios');
+  try {
+    final response = await http
+        .get(url, headers: _authHeaders())
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  } catch (e) {
+    return "Houve um erro, tente novamente!";
+  }
+}
+
+getCondominio(int id) async {
+  final url = _buildUri('/condominio/get-condominio', {'id_condominio': id.toString()});
+  try {
+    final response = await http
+        .get(url, headers: _authHeaders())
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    return null;
+  } catch (e) {
+    return "Houve um erro, tente novamente!";
+  }
+}
+
+updateInfosCondominio(String nome, String documento, String subsindico,
+    String dtIni, String dtFim, String? photo) async {
+  final url = _buildUri('/condominio/update');
+  final body = json.encode({
+    "condominio": {
+      "id": Singleton.instance.id_condominio.toString(),
+      "nome": nome,
+      "identificacao": documento,
+      "subsindico_nome": subsindico,
+      "inicio_mandato": dtIni,
+      "termino_mandato": dtFim,
+      'photo': photo,
+    }
+  });
+  try {
+    final response = await http
+        .post(url, headers: _authHeaders(withContentType: true), body: body)
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) return;
+    final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+    throw parsed["message"] ?? "Houve um erro, tente novamente!";
+  } catch (e) {
+    throw "Houve um erro, tente novamente!";
+  }
+}
+
+updateAddressCondominio(String cep, String rua, String numero,
+    String complemento, String bairro, String cidade, String uf, String pais) async {
+  final url = _buildUri('/condominio/update-address');
+  final body = json.encode({
+    "address": {
+      "idCondominio": Singleton.instance.id_condominio.toString(),
+      "cep": cep,
+      "rua": rua,
+      "numero": numero,
+      "complemento": complemento,
+      "bairro": bairro,
+      "cidade": cidade,
+      "uf": uf,
+      "pais": pais,
+    }
+  });
+  try {
+    final response = await http
+        .post(url, headers: _authHeaders(withContentType: true), body: body)
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) return;
+    final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+    throw parsed["message"] ?? "Houve um erro, tente novamente!";
+  } catch (e) {
+    throw "Houve um erro, tente novamente!";
+  }
+}
+
+updateAsinaturaCondominioApi(
+    String idCondominio, String plano, String codigo) async {
+  final url = _buildUri('/condominio/update-assinatura');
+  final body = json.encode({
+    "assinatura": {
+      "id_condominio": idCondominio,
+      "id_plano": plano,
+      "codigo": codigo,
+      "plataforma": kIsWeb ? "Web" : Platform.isAndroid ? "Android" : "iOS",
+    }
+  });
+  try {
+    final response = await http
+        .post(url, headers: _authHeaders(withContentType: true), body: body)
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) return;
+    final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+    throw parsed["message"] ?? "Houve um erro, tente novamente!";
+  } catch (e) {
+    throw "Houve um erro, tente novamente!";
+  }
+}
+
+updateMoedaCondominioApi(String idCondominio, String moeda) async {
+  final url = _buildUri('/condominio/update-moeda');
+  final body = json.encode({
+    "condominio": {"id": idCondominio, "moeda": moeda}
+  });
+  try {
+    final response = await http
+        .post(url, headers: _authHeaders(withContentType: true), body: body)
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) return;
+    final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+    throw parsed["message"] ?? "Houve um erro, tente novamente!";
+  } catch (e) {
+    throw "Houve um erro, tente novamente!";
+  }
+}
