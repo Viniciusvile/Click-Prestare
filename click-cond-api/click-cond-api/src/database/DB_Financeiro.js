@@ -6,14 +6,14 @@ module.exports = {
     financeiro.descricao = financeiro.descricao.replaceAll("'","''");
     financeiro.tipo = financeiro.tipo.replaceAll("'","''");
 
-    const query = `insert into Financeiro (nome, tipo, valor, data, data_vencimento, categoria, conta, descricao, cliente, forma_pagamento, parcelas, nome_operador, id_condominio, photo, pago)
+    const query = `insert into Financeiro (nome, tipo, valor, data, data_vencimento, categoria, conta, descricao, cliente, forma_pagamento, parcelas, nome_operador, id_condominio, photo, pago, url_boleto, status, id_usuario)
 						values ('${financeiro.nome}',
                     '${financeiro.tipo}',
                     '${financeiro.valor}',
-                    '${financeiro.data != null ? financeiro.data : financeiro.data_vencimento != null ? financeiro.data_vencimento : null}',
-                    ${financeiro.data_vencimento != null ? `'${financeiro.data_vencimento}'` : null},
+                    ${financeiro.data != null ? `'${financeiro.data}'` : 'null'},
+                    ${financeiro.data_vencimento != null ? `'${financeiro.data_vencimento}'` : 'null'},
                     '${financeiro.categoria}',
-                    ${financeiro.conta != null ? `'${financeiro.conta}'` : null},
+                    ${financeiro.conta != null ? `'${financeiro.conta}'` : 'null'},
                     ${financeiro.descricao != null ? `'${financeiro.descricao}'` : null},
                     ${financeiro.cliente != null ? `'${financeiro.cliente}'` : null},
                     ${financeiro.forma_pagamento != null ? `'${financeiro.forma_pagamento}'` : null},
@@ -21,7 +21,10 @@ module.exports = {
                     '${name}',
                     ${id_condominio},
                     '${financeiro.photo}',
-                    ${financeiro.data == null || financeiro.data=="" ? 0 : 1}
+                    ${financeiro.data == null || financeiro.data=="" ? 0 : 1},
+                    ${financeiro.url_boleto != null ? `'${financeiro.url_boleto}'` : 'null'},
+                    ${financeiro.status != null ? financeiro.status : 0},
+                    ${financeiro.id_usuario != null ? financeiro.id_usuario : 'null'}
                   )`;
     await db.query(query);
   },
@@ -149,16 +152,20 @@ module.exports = {
                      set nome='${financeiro.nome}',
                       tipo='${financeiro.tipo}',
                       valor='${financeiro.valor}',
-                      data='${financeiro.data != null ? financeiro.data : financeiro.data_vencimento != null ? financeiro.data_vencimento : null}',
-                      data_vencimento=${financeiro.data_vencimento != null ? `'${financeiro.data_vencimento}'` : null},
+                      data=${financeiro.data != null ? `'${financeiro.data}'` : 'null'},
+                      data_vencimento=${financeiro.data_vencimento != null ? `'${financeiro.data_vencimento}'` : 'null'},
                       categoria='${financeiro.categoria}',
-                      conta=${financeiro.conta != null ? `'${financeiro.conta}'` : null},
-                      descricao=${financeiro.descricao != null ? `'${financeiro.descricao}'` : null},
-                      cliente=${financeiro.cliente != null ? `'${financeiro.cliente}'` : null},
-                      forma_pagamento=${financeiro.forma_pagamento != null ? `'${financeiro.forma_pagamento}'` : null},
-                      parcelas=${financeiro.parcelas != null ? `'${financeiro.parcelas}'` : null},
+                      conta=${financeiro.conta != null ? `'${financeiro.conta}'` : 'null'},
+                      descricao=${financeiro.descricao != null ? `'${financeiro.descricao}'` : 'null'},
+                      cliente=${financeiro.cliente != null ? `'${financeiro.cliente}'` : 'null'},
+                      forma_pagamento=${financeiro.forma_pagamento != null ? `'${financeiro.forma_pagamento}'` : 'null'},
+                      parcelas=${financeiro.parcelas != null ? `'${financeiro.parcelas}'` : 'null'},
                       nome_operador='${name}',
-                      pago=${financeiro.data == null || financeiro.data=="" ? 0 : 1}
+                      pago=${financeiro.pago != null ? financeiro.pago : 0},
+                      url_boleto=${financeiro.url_boleto != null ? `'${financeiro.url_boleto}'` : 'url_boleto'},
+                      url_comprovante=${financeiro.url_comprovante != null ? `'${financeiro.url_comprovante}'` : 'url_comprovante'},
+                      status=${financeiro.status != null ? financeiro.status : 'status'},
+                      id_usuario=${financeiro.id_usuario != null ? financeiro.id_usuario : 'id_usuario'}
                     where id=${financeiro.id} and id_condominio=${id_condominio}`;
     await db.query(query);
   },
@@ -199,6 +206,32 @@ module.exports = {
       return "-";
     }
     return results[0].data;
+  },
+
+  updateBoleto: async function (url, id){
+    const query = `update Financeiro set url_boleto='${url}' where id='${id}' `;
+    await db.query(query);
+  },
+
+  updateComprovante: async function (url, id){
+    const query = `update Financeiro set url_comprovante='${url}', status=2 where id='${id}' `;
+    await db.query(query);
+  },
+
+  updateStatus: async function (status, id){
+    const query = `update Financeiro set status=${status}, pago=${status == 1 ? 1 : 0} where id='${id}' `;
+    await db.query(query);
+  },
+
+  getByUser: async function (id_user, id_cond) {
+    const query = `select id, nome, tipo, valor, categoria, url_boleto, url_comprovante, status,
+                    DATE_FORMAT(data_vencimento, '%d/%m/%Y') as data_vencimento,
+                    DATE_FORMAT(data, '%d/%m/%Y') as data, pago
+                    from Financeiro
+                    where id_condominio=${id_cond} and (id_usuario=${id_user} or id_usuario is null)
+                    order by data_vencimento desc`;
+    const { results } = await db.query(query);
+    return results;
   },
     
 };
