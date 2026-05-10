@@ -2,7 +2,11 @@
   "name": "@org/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "build": "nx build portaria-web",
+    "start": "nx serve portaria-web",
+    "test": "nx test portaria-web"
+  },
   "private": true,
   "engines": {
     "node": "24.x",
