@@ -5,7 +5,8 @@
   "scripts": {},
   "private": true,
   "engines": {
-    "node": "22.x"
+    "node": "24.x",
+    "npm": ">=9"
   },
   "devDependencies": {
     "@angular-devkit/core": "~21.2.0",
