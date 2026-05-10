@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const upload = require('express-fileupload');
 const session = require('express-session');
 const cors = require('cors');
+const compression = require('compression');
 
 const condominioRoutes = require('./src/routes/condominio');
 const sindicoRoutes = require('./src/routes/sindico');
@@ -25,11 +26,13 @@ const areasSociaisRouter = require('./src/routes/areasSociais');
 const financeiroRouter = require('./src/routes/financeiro');
 const dashboardRouter = require('./src/routes/dashboard');
 const encomendasRouter = require('./src/routes/encomendas');
+const usersRouter = require('./src/routes/users');
 
 const app = express();
 
+app.use(compression());
 app.use(cors());
-app.use(session({ secret: 'senha123' }));
+app.use(session({ secret: process.env.SESSION_SECRET || 'dev-session-secret' }));
 app.use(upload());
 
 // view engine setup
@@ -58,6 +61,7 @@ app.use('/manutencoes', manutencoesRouter);
 app.use('/ocorrencias', ocorrenciasRouter);
 app.use('/prestadores', prestadoresRouter);
 app.use('/mudancas', mudancasRouter);
+app.use('/users', usersRouter);
 app.use('/visitantes', visitantesRouter);
 app.use('/funcionarios', funcionariosRouter);
 app.use('/moradores', moradoresRouter);
@@ -75,9 +79,10 @@ app.use(function (req, res, next) {
 	next(err);
 });
 
+const loggerUtil = require('./src/utils/logger');
 // error handler
 app.use(function (err, req, res) {
-	console.log(err);
+	loggerUtil.error(err);
 	// set locals, only providing error in development
 	res.locals.message = err.message;
 	res.locals.error = req.app.get('env') === 'development' ? err : {};

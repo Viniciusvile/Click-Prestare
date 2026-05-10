@@ -85,4 +85,10 @@ module.exports = {
     const { results } = await db.query(query);
     return results;
   },
+
+  getCreatorId: async function (id) {
+    const query = `SELECT user FROM Ocorrencias WHERE id = ${id}`;
+    const { results } = await db.query(query);
+    return results[0]?.user;
+  },
 };

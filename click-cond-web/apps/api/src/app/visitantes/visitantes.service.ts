@@ -18,9 +18,14 @@ export interface UpdateVisitanteDto extends Partial<CreateVisitanteDto> {
   id: number;
 }
 
+import { NotificationsService } from '../notifications/notifications.service';
+
 @Injectable()
 export class VisitantesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async findAll(idCondominio: number, search?: string) {
     return this.prisma.visitantes.findMany({
@@ -51,8 +56,8 @@ export class VisitantesService {
     return v;
   }
 
-  create(dto: CreateVisitanteDto) {
-    return this.prisma.visitantes.create({
+  async create(dto: CreateVisitanteDto) {
+    const visitante = await this.prisma.visitantes.create({
       data: {
         nome: dto.nome,
         doc_identificacao: dto.doc_identificacao ?? null,
@@ -66,6 +71,37 @@ export class VisitantesService {
         foto_pessoa: dto.foto_pessoa ?? null,
       },
     });
+
+    // Notificar moradores
+    try {
+      const moradores = await this.prisma.users.findMany({
+        where: {
+          apartamentosUsers: {
+            some: {
+              id_apto: dto.id_apartamento,
+            },
+          },
+          fcm_token: { not: null },
+          notif_visitantes: 1,
+        },
+        select: { fcm_token: true },
+      });
+
+      for (const m of moradores) {
+        if (m.fcm_token) {
+          await this.notifications.sendPushNotification(
+            m.fcm_token,
+            dto.is_prestador ? 'Prestador de Serviço' : 'Chegada de Visitante',
+            `${dto.nome} acabou de chegar para o seu apartamento.`,
+            { id: visitante.id.toString(), type: 'visitante' },
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao notificar moradores sobre visitante:', error);
+    }
+
+    return visitante;
   }
 
   async update(dto: UpdateVisitanteDto) {

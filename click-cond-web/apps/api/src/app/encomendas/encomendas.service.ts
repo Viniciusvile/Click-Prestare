@@ -10,9 +10,14 @@ export interface CreateEncomendaDto {
   id_condominio: number;
 }
 
+import { NotificationsService } from '../notifications/notifications.service';
+
 @Injectable()
 export class EncomendasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findAll(idCondominio: number, status?: string) {
     return this.prisma.encomendas.findMany({
@@ -30,8 +35,8 @@ export class EncomendasService {
     return e;
   }
 
-  create(dto: CreateEncomendaDto) {
-    return this.prisma.encomendas.create({
+  async create(dto: CreateEncomendaDto) {
+    const encomenda = await this.prisma.encomendas.create({
       data: {
         descricao: dto.descricao,
         destinatario_apto: dto.destinatario_apto,
@@ -42,6 +47,41 @@ export class EncomendasService {
         id_condominio: dto.id_condominio,
       },
     });
+
+    // Notificar moradores do apartamento
+    try {
+      const moradores = await this.prisma.users.findMany({
+        where: {
+          moradores: {
+            some: {
+              id_condominio: dto.id_condominio,
+              apartamento: {
+                apto: dto.destinatario_apto,
+                ...(dto.destinatario_bloco ? { bloco: dto.destinatario_bloco } : {}),
+              },
+            },
+          },
+          fcm_token: { not: null },
+          notif_encomendas: 1,
+        },
+        select: { fcm_token: true, name: true },
+      });
+
+      for (const morador of moradores) {
+        if (morador.fcm_token) {
+          await this.notifications.sendPushNotification(
+            morador.fcm_token,
+            'Nova Encomenda!',
+            `Uma encomenda (${dto.descricao}) chegou para o seu apartamento.`,
+            { id: encomenda.id.toString(), type: 'encomenda' },
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Falha ao notificar moradores:', error);
+    }
+
+    return encomenda;
   }
 
   async retirar(id: number, retiradoPor: string) {

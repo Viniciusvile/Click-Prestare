@@ -90,6 +90,7 @@ module.exports = {
     const query = `select c.id, c.num_blocos, c.moeda,
                     DATE_FORMAT(c.updated_at, '%d/%m/%Y às %H:%i') as updatedAt, 
                     c.nome, c.photo, sum(f.valor) as saldo,
+                    (SELECT DATE_FORMAT(created_at, '%d/%m/%Y') FROM Financeiro WHERE id_condominio = c.id ORDER BY id DESC LIMIT 1) as data_financeiro,
                     (select count(id) from Apartamentos where id_condominio=c.id) as num_aptos,
                     DATE_FORMAT(c.vencimento, '%d/%m/%Y') as vencimento_condominio,
                     (DATEDIFF(c.vencimento, NOW()) + 1) as dias_restantes_condominio

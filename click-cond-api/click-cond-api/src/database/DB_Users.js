@@ -274,4 +274,9 @@ module.exports = {
     return results;
   },
 
+  updateFcmToken: async function (id, token) {
+    const query = `UPDATE Users SET fcm_token=? WHERE id=?`;
+    await db.queryParam(query, [token, id]);
+  },
+
 };

@@ -60,4 +60,10 @@ module.exports = {
     const { results } = await db.query(query);
     return results[0];
   },
+
+  getById: async function (id) {
+    const query = `select * from Mudancas where id=${id}`;
+    const { results } = await db.query(query);
+    return results[0];
+  },
 };

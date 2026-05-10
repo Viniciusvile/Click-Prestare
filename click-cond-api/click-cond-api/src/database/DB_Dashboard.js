@@ -78,4 +78,62 @@ module.exports = {
     return results;             
   },
 
+  getSyndicSummary: async function (userId) {
+    // Total debts (count and sum) across all managed condos
+    const queryDebts = `SELECT count(*) as count, SUM(valor) as total 
+                        FROM Financeiro f 
+                        INNER JOIN Sindicos_Condominios sc ON sc.id_condominio = f.id_condominio 
+                        WHERE sc.id_user = ? AND f.pago = 0`;
+    
+    // Pending occurrences across all managed condos
+    const queryOccurrences = `SELECT count(*) as count 
+                              FROM Ocorrencias o 
+                              INNER JOIN Sindicos_Condominios sc ON sc.id_condominio = o.id_condominio 
+                              WHERE sc.id_user = ? AND o.status = 'Pendente'`;
+
+    const [debts, occurrences] = await Promise.all([
+      db.queryParam(queryDebts, [userId]),
+      db.queryParam(queryOccurrences, [userId])
+    ]);
+
+    return {
+      debts: {
+        count: debts.results[0].count || 0,
+        total: debts.results[0].total || 0
+      },
+      occurrences: occurrences.results[0].count || 0
+    };
+  },
+
+  getResidentSummary: async function (userId) {
+    // Visits for today across all linked condos
+    const queryVisits = `SELECT count(*) as count 
+                         FROM Visitantes 
+                         WHERE user = ? AND DATE(data_hora_inicio) = CURDATE()`;
+    
+    // Pending packages linked to the resident
+    // Note: We'll match by the email or user link if available, but Encomendas matches by apto/bloco.
+    // We need to fetch the resident's apto/bloco first.
+    const residentInfo = await db.queryParam(`SELECT id_condominio, bloco, apartamento FROM Moradores WHERE id_user = ?`, [userId]);
+    
+    let packageCount = 0;
+    if (residentInfo.results.length > 0) {
+      const info = residentInfo.results[0];
+      const queryPackages = `SELECT count(*) as count 
+                             FROM Encomendas 
+                             WHERE id_condominio = ? AND destinatario_bloco = ? AND destinatario_apto = ? AND status = 'Aguardando'`;
+      const packages = await db.queryParam(queryPackages, [info.id_condominio, info.bloco, info.apartamento]);
+      packageCount = packages.results[0].count;
+    }
+
+    const [visits] = await Promise.all([
+      db.queryParam(queryVisits, [userId])
+    ]);
+
+    return {
+      visits: visits.results[0].count || 0,
+      packages: packageCount
+    };
+  },
+
 };

@@ -8,3 +8,6 @@ build/
 npm-debug.log
 yarn-error.log
 .claude/
+.antigravity_config.json
+firebase-service-account.json
+scratch/

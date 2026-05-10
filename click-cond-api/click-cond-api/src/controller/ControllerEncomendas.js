@@ -1,4 +1,5 @@
 const db = require('../database/DB_Encomendas.js');
+const dbAptos = require('../database/DB_Apartamento.js');
 const saveToAWS = require('../utils/saveToAWS');
 
 module.exports = {
@@ -8,23 +9,25 @@ module.exports = {
   async getAll(req, res) {
     try {
       const { id_condominio, status } = req.query;
-      let bloco = null;
-      let apto = null;
+      let { bloco, apto } = req.query;
+      const user = req.session.user;
 
-      // Se for morador, filtra automaticamente pelo bloco/apto dele (segurança)
-      if (req.session.user.typeAccess === 'Morador') {
-        // Precisamos dos dados do morador para filtrar
+      // Enforce data isolation for residents
+      if (user.typeAccess === 'Morador') {
+        const userAptos = await dbAptos.getMoradoresApartamentos(user.id, id_condominio); 
+        // Wait! Let me check if getMoradoresApartamentos exists or if I should use getApartmentsByUser
+        // I added getApartmentsByUser previously.
+        
+        // Actually, getApartmentsByUser returns IDs. I need the actual apto/bloco strings.
         const dbMoradores = require('../database/DB_Moradores');
-        const morador = await dbMoradores.get(req.session.user.id);
-        // Note: m.apto_bloco e m.apto vêm do DB_Moradores.get via join com Apartamentos
-        // Mas o get do DB_Moradores retorna as colunas mapeadas
-        const conds = await dbMoradores.listCondominios(req.session.user.id);
-        // Pega o primeiro condomínio da lista para simplificar (ou o id_condominio da query se for válido)
+        const conds = await dbMoradores.listCondominios(user.id);
         const currentCond = conds.find(c => c.id == id_condominio) || conds[0];
-        if (currentCond) {
-            bloco = currentCond.apto_bloco;
-            apto = currentCond.apto;
-        }
+        
+        if (!currentCond) return res.status(200).json([]);
+
+        // Force filtering to their registered unit
+        bloco = currentCond.apto_bloco;
+        apto = currentCond.apto;
       }
 
       const result = await db.getAll(id_condominio, status, bloco, apto);
@@ -63,7 +66,24 @@ module.exports = {
 
   async get(req, res) {
     try {
+      const user = req.session.user;
       const result = await db.get(req.query.id);
+
+      if (!result) return res.status(404).json({ message: "Encomenda não encontrada." });
+
+      // Enforce isolation for residents
+      if (user.typeAccess === 'Morador') {
+        const dbMoradores = require('../database/DB_Moradores');
+        const conds = await dbMoradores.listCondominios(user.id);
+        const currentCond = conds.find(c => c.id == result.id_condominio);
+
+        if (!currentCond || 
+            result.destinatario_apto !== currentCond.apto || 
+            (result.destinatario_bloco && result.destinatario_bloco !== currentCond.apto_bloco)) {
+          return res.status(403).json({ message: "Acesso negado: Esta encomenda não pertence ao seu apartamento." });
+        }
+      }
+
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({ message: err.message });

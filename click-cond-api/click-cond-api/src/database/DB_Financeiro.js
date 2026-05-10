@@ -30,29 +30,29 @@ module.exports = {
   },
 
   getAll: async function (id_cond, mes, ano, getPendentes) {
-    const query = `select t1.id, t1.nome, t1.tipo, t1.valor, t1.categoria, t1.nome_operador, t1.pago,
-                      DATE_FORMAT(t1.data, '%d') as dia,
-                      DATE_FORMAT(t1.data, '%m') as mes,
-                      DATE_FORMAT(t1.data, '%Y') as ano
+    const query = `select t1.id, t1.nome, t1.tipo, t1.valor, t1.categoria, t1.nome_operador, t1.pago, t1.status,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%d') as dia,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%m') as mes,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%Y') as ano
                     from Financeiro as t1
                     where t1.id_condominio=${id_cond} 
-                      and t1.data<='${ano}-${mes}-31'
+                      and COALESCE(t1.data, t1.data_vencimento, t1.created_at) <= '${ano}-${mes}-31'
+                      and COALESCE(t1.data, t1.data_vencimento, t1.created_at) >= '${ano}-${mes}-01'
                       ${getPendentes == false ? 'and t1.pago=1' : ''}
-                    group by t1.data, t1.created_at
-                    order by t1.data asc`;
+                    order by COALESCE(t1.data, t1.data_vencimento, t1.created_at) asc, t1.created_at desc`;
     const { results } = await db.query(query);
     return results;
   },
 
   getAllGrafico: async function (id_cond, mes, ano) {
     const query = `select t1.id, t1.nome, t1.tipo, t1.valor, t1.categoria, t1.pago,
-                      DATE_FORMAT(t1.data, '%d') as dia,
-                      DATE_FORMAT(t1.data, '%m') as mes,
-                      DATE_FORMAT(t1.data, '%Y') as ano
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%d') as dia,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%m') as mes,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%Y') as ano
                     from Financeiro as t1
                     where t1.id_condominio=${id_cond} 
-                      and t1.data<='${ano}-${mes}-31' 
-                      and t1.data>='${ano}-${mes}-01' 
+                      and COALESCE(t1.data, t1.data_vencimento, t1.created_at) <= '${ano}-${mes}-31' 
+                      and COALESCE(t1.data, t1.data_vencimento, t1.created_at) >= '${ano}-${mes}-01' 
                       and t1.pago = 1
                     order by t1.categoria asc`;
     const { results } = await db.query(query);
@@ -128,12 +128,12 @@ module.exports = {
 
   getAllMeses: async function (id_cond) {
     const query = `select 
-                      distinct DATE_FORMAT(t1.data, '%m/%y') as periodo,
-                      DATE_FORMAT(t1.data, '%m') as mes,
-                      DATE_FORMAT(t1.data, '%Y') as ano
+                      distinct DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%m/%y') as periodo,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%m') as mes,
+                      DATE_FORMAT(COALESCE(t1.data, t1.data_vencimento, t1.created_at), '%Y') as ano
                     from Financeiro as t1
                     where t1.id_condominio=${id_cond}
-                    order by t1.data asc `;
+                    order by COALESCE(t1.data, t1.data_vencimento, t1.created_at) asc `;
     const { results } = await db.query(query);
     return results;
   },
@@ -189,7 +189,8 @@ module.exports = {
                         forma_pagamento,
                         parcelas,
                         photo,
-                        pago
+                        pago,
+                        id_usuario
                       from Financeiro
                       where id_condominio=${id_cond} and id=${id}`;
     const { results } = await db.query(query);

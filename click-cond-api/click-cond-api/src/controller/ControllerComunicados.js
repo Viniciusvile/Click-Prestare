@@ -1,9 +1,23 @@
 const db = require('../database/DB_Comunicados.js');
+const dbMoradores = require('../database/DB_Moradores.js');
+const notifications = require('../services/Notifications.js');
 
 module.exports = {
   async insert(req, res) {
     try {
       await db.insert(req.body.id_condominio, req.body.comunicado, req.session.user.id);
+      
+      // Notificar moradores
+      const tokens = await dbMoradores.getTokensForComunicados(req.body.id_condominio);
+      if (tokens.length > 0) {
+        await notifications.sendToTokens(
+          tokens,
+          'Novo Comunicado!',
+          req.body.comunicado.substring(0, 100) + '...',
+          { type: 'comunicado' }
+        );
+      }
+
       return res.json();
     } catch (err) {
       return res.status(500).json({ message: err.message });

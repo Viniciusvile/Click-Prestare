@@ -60,9 +60,11 @@ module.exports = {
       for(var i=0; i<60; i++){
         date.setDate(date.getDate() + 1);
         const dateFormat = stringExtension.formatDateToString(date);
-        const weekDay = date.getDay()-1 < 0 ? 6 : date.getDay()-1;
-        if(result.horarios[weekDay].horarios.length > 0){
-          horariosLivres[dateFormat] = result.horarios[weekDay].horarios;          
+        const weekDay = date.getDay() - 1 < 0 ? 6 : date.getDay() - 1;
+        if (result.horarios && result.horarios[weekDay] && result.horarios[weekDay].horarios) {
+          if (result.horarios[weekDay].horarios.length > 0) {
+            horariosLivres[dateFormat] = JSON.parse(JSON.stringify(result.horarios[weekDay].horarios));
+          }
         }
       }
       
@@ -93,7 +95,25 @@ module.exports = {
 
   async insertAgendamento(req, res){
     try {
-      const result = await db.insertAgendamento(req.body.agendamento, req.session.user.id);
+      const user = req.session.user;
+      const { agendamento } = req.body;
+
+      // Enforce isolation for residents
+      if (user.typeAccess === 'Morador') {
+        const dbAptos = require('../database/DB_Apartamento.js');
+        const userAptos = await dbAptos.getApartmentsByUser(user.id, agendamento.id_condominio); // Wait, need condo ID. 
+        // Agendamento might not have condo ID, but we can get it from the Area Social.
+        const area = await db.get(null, agendamento.id_area_social); // pass null for id_cond if we don't have it yet, or better, get it.
+        
+        if (area) {
+          const userAptosReal = await dbAptos.getApartmentsByUser(user.id, area.id_condominio);
+          if (!userAptosReal.includes(parseInt(agendamento.id_apartamento))) {
+            return res.status(403).json({ message: "Acesso negado: Você só pode agendar para o seu próprio apartamento." });
+          }
+        }
+      }
+
+      const result = await db.insertAgendamento(agendamento, user.id);
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -102,7 +122,18 @@ module.exports = {
 
   async removeAgendamento(req, res) {
     try {
-      await db.removeAgendamento(req.body.id);
+      const user = req.session.user;
+      const id = req.body.id;
+
+      // Enforce ownership for residents
+      if (user.typeAccess === 'Morador') {
+        const agendamento = await db.getAgendamento(id); // I should check if getAgendamento exists
+        if (!agendamento || agendamento.id_user !== user.id) {
+           return res.status(403).json({ message: "Acesso negado: Você só pode remover seus próprios agendamentos." });
+        }
+      }
+
+      await db.removeAgendamento(id);
       return res.json();
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -129,7 +160,22 @@ module.exports = {
 
   async getAllMeusAgendamentos(req, res) {
     try {
-      const cond = await db.getAllMeusAgendamentos(req.query.id_condominio, req.query.id_apto);
+      const user = req.session.user;
+      const id_condominio = req.query.id_condominio;
+      let id_apto = req.query.id_apto;
+
+      // Enforce isolation for residents
+      if (user.typeAccess === 'Morador') {
+        const dbAptos = require('../database/DB_Apartamento.js');
+        const userAptos = await dbAptos.getApartmentsByUser(user.id, id_condominio);
+        
+        if (id_apto && !userAptos.includes(parseInt(id_apto))) {
+           return res.status(403).json({ message: "Acesso negado." });
+        }
+        if (!id_apto) id_apto = userAptos[0];
+      }
+
+      const cond = await db.getAllMeusAgendamentos(id_condominio, id_apto);
       return res.status(200).json(cond);
     } catch (err) {
       return res.status(500).json({ message: err.message });

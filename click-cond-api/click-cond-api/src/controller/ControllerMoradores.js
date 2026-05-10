@@ -95,8 +95,7 @@ module.exports = {
       var list = await db.listCondominios(req.session.user.id);
       for(var i=0; i<list.length; i++){
         list[i].saldo = doubleToReal.convertDoubleToReal(list[i].saldo ?? 0);
-        var dt = await dbFinanceiro.getLastUpdate(list[i].id);
-        list[i].data_financeiro = dt;
+        if(!list[i].data_financeiro) list[i].data_financeiro = "-";
       }
       return res.status(200).json( list );
     } catch (err) {

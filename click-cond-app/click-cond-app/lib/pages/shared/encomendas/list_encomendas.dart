@@ -135,9 +135,21 @@ class _EncomendaCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  encomenda.descricao ?? 'Encomenda sem descrição',
-                  style: AppTypography.bodyMedium(context).copyWith(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        encomenda.descricao ?? 'Encomenda sem descrição',
+                        style: AppTypography.bodyMedium(context).copyWith(fontWeight: FontWeight.bold),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (encomenda.destinatarioApto != null)
+                      Text(
+                        '${encomenda.destinatarioBloco ?? ''} - ${encomenda.destinatarioApto}',
+                        style: AppTypography.tiny(context).copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(

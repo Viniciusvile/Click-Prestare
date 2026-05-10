@@ -1,4 +1,6 @@
 const db = require('../database/DB_Ocorrencias.js');
+const dbMoradores = require('../database/DB_Moradores.js');
+const notifications = require('../services/Notifications.js');
 const saveToAWS = require('../utils/saveToAWS');
 
 module.exports = {
@@ -62,7 +64,17 @@ module.exports = {
 
   async remove(req, res) {
     try {
-      await db.remove(req.body.id);
+      const user = req.session.user;
+      const id = req.body.id;
+
+      if (user.typeAccess === 'Morador') {
+        const creatorId = await db.getCreatorId(id);
+        if (creatorId !== user.id) {
+          return res.status(403).json({ message: "Acesso negado: Você só pode remover as suas próprias ocorrências." });
+        }
+      }
+
+      await db.remove(id);
       return res.json();
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -71,16 +83,40 @@ module.exports = {
 
   async update(req, res) {
     try {
-      if(req.body.ocorrencia.isResposta && req.body.ocorrencia.isResposta == true){
-        await db.setResposta(req.body.id_condominio, req.body.ocorrencia, req.session.user.id); 
+      const user = req.session.user;
+      const { id_condominio, ocorrencia } = req.body;
+
+      if (user.typeAccess === 'Morador') {
+        const creatorId = await db.getCreatorId(ocorrencia.id);
+        if (creatorId !== user.id) {
+          return res.status(403).json({ message: "Acesso negado: Você só pode editar as suas próprias ocorrências." });
+        }
+      }
+
+      if(ocorrencia.isResposta && ocorrencia.isResposta == true){
+        await db.setResposta(id_condominio, ocorrencia, user.id); 
+        
+        // Notificar o morador que criou a ocorrência
+        const creatorId = await db.getCreatorId(ocorrencia.id);
+        if (creatorId) {
+          const tokens = await dbMoradores.getTokensForOcorrencias(creatorId);
+          if (tokens.length > 0) {
+            await notifications.sendToTokens(
+              tokens,
+              'Atualização na sua Ocorrência',
+              `O síndico respondeu à sua ocorrência: ${ocorrencia.status}`,
+              { id: ocorrencia.id.toString(), type: 'ocorrencia' }
+            );
+          }
+        }
       }else{
         var listDocs = [];
-        for (var i = 0; i < req.body.ocorrencia.docs.length; i++) {      
-          const doc = req.body.ocorrencia.docs[i];
-          const urlPhotoProfile = await saveToAWS(doc, `condominios/${req.body.id_condominio}/ocorrencias`, '');
+        for (var i = 0; i < ocorrencia.docs.length; i++) {      
+          const doc = ocorrencia.docs[i];
+          const urlPhotoProfile = await saveToAWS(doc, `condominios/${id_condominio}/ocorrencias`, '');
           listDocs.push(urlPhotoProfile.url);
         }
-        await db.update(req.body.id_condominio, req.body.ocorrencia, req.session.user.id, listDocs); 
+        await db.update(id_condominio, ocorrencia, user.id, listDocs); 
       } 
       return res.json();
     } catch (err) {
@@ -90,7 +126,18 @@ module.exports = {
 
   async get(req, res) {
     try {
+      const user = req.session.user;
       const result = await db.get(req.query.id_condominio, req.query.id);
+
+      if (!result) return res.status(404).json({ message: "Ocorrência não encontrada." });
+
+      // Enforce isolation for residents
+      if (user.typeAccess === 'Morador') {
+        if (result.id_user !== user.id) {
+          return res.status(403).json({ message: "Acesso negado: Você só pode ver detalhes das suas próprias ocorrências." });
+        }
+      }
+
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({ message: err.message });

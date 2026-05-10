@@ -210,12 +210,19 @@ class _VisitanteCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(child: Text(item['nome'] ?? '', style: AppTypography.bodyMedium(context), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                      if (isInside)
+                      if (item['apto'] != null)
+                        Text(
+                          '${item['bloco'] ?? ''} - ${item['apto']}',
+                          style: AppTypography.tiny(context).copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                        ),
+                      if (isInside) ...[
+                        const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
                           child: Text('NO LOCAL', style: AppTypography.tiny(context).copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
                         ),
+                      ],
                     ],
                   ),
                   Row(

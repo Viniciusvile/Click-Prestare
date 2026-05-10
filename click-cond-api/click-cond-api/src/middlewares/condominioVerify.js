@@ -31,6 +31,13 @@ module.exports = async function (req, res, next) {
       return res.status(401).json({ message: "Usuário não autenticado." });
     }
 
+    // Cache permissions in session to avoid DB hits on every request
+    if (!req.session.permissions) req.session.permissions = {};
+    const cacheKey = `${user.id}_${id_condominio}`;
+    if (req.session.permissions[cacheKey]) {
+      return next();
+    }
+
     const userId = user.id;
     const typeAccess = user.typeAccess;
 
@@ -61,6 +68,9 @@ module.exports = async function (req, res, next) {
       console.warn(`[SECURITY] User ${userId} (${typeAccess}) attempted to access Condominio ${id_condominio} without permission.`);
       return res.status(403).json({ message: "Acesso negado: Você não tem permissão para acessar os dados deste condomínio." });
     }
+
+    // Cache the successful verification
+    req.session.permissions[cacheKey] = true;
 
     next();
   } catch (err) {

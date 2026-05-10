@@ -12,11 +12,24 @@ module.exports = {
 
   async getAll(req, res) {
     try {
-      if(req.session.user.typeAccess != 'Morador'){
-        const result = await db.getAll(req.query.id_condominio, req.query.offset, null);
+      const user = req.session.user;
+      const id_condominio = req.query.id_condominio;
+
+      if (user.typeAccess != 'Morador') {
+        const result = await db.getAll(id_condominio, req.query.offset, null);
         return res.status(200).json(result);
-      }else if(req.session.user.typeAccess == 'Morador'){
-        const result = await db.getAll(req.query.id_condominio, req.query.offset, req.query.id_apto);
+      } else {
+        const dbAptos = require('../database/DB_Apartamento.js');
+        const userAptos = await dbAptos.getApartmentsByUser(user.id, id_condominio);
+        
+        let id_apto = req.query.id_apto;
+        if (id_apto && !userAptos.includes(parseInt(id_apto))) {
+           return res.status(403).json({ message: "Acesso negado." });
+        }
+        
+        if (!id_apto) id_apto = userAptos[0];
+
+        const result = await db.getAll(id_condominio, req.query.offset, id_apto);
         return res.status(200).json(result);
       }
     } catch (err) {
@@ -26,7 +39,21 @@ module.exports = {
 
   async remove(req, res) {
     try {
-      await db.remove(req.body.id);
+      const user = req.session.user;
+      const id = req.body.id;
+
+      if (user.typeAccess === 'Morador') {
+        const existing = await db.getById(id); // Check if getById exists
+        if (!existing) return res.status(404).json({ message: "Mudança não encontrada." });
+        
+        const dbAptos = require('../database/DB_Apartamento.js');
+        const userAptos = await dbAptos.getApartmentsByUser(user.id, existing.id_condominio);
+        if (!userAptos.includes(existing.id_apto)) {
+          return res.status(403).json({ message: "Acesso negado." });
+        }
+      }
+
+      await db.remove(id);
       return res.json();
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -35,7 +62,21 @@ module.exports = {
 
   async update(req, res) {
     try {
-      await db.update(req.body.id_condominio, req.body.mudanca);
+      const user = req.session.user;
+      const { id_condominio, mudanca } = req.body;
+
+      if (user.typeAccess === 'Morador') {
+        const existing = await db.getById(mudanca.id);
+        if (!existing) return res.status(404).json({ message: "Mudança não encontrada." });
+        
+        const dbAptos = require('../database/DB_Apartamento.js');
+        const userAptos = await dbAptos.getApartmentsByUser(user.id, id_condominio);
+        if (!userAptos.includes(existing.id_apto)) {
+          return res.status(403).json({ message: "Acesso negado." });
+        }
+      }
+
+      await db.update(id_condominio, mudanca);
       return res.json();
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -54,7 +95,21 @@ module.exports = {
 
   async get(req, res) {
     try {
+      const user = req.session.user;
       const result = await db.get(req.query.id_condominio, req.query.id);
+
+      if (!result) return res.status(404).json({ message: "Mudança não encontrada." });
+
+      // Enforce isolation for residents
+      if (user.typeAccess === 'Morador') {
+        const dbAptos = require('../database/DB_Apartamento.js');
+        const userAptos = await dbAptos.getApartmentsByUser(user.id, req.query.id_condominio);
+        
+        if (!userAptos.includes(result.id_apto)) {
+          return res.status(403).json({ message: "Acesso negado: Esta mudança não pertence ao seu apartamento." });
+        }
+      }
+
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({ message: err.message });

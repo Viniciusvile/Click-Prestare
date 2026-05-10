@@ -9,6 +9,8 @@ router.get('/get-all', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }
 router.post('/remove', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }), controller.remove);
 router.post('/update', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }), validate.validateInsert, controller.update);
 router.get('/get', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }), controller.get);
+router.post('/check-in', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }), controller.checkIn);
+router.post('/check-out', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }), controller.checkOut);
 
 
 module.exports = router;

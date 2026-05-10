@@ -63,4 +63,15 @@ module.exports = {
     return results;
   },
 
+  getApartmentsByUser: async function (userId, idCondominio) {
+    const query = `
+      SELECT au.id_apto 
+      FROM Apartamentos_Users au
+      INNER JOIN Apartamentos a ON a.id = au.id_apto
+      WHERE au.id_user = ? AND a.id_condominio = ?
+    `;
+    const { results } = await db.queryParam(query, [userId, idCondominio]);
+    return results.map(r => r.id_apto);
+  },
+
 };

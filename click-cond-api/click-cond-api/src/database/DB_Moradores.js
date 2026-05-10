@@ -132,9 +132,12 @@ module.exports = {
   },
 
   listCondominios: async function (id) {
-    const query = `select c.id, c.num_aptos, c.num_blocos,  c.moeda,
+    const query = `select c.id, c.num_aptos, c.num_blocos, c.moeda,
                     DATE_FORMAT(c.updated_at, '%d/%m/%Y às %H:%i') as updatedAt, 
-                    c.nome, c.photo, sum(f.valor) as saldo, DATE_FORMAT(c.vencimento, '%d/%m/%Y') as vencimento_condominio,
+                    c.nome, c.photo, 
+                    (SELECT SUM(valor) FROM Financeiro WHERE id_condominio = c.id AND pago = 1) as saldo,
+                    (SELECT DATE_FORMAT(created_at, '%d/%m/%Y') FROM Financeiro WHERE id_condominio = c.id ORDER BY id DESC LIMIT 1) as data_financeiro,
+                    DATE_FORMAT(c.vencimento, '%d/%m/%Y') as vencimento_condominio,
                     (DATEDIFF(c.vencimento, NOW()) + 1) as dias_restantes_condominio,
                     apto.id as apto_id, apto.apto as apto, apto.bloco as apto_bloco,
                     DATE_FORMAT(au.vencimento, '%d/%m/%Y') as vencimento_morador,
@@ -142,9 +145,7 @@ module.exports = {
                     from Apartamentos_Users au 
                       inner join Apartamentos apto on apto.id=au.id_apto
                       inner join Condominios c on apto.id_condominio = c.id
-                      left join Financeiro f on (f.id_condominio=c.id and f.pago=1)
                       where au.id_user=${id} and c.ativo=1
-                    group by c.id
                     order by c.created_at desc`;
     const { results } = await db.query(query);
     return results;
@@ -190,6 +191,25 @@ module.exports = {
                     from Apartamentos_Users where id_user=${id}`;
     const { results } = await db.query(query);
     return results[0];
+  },
+
+  getTokensForComunicados: async function (idCondominio) {
+    const query = `SELECT fcm_token FROM Users u
+                   INNER JOIN Moradores m ON m.id_user = u.id
+                   WHERE m.id_condominio = ${idCondominio} 
+                   AND u.fcm_token IS NOT NULL 
+                   AND u.notif_comunicados = 1`;
+    const { results } = await db.query(query);
+    return results.map(r => r.fcm_token);
+  },
+
+  getTokensForOcorrencias: async function (idUser) {
+    const query = `SELECT fcm_token FROM Users
+                   WHERE id = ${idUser} 
+                   AND fcm_token IS NOT NULL 
+                   AND notif_ocorrencias = 1`;
+    const { results } = await db.query(query);
+    return results.map(r => r.fcm_token);
   },
 
 };

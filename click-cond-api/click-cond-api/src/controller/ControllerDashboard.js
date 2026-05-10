@@ -30,14 +30,40 @@ module.exports = {
 
   async getDashboard(req, res) {
     try {
-      const count_condominio = await db.getCountCondominio();
-      const count_apartamentos = await db.getCountApartamentos();
-      const count_moradores = await db.getCountMoradores();
-      const condominios_dia = await db.getCondominiosDia();
-      const condominios_localidade = await db.getCondominiosLocalidade();
+      const [
+        count_condominio,
+        count_apartamentos,
+        count_moradores,
+        condominios_dia,
+        condominios_localidade
+      ] = await Promise.all([
+        db.getCountCondominio(),
+        db.getCountApartamentos(),
+        db.getCountMoradores(),
+        db.getCondominiosDia(),
+        db.getCondominiosLocalidade()
+      ]);
 
       return res.status(200).json({count_condominio, count_apartamentos, count_moradores, condominios_dia, condominios_localidade});
     } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+
+  async getSummary(req, res) {
+    try {
+      const { typeAccess, id } = req.session.user;
+      let summary = {};
+      
+      if (typeAccess === 'Sindico') {
+        summary = await db.getSyndicSummary(id);
+      } else if (typeAccess === 'Morador') {
+        summary = await db.getResidentSummary(id);
+      }
+
+      return res.status(200).json(summary);
+    } catch (err) {
+      console.error('[getSummary Error]', err);
       return res.status(500).json({ message: err.message });
     }
   },

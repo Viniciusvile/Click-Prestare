@@ -6,5 +6,6 @@ const jwt = require('../middlewares/jwtVerify.js');
 router.post('/login', controller.login);
 router.get('/condominios/get-all', jwt({ typeAccess: ['Admin'] }), controller.getAllCondominios);
 router.get('/get-all', jwt({ typeAccess: ['Admin'] }), controller.getDashboard);
+router.get('/summary', jwt({ typeAccess: ['Sindico', 'Morador'] }), controller.getSummary);
 
 module.exports = router;

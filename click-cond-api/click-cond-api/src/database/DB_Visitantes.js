@@ -13,6 +13,9 @@ module.exports = {
   getAll: async function (id_cond, offset, id_apto, search) {
     const query = `select v.id, v.nome, v.doc_identificacao, 
                     DATE_FORMAT(v.data_hora_inicio, '%d/%m/%Y') as data_hora,
+                    DATE_FORMAT(v.data_entrada, '%H:%i') as hora_entrada,
+                    DATE_FORMAT(v.data_saida, '%H:%i') as hora_saida,
+                    v.data_entrada, v.data_saida,
                     v.is_visitante, v.is_prestador, u.login,
                     apto.apto, apto.bloco as apto_bloco, apto.id as apto_id,
                     v.foto_documento, v.foto_pessoa
@@ -64,4 +67,20 @@ module.exports = {
     const { results } = await db.query(query);
     return results[0];
   },
+
+  getById: async function (id) {
+    const query = `select * from Visitantes where id=${id}`;
+    const { results } = await db.query(query);
+    return results[0];
+  },
+  
+  checkIn: async function (id) {
+    const query = `update Visitantes set data_entrada=NOW(), data_saida=NULL where id=${id}`;
+    await db.query(query);
+  },
+
+  checkOut: async function (id) {
+    const query = `update Visitantes set data_saida=NOW() where id=${id}`;
+    await db.query(query);
+  }
 };

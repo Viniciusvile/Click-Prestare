@@ -50,11 +50,18 @@ module.exports = {
 
       // CONSULTA LANÇAMENTOS
       var arrayFinal = new Map();
-      var saldo=-9999999;
+      var saldo = 0;
+      var totalReceita = 0;
+      var totalDespesa = 0;
+      var hasPaid = false;
       var dia = `${new Date().getDate()}/${req.query.mes}/${req.query.ano}`;
       for(var i=0; i<results.length; i++){       
         if(results[i].pago == 1){
-          saldo = saldo == -9999999 ? results[i].valor : saldo += results[i].valor;
+          const valor = parseFloat(results[i].valor || 0);
+          saldo += valor;
+          if (valor > 0) totalReceita += valor;
+          else totalDespesa += valor;
+          hasPaid = true;
         }       
         if(results[i].ano < req.query.ano 
           || (results[i].ano == req.query.ano && results[i].mes < req.query.mes)          
@@ -70,8 +77,14 @@ module.exports = {
           arrayFinal[`${results[i].dia} de ${stringExtension.convertMonthToReal(results[i].mes, false)} de ${results[i].ano}`].push(results[i]);
         }
       }
-      saldo= saldo==-9999999 ? 0 : saldo;
-      return res.status(200).json({lancamentos: arrayFinal, saldo: doubleToReal.convertDoubleToReal(saldo ?? 0), dia: dia, meses:meses});
+      return res.status(200).json({
+        lancamentos: arrayFinal, 
+        saldo: doubleToReal.convertDoubleToReal(saldo ?? 0), 
+        totalReceita: doubleToReal.convertDoubleToReal(totalReceita),
+        totalDespesa: doubleToReal.convertDoubleToReal(totalDespesa),
+        dia: dia, 
+        meses: meses
+      });
     } catch (err) {
       return res.status(500).json({ message: err.message });
     }
@@ -172,7 +185,20 @@ module.exports = {
 
   async get(req, res) {
     try {
+      const user = req.session.user;
       const result = await db.get(req.query.id_condominio, req.query.id);
+
+      if (!result) return res.status(404).json({ message: "Lançamento não encontrado." });
+
+      // Enforce isolation for residents
+      if (user.typeAccess === 'Morador') {
+        // A resident can only see their own entries OR public condo entries (id_usuario is null)
+        // Note: we need to check id_usuario. Let's make sure db.get returns it.
+        if (result.id_usuario && result.id_usuario !== user.id) {
+          return res.status(403).json({ message: "Acesso negado: Este lançamento financeiro não pertence a você." });
+        }
+      }
+
       return res.status(200).json(result);
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -256,7 +282,19 @@ module.exports = {
 
   async getByUser(req, res) {
     try {
-      const results = await db.getByUser(req.query.id_user, req.query.id_condominio);
+      let id_user = req.query.id_user;
+      const user = req.session.user;
+
+      // Enforce data isolation for residents
+      if (user.typeAccess === 'Morador') {
+        if (id_user && parseInt(id_user) !== user.id) {
+          console.warn(`[SECURITY] Resident ${user.id} attempted to access financial data of user ${id_user}.`);
+          return res.status(403).json({ message: "Acesso negado: Você só pode ver os seus próprios dados financeiros." });
+        }
+        id_user = user.id; // Force their own ID
+      }
+
+      const results = await db.getByUser(id_user, req.query.id_condominio);
       results.forEach(item => {
         item.valorReal = doubleToReal.convertDoubleToReal(item.valor ?? 0);
       });

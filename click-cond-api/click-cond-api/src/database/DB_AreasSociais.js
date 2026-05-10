@@ -36,8 +36,9 @@ module.exports = {
   },
 
   get: async function (id_cond, id) {
-    const query = `select id, nome, imagem, precisa_agendar, precisa_autorizacao, precisa_pagamento, horarios, capacidade from Areas_Sociais
-                      where id_condominio=${id_cond} and id=${id}`;
+    const condFilter = id_cond ? `id_condominio=${id_cond} and` : '';
+    const query = `select id, nome, imagem, precisa_agendar, precisa_autorizacao, precisa_pagamento, horarios, capacidade, id_condominio from Areas_Sociais
+                      where ${condFilter} id=${id}`;
     const { results } = await db.query(query);
     return results[0];
   },
@@ -59,6 +60,12 @@ module.exports = {
   removeAgendamento: async function (id) {
     const query = `delete from Areas_Sociais_Agendamentos where id=${id}`;
     await db.query(query);
+  },
+
+  getAgendamento: async function (id) {
+    const query = `select * from Areas_Sociais_Agendamentos where id=${id}`;
+    const { results } = await db.query(query);
+    return results[0];
   },
 
   getAllAgendamentos: async function (id_cond) {
