@@ -1,4 +1,4 @@
-﻿import 'package:click/controllers/controller_condominio.dart';
+import 'package:click/controllers/controller_condominio.dart';
 import 'package:click/pages/shared/agenda/list_agenda.dart';
 import 'package:click/pages/shared/areas%20sociais/list_areas_sociais.dart';
 import 'package:click/pages/shared/assembleias/list_assembleias.dart';
@@ -6,12 +6,14 @@ import 'package:click/pages/shared/comunicados/list_comunicados.dart';
 import 'package:click/pages/shared/configuracoes/configuracoes_view.dart';
 import 'package:click/pages/shared/docs/list_docs.dart';
 import 'package:click/pages/shared/financeiro/list_financeiro.dart';
+import 'package:click/pages/shared/financeiro/morador_financeiro_view.dart';
 import 'package:click/pages/shared/funcionarios/list_funcionarios.dart';
 import 'package:click/pages/shared/morador/list_moradores.dart';
 import 'package:click/pages/shared/mudancas/list_mudancas.dart';
 import 'package:click/pages/shared/ocorrencias/list_ocorrencias.dart';
 import 'package:click/pages/shared/prestador%20de%20servico/list_prestadores.dart';
 import 'package:click/pages/shared/visitantes/list_visitantes.dart';
+import 'package:click/pages/shared/encomendas/list_encomendas.dart';
 import 'package:click/pages/shared/enquetes/list_enquetes.dart';
 import 'package:click/pages/singleton.dart';
 import 'package:click/theme/app_colors.dart';
@@ -20,6 +22,7 @@ import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/local_storage.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/utils/utils.dart';
+import 'package:click/widgets/app/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -36,6 +39,7 @@ class _MyCondominiumState extends State<MyCondominium> {
   Map<String, dynamic>? _cond;
   late List<_MenuItem> _menu;
   String _saldo = '';
+  Map<String, dynamic>? _summary;
 
   @override
   void initState() {
@@ -48,7 +52,8 @@ class _MyCondominiumState extends State<MyCondominium> {
   List<_MenuItem> _buildMenu() {
     final all = <_MenuItem>[
       _MenuItem(getText('lb_areas_sociais'), PhosphorIcons.usersFour, ListAreasSociais()),
-      _MenuItem(getText('lb_financeiro'), PhosphorIcons.wallet, ListFinanceiro()),
+      _MenuItem(getText('lb_financeiro'), PhosphorIcons.wallet, getUserType() == 'morador' ? const MoradorFinanceiroView() : const ListFinanceiro()),
+      _MenuItem('Minhas Encomendas', PhosphorIcons.package, const ListEncomendas()),
       _MenuItem(getText('lb_assembleia_votacoes'), PhosphorIcons.usersThree, ListAssembleias()),
       _MenuItem(getText('lb_enquetes'), PhosphorIcons.chartBar, ListEnquetes()),
       _MenuItem(getText('lb_comunicados'), PhosphorIcons.megaphone, ListComunicados()),
@@ -74,13 +79,20 @@ class _MyCondominiumState extends State<MyCondominium> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final result = await getCondominio(widget.id);
+      final results = await Future.wait<dynamic>([
+        getCondominio(widget.id),
+        getDashboardSummary(),
+      ]);
+
       if (!mounted) return;
-      if (result is Map<String, dynamic>) {
-        final raw = (result['saldo'] ?? '').toString();
+      
+      if (results[0] is Map<String, dynamic>) {
+        final cond = results[0] as Map<String, dynamic>;
+        final raw = (cond['saldo'] ?? '').toString();
         setState(() {
-          _cond = result;
+          _cond = cond;
           _saldo = raw.replaceAll("R\$", Singleton.instance.getCurrentMoeda());
+          _summary = results[1] as Map<String, dynamic>?;
         });
       } else {
         _err();
@@ -115,7 +127,13 @@ class _MyCondominiumState extends State<MyCondominium> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(child: _buildHeader(context)),
-              SliverToBoxAdapter(child: _buildStats(context, saldoNeg)),
+              SliverToBoxAdapter(
+                  child: _isLoading
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                          child: AppSkeleton(width: double.infinity, height: 160, borderRadius: AppRadius.xxl),
+                        )
+                      : _buildStats(context, saldoNeg)),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -123,29 +141,34 @@ class _MyCondominiumState extends State<MyCondominium> {
                   child: Row(
                     children: [
                       Expanded(child: Text('Gerenciar', style: AppTypography.title(context))),
-                      Text('${_menu.length} módulos',
-                          style: AppTypography.tiny(context)),
+                      if (!_isLoading)
+                        Text('${_menu.length} módulos', style: AppTypography.tiny(context)),
                     ],
                   ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xxxl),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) {
-                      if (i.isOdd) return const SizedBox(height: AppSpacing.sm);
-                      final idx = i ~/ 2;
-                      return _MenuRow(
-                        item: _menu[idx],
-                        onTap: () => _navigate(_menu[idx].page),
-                      );
-                    },
-                    childCount: _menu.length * 2 - 1,
-                  ),
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xxxl),
+                sliver: _isLoading
+                    ? SliverList.separated(
+                        itemCount: 6,
+                        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (_, __) => AppSkeleton.listTile(context),
+                      )
+                    : SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, i) {
+                            if (i.isOdd) return const SizedBox(height: AppSpacing.sm);
+                            final idx = i ~/ 2;
+                            return _MenuRow(
+                              item: _menu[idx],
+                              onTap: () => _navigate(_menu[idx].page),
+                            );
+                          },
+                          childCount: _menu.length * 2 - 1,
+                        ),
+                      ),
               ),
             ],
           ),
@@ -271,7 +294,7 @@ class _MyCondominiumState extends State<MyCondominium> {
                 ),
               ],
             ),
-            if (type != 'funcionario') ...[
+            if (type == 'sindico') ...[
               AppSpacing.gapXl,
               Container(height: 1, color: Colors.white.withOpacity(0.2)),
               AppSpacing.gapLg,
@@ -304,6 +327,27 @@ class _MyCondominiumState extends State<MyCondominium> {
                             color: Colors.white, size: 20),
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ] else if (type == 'morador') ...[
+              AppSpacing.gapXl,
+              Container(height: 1, color: Colors.white.withOpacity(0.2)),
+              AppSpacing.gapLg,
+              Row(
+                children: [
+                  _AlertItem(
+                    count: _summary?['packages'] ?? 0,
+                    label: 'Encomendas',
+                    icon: PhosphorIcons.package,
+                    onTap: () => _navigate(const ListEncomendas()),
+                  ),
+                  Container(width: 1, height: 40, color: Colors.white.withOpacity(0.2), margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg)),
+                  _AlertItem(
+                    count: _summary?['visits'] ?? 0,
+                    label: 'Visitas Hoje',
+                    icon: PhosphorIcons.userList,
+                    onTap: () => _navigate(const ListVisitantes()),
                   ),
                 ],
               ),
@@ -365,6 +409,36 @@ class _MenuRow extends StatelessWidget {
               Icon(PhosphorIcons.caretRight, size: 16, color: AppColors.textTertiary(context)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+class _AlertItem extends StatelessWidget {
+  final int count;
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _AlertItem({required this.count, required this.label, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            AppSpacing.gapMd,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(count.toString(), style: AppTypography.headline(context).copyWith(color: Colors.white)),
+                Text(label, style: AppTypography.tiny(context).copyWith(color: Colors.white.withOpacity(0.8))),
+              ],
+            ),
+          ],
         ),
       ),
     );

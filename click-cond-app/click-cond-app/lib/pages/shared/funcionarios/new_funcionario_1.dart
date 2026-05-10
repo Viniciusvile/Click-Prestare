@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/theme/app_colors.dart';
@@ -23,7 +23,7 @@ class NewFuncionario1 extends StatefulWidget {
 }
 
 class _NewFuncionario1PageState extends State<NewFuncionario1> {
-  File? imageFile;
+  dynamic imageFile;
   var _isLoading = false;
   var _isSaving = false;
   bool _hasPortariaAccess = false;
@@ -92,7 +92,7 @@ class _NewFuncionario1PageState extends State<NewFuncionario1> {
 
   Future<void> _selectPhoto() async {
     var res = await getPhoto(context);
-    imageFile = File(res.path);
+    imageFile = res;
     setState(() {});
   }
 
@@ -101,7 +101,7 @@ class _NewFuncionario1PageState extends State<NewFuncionario1> {
       setState(() => _isSaving = true);
       String? base64;
       if (imageFile != null) {
-        List<int> imageBytes = imageFile!.readAsBytesSync();
+        List<int> imageBytes = [];
         base64 = "data:image/png;base64," + base64Encode(imageBytes);
       }
       var obj = FuncionarioModel(
@@ -159,7 +159,7 @@ class _NewFuncionario1PageState extends State<NewFuncionario1> {
                             backgroundColor: AppColors.primary.withOpacity(0.1),
                             backgroundImage: imageFile == null
                                 ? const AssetImage('assets/images/defaultUser.png')
-                                : Image.file(File(imageFile!.path)).image,
+                                : Image.network(imageFile.path).image,
                           ),
                           Positioned(
                             bottom: 0, right: 0,

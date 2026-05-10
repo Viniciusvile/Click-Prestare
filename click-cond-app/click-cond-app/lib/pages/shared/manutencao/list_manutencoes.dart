@@ -5,8 +5,9 @@ import 'package:click/theme/app_spacing.dart';
 import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/utils/utils.dart';
-import 'package:flutter/material.dart';
 import 'package:click/widgets/app/app_scaffold.dart';
+import 'package:click/widgets/app/app_skeleton.dart';
+import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ListManutencoes extends StatefulWidget {
@@ -48,7 +49,12 @@ class _ListManutencoesPageState extends State<ListManutencoes> {
         child: const Icon(PhosphorIcons.plus, color: Colors.white),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? ListView.separated(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: 6,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (_, __) => AppSkeleton.listTile(context),
+            )
           : list.isEmpty
               ? Center(
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

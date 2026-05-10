@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/pages/shared/ocorrencias/new_ocorrencia.dart';
@@ -27,7 +27,7 @@ class _DetailOcorrenciaPageState extends State<DetailOcorrencia> {
   var _isSaving = false;
   final txtResposta = TextEditingController();
   dynamic obj;
-  List<File> list = [];
+  List<dynamic> list = [];
   var currentStatus = '';
 
   @override

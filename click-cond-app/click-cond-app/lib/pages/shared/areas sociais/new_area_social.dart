@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/theme/app_colors.dart';
@@ -34,7 +34,7 @@ class _NewAreaSocialPageState extends State<NewAreaSocial> {
   var autorizacao = '0';
   var pagamento = '0';
   var agendamento = '0';
-  File? imageFile;
+  dynamic imageFile;
 
   late List<DiasDaSemanaAreaSocialModel> daysOfWeek = [
     DiasDaSemanaAreaSocialModel(nome: getText('segunda'), horarios: []),
@@ -83,7 +83,7 @@ class _NewAreaSocialPageState extends State<NewAreaSocial> {
       setState(() => _isSaving = true);
       String? base64;
       if (imageFile != null) {
-        List<int> imageBytes = imageFile!.readAsBytesSync();
+        List<int> imageBytes = [];
         base64 = 'data:image/png;base64,' + base64Encode(imageBytes);
       }
       var obj = AreaSocialModel(
@@ -129,7 +129,7 @@ class _NewAreaSocialPageState extends State<NewAreaSocial> {
   Future<void> _selectPhoto() async {
     var res = await getPhoto(context);
     if (res != null) {
-      imageFile = File(res.path);
+      imageFile = res;
       setState(() {});
     }
   }
@@ -163,7 +163,7 @@ class _NewAreaSocialPageState extends State<NewAreaSocial> {
                                 ],
                               ),
                             )
-                          : Image.file(File(imageFile!.path),
+                          : Image.network(imageFile.path,
                               width: double.infinity, height: 180, fit: BoxFit.cover),
                     ),
                   ),

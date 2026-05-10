@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/theme/app_colors.dart';
@@ -22,7 +22,7 @@ class NewDocument extends StatefulWidget {
 }
 
 class _NewDocumentPageState extends State<NewDocument> {
-  List<File> list = [];
+  List<dynamic> list = [];
   var _isSaving = false;
   final txtTitulo = TextEditingController();
 

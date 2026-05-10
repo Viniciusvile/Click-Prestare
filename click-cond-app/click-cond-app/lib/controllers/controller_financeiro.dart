@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:click/pages/singleton.dart';
 import 'package:click/utils/local_storage.dart';
 import 'package:http/http.dart' as http;
@@ -43,6 +43,64 @@ apiGetDetailsInadimplente(String route, String bloco, String apto) async {
     }
   }catch(e){
     return null;
+  }
+}
+
+apiUpdateFinanceiroStatus(int id, int status) async {
+  var url = ApiConfig.buildUri('/financeiro/update-status');
+  try {
+    var response = await http.post(
+      url,
+      headers: { "Authorization": getToken(), "Content-Type": "application/json" },
+      body: jsonEncode({ "id": id, "status": status })
+    );
+    return response.statusCode == 200;
+  } catch(e) {
+    return false;
+  }
+}
+
+apiUploadBoleto(int id, String fileBase64) async {
+  var url = ApiConfig.buildUri('/financeiro/upload-shared-file');
+  try {
+    var response = await http.post(
+      url,
+      headers: { "Authorization": getToken(), "Content-Type": "application/json" },
+      body: jsonEncode({ "id": id, "file": fileBase64, "type": "boleto" })
+    );
+    return response.statusCode == 200;
+  } catch(e) {
+    return false;
+  }
+}
+
+apiUploadComprovante(int id, String fileBase64) async {
+  var url = ApiConfig.buildUri('/financeiro/upload-shared-file');
+  try {
+    var response = await http.post(
+      url,
+      headers: { "Authorization": getToken(), "Content-Type": "application/json" },
+      body: jsonEncode({ "id": id, "file": fileBase64, "type": "comprovante" })
+    );
+    return response.statusCode == 200;
+  } catch(e) {
+    return false;
+  }
+}
+
+apiGetFinanceiroByUser() async {
+  var url = ApiConfig.buildUri('/financeiro/get-by-user', {
+    'id_condominio': Singleton.instance.id_condominio.toString(),
+    'id_user': getUserId()
+  });
+  try {
+    var response = await http.get(url, headers: { "Authorization": getToken() });
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  } catch(e) {
+    return [];
   }
 }
 

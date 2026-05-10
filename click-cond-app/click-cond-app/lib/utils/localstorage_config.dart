@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/pages/singleton.dart';
 import 'package:click/utils/local_storage.dart';
@@ -32,13 +33,12 @@ class LocalStorageConfig {
       return code.toString();
     }
     try {
-      switch (Platform.localeName) {
-        case 'pt_BR': return "pt_BR";
-        case 'en_US': return 'en_US';
-        case 'pt_PT': return 'pt_PT';
-        case 'de':    return 'de';
-        default:      return 'pt_BR';
-      }
+      final localeName = kIsWeb ? 'pt_BR' : ui.window.locale.toString();
+      if (localeName.contains('pt_BR')) return 'pt_BR';
+      if (localeName.contains('en')) return 'en_US';
+      if (localeName.contains('pt')) return 'pt_PT';
+      if (localeName.contains('de')) return 'de';
+      return 'pt_BR';
     } catch (e) {
       return 'pt_BR';
     }

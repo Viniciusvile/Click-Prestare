@@ -9,8 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
+import 'package:click/services/firebase_service.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseService.instance.init();
+  
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/theme/app_colors.dart';
 import 'package:click/theme/app_spacing.dart';
@@ -14,6 +15,8 @@ import 'package:easy_mask/easy_mask.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:click/pages/singleton.dart';
 
 class NewFinanceiroMorador extends StatefulWidget {
   const NewFinanceiroMorador({Key? key, required this.apto, this.id}) : super(key: key);
@@ -37,6 +40,9 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
   final txtConta = TextEditingController();
   final txtDescricao = TextEditingController();
 
+  String _selectedCategoria = 'Condomínio';
+  String? _urlBoleto;
+
   @override
   void dispose() {
     txtBloco.dispose(); txtApto.dispose(); txtReferencia.dispose();
@@ -59,6 +65,8 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
       txtValor.text = widget.apto['valor'].toString();
       txtDescricao.text = widget.apto['descricao'] ?? '';
       txtConta.text = widget.apto['conta'] ?? '';
+      _selectedCategoria = widget.apto['categoria'] ?? 'Condomínio';
+      _urlBoleto = widget.apto['url_boleto'];
     } else if (widget.id != null) {
       load();
     }
@@ -79,6 +87,8 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
       txtValor.text = obj['valor'].toString();
       txtDescricao.text = obj['descricao']?.toString() ?? '';
       txtConta.text = obj['conta']?.toString() ?? '';
+      _selectedCategoria = obj['categoria'] ?? 'Condomínio';
+      _urlBoleto = obj['url_boleto'];
       id = obj['id'];
       if (mounted) setState(() {});
     } catch (e) {
@@ -94,14 +104,17 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
       var dtPag = txtPagamento.text.isNotEmpty ? convertStringToDate(txtPagamento.text) : null;
       var obj = FinanceiroModel(
         id: id,
+        id_condominio: Singleton.instance.id_condominio,
         nome: "Apto ${txtApto.text} Bloco ${txtBloco.text} - Ref. ${txtReferencia.text}",
-        tipo: 'C', categoria: 'Arrecadação',
+        tipo: 'C', 
+        categoria: _selectedCategoria,
         data: dtPag,
         data_vencimento: convertStringToDate(txtVencimento.text),
         conta: txtConta.text, descricao: txtDescricao.text,
-        valor: double.parse(txtValor.text.replaceAll(',', '.')),
+        valor: txtValor.text.isNotEmpty ? double.parse(txtValor.text.replaceAll('.', '').replaceAll(',', '.')) : 0.0,
+        url_boleto: _urlBoleto,
       );
-      var res = await apiSaveObject("financeiro", "financeiro", obj, id != -1);
+      var res = await apiSaveObject("financeiro", "financeiro", obj, id != null && id != -1);
       if (res.toString().isEmpty) {
         if (mounted) Navigator.of(context).pop(true);
       } else {
@@ -206,6 +219,35 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
                     formatters: [CurrencyTextInputFormatter.currency(decimalDigits: 2, symbol: '', locale: 'pt_BR')],
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  _section("Categoria da Despesa"),
+                  DropdownButtonFormField<String>(
+                    value: _selectedCategoria,
+                    dropdownColor: AppColors.surface(context),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.surface(context),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      prefixIcon: Icon(PhosphorIcons.tag, color: AppColors.primary),
+                    ),
+                    items: ["Condomínio", "Aluguel", "Água", "Luz", "Internet", "Outros"]
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c, style: AppTypography.body(context))))
+                        .toList(),
+                    onChanged: (val) => setState(() => _selectedCategoria = val!),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _section("Boleto Bancário (Documento)"),
+                  AppButton(
+                    label: _urlBoleto != null ? "Boleto Anexado ✅" : "Anexar Boleto",
+                    variant: _urlBoleto != null ? AppButtonVariant.primary : AppButtonVariant.secondary,
+                    onPressed: () async {
+                      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'png'], withData: true);
+                      if (result != null) {
+                         setState(() { _urlBoleto = "upload_pendente"; });
+                      }
+                    },
+                    icon: PhosphorIcons.filePdf,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   AppInput(
                     label: getText('financeiro_conta_bancaria'),
                     controller: txtConta,
@@ -247,24 +289,26 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
   Widget _section(String title) => Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
         child: Text(title.toUpperCase(),
-            style: AppTypography.captionMedium(context).copyWith(color: AppColors.primary, letterSpacing: 0.8)),
+            style: AppTypography.tiny(context).copyWith(color: AppColors.primary, letterSpacing: 0.8, fontWeight: FontWeight.bold)),
       );
 }
 
 class FinanceiroModel {
-  int? id;
-  String? nome, tipo, data, data_vencimento, categoria, conta, descricao, cliente, forma_pagamento, photo;
+  int? id, id_condominio;
+  String? nome, tipo, data, data_vencimento, categoria, conta, descricao, cliente, forma_pagamento, photo, url_boleto, url_comprovante;
   double? valor;
-  int? parcelas;
+  int? parcelas, status;
 
-  FinanceiroModel({this.id, this.nome, this.tipo, this.data, this.data_vencimento,
+  FinanceiroModel({this.id, this.id_condominio, this.nome, this.tipo, this.data, this.data_vencimento,
       this.valor, this.categoria, this.conta, this.descricao, this.cliente,
-      this.forma_pagamento, this.parcelas, this.photo});
+      this.forma_pagamento, this.parcelas, this.photo, this.url_boleto, this.url_comprovante, this.status});
 
   Map toJson() => {
         'id': id, 'nome': nome, 'tipo': tipo, 'data': data,
+        'id_condominio': id_condominio,
         'data_vencimento': data_vencimento, 'valor': valor, 'categoria': categoria,
         'conta': conta, 'descricao': descricao, 'cliente': cliente,
         'forma_pagamento': forma_pagamento, 'parcelas': parcelas, 'photo': photo,
+        'url_boleto': url_boleto, 'url_comprovante': url_comprovante, 'status': status
       };
 }

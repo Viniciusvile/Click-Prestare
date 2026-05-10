@@ -10,6 +10,7 @@ Future<void> ensureStorageReady() async {
 
 storageLogin(Map<String, dynamic> parsed) {
   _storage.setItem('token', parsed["token"]);
+  _storage.setItem('id', parsed["user"]["id"]);
   _storage.setItem('name', parsed["user"]["name"]);
   _storage.setItem('photo', parsed["user"]["photo"]);
   _storage.setItem('loginType', 'sindico');
@@ -17,6 +18,7 @@ storageLogin(Map<String, dynamic> parsed) {
 
 storageMorador(Map<String, dynamic> parsed) {
   _storage.setItem('token', parsed["token"]);
+  _storage.setItem('id', parsed["user"]["id"]);
   _storage.setItem('name', parsed["user"]["nome"]);
   _storage.setItem('photo', parsed["user"]["photo"]);
   _storage.setItem('loginType', 'morador');
@@ -24,6 +26,7 @@ storageMorador(Map<String, dynamic> parsed) {
 
 storageFuncionario(Map<String, dynamic> parsed) {
   _storage.setItem('token', parsed["token"]);
+  _storage.setItem('id', parsed["user"]["id"]);
   _storage.setItem('name', parsed["user"]["nome"]);
   _storage.setItem('photo', parsed["user"]["photo"]);
   _storage.setItem('loginType', 'funcionario');
@@ -62,4 +65,8 @@ String getUserType() {
 
 getUserPermission(String permission) {
   return _storage.getItem(permission) ?? 0;
+}
+
+String getUserId() {
+  return _storage.getItem('id')?.toString() ?? "";
 }

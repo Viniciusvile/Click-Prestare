@@ -7,8 +7,9 @@ import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/local_storage.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/utils/utils.dart';
-import 'package:flutter/material.dart';
 import 'package:click/widgets/app/app_scaffold.dart';
+import 'package:click/widgets/app/app_skeleton.dart';
+import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ListVisitantes extends StatefulWidget {
@@ -86,23 +87,73 @@ class _ListVisitantesPageState extends State<ListVisitantes> {
           ),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? ListView.separated(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    itemCount: 8,
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (_, __) => AppSkeleton.listTile(context),
+                  )
                 : list.isEmpty
                     ? _EmptyState(getText('alert_list_empty_generic'), PhosphorIcons.identificationCard)
                     : RefreshIndicator(
                         onRefresh: loadList,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          itemCount: list.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                          itemBuilder: (_, i) => _VisitanteCard(
-                            item: list[i],
-                            onTap: canAdd
-                                ? () => Navigator.push(context,
-                                        MaterialPageRoute(builder: (_) => NewVisitante(isEdit: true, myId: list[i]['id'])))
-                                    .then((_) => loadList())
-                                : null,
-                          ),
+                        child: CustomScrollView(
+                          slivers: [
+                            if (list.any((e) => e['data_entrada'] != null && e['data_saida'] == null)) ...[
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
+                                sliver: SliverToBoxAdapter(
+                                  child: Row(
+                                    children: [
+                                      Icon(PhosphorIcons.houseLine, size: 18, color: AppColors.success),
+                                      const SizedBox(width: 8),
+                                      Text('No Condomínio', style: AppTypography.caption(context).copyWith(fontWeight: FontWeight.bold, color: AppColors.success)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SliverPadding(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                                sliver: SliverList.separated(
+                                  itemCount: list.where((e) => e['data_entrada'] != null && e['data_saida'] == null).length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                                  itemBuilder: (_, i) {
+                                    final inside = list.where((e) => e['data_entrada'] != null && e['data_saida'] == null).toList();
+                                    return _VisitanteCard(
+                                      item: inside[i],
+                                      onTap: canAdd
+                                          ? () => Navigator.push(context,
+                                                  MaterialPageRoute(builder: (_) => NewVisitante(isEdit: true, myId: inside[i]['id'])))
+                                              .then((_) => loadList())
+                                          : null,
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                                sliver: SliverToBoxAdapter(
+                                  child: Text('Todos os Visitantes', style: AppTypography.tiny(context).copyWith(color: AppColors.textTertiary(context))),
+                                ),
+                              ),
+                            ],
+                            SliverPadding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              sliver: SliverList.separated(
+                                itemCount: list.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                                itemBuilder: (_, i) => _VisitanteCard(
+                                  item: list[i],
+                                  onTap: canAdd
+                                      ? () => Navigator.push(context,
+                                              MaterialPageRoute(builder: (_) => NewVisitante(isEdit: true, myId: list[i]['id'])))
+                                          .then((_) => loadList())
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
           ),
@@ -119,6 +170,7 @@ class _VisitanteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isInside = item['data_entrada'] != null && item['data_saida'] == null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -126,22 +178,64 @@ class _VisitanteCard extends StatelessWidget {
         decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.circular(16)),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              child: Text(
-                (item['nome'] ?? 'V').substring(0, 1).toUpperCase(),
-                style: AppTypography.bodyMedium(context).copyWith(color: AppColors.primary),
-              ),
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  child: Text(
+                    (item['nome'] ?? 'V').substring(0, 1).toUpperCase(),
+                    style: AppTypography.bodyMedium(context).copyWith(color: AppColors.primary),
+                  ),
+                ),
+                if (isInside)
+                  Positioned(
+                    right: 0, bottom: 0,
+                    child: Container(
+                      width: 12, height: 12,
+                      decoration: BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.surface(context), width: 2),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item['nome'] ?? '', style: AppTypography.bodyMedium(context), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  if (item['documento'] != null)
-                    Text(item['documento'], style: AppTypography.caption(context)),
+                  Row(
+                    children: [
+                      Expanded(child: Text(item['nome'] ?? '', style: AppTypography.bodyMedium(context), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      if (isInside)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                          child: Text('NO LOCAL', style: AppTypography.tiny(context).copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      if (item['data_hora'] != null)
+                        Text(item['data_hora'], style: AppTypography.caption(context)),
+                      if (item['hora_entrada'] != null) ...[
+                        Text(' • ', style: AppTypography.caption(context)),
+                        Icon(PhosphorIcons.signIn, size: 12, color: AppColors.textTertiary(context)),
+                        const SizedBox(width: 2),
+                        Text(item['hora_entrada'], style: AppTypography.caption(context)),
+                      ],
+                      if (item['hora_saida'] != null) ...[
+                        Text(' • ', style: AppTypography.caption(context)),
+                        Icon(PhosphorIcons.signOut, size: 12, color: AppColors.textTertiary(context)),
+                        const SizedBox(width: 2),
+                        Text(item['hora_saida'], style: AppTypography.caption(context)),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),

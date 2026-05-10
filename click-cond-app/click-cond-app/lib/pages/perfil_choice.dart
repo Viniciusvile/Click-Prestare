@@ -1,4 +1,4 @@
-﻿import 'package:click/pages/sindico/hello.dart';
+import 'package:click/pages/sindico/hello.dart';
 import 'package:click/pages/sindico/list_condominiums.dart';
 import 'package:click/pages/sindico/login.dart';
 import 'package:click/theme/app_colors.dart';

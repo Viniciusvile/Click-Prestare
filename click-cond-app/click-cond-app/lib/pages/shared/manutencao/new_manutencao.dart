@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/theme/app_colors.dart';
@@ -23,7 +23,7 @@ class NewManutencao extends StatefulWidget {
 }
 
 class _NewManutencaoPageState extends State<NewManutencao> {
-  List<File> list = [];
+  List<dynamic> list = [];
   var _isLoading = false;
   var _isSaving = false;
   final txtDescricao = TextEditingController();

@@ -1,10 +1,16 @@
-﻿import 'package:click/controllers/controller_condominio.dart';
+import 'package:click/controllers/controller_condominio.dart';
 import 'package:click/controllers/controller_funcionario.dart';
 import 'package:click/controllers/controller_moradores.dart';
+import 'package:click/pages/settings/notification_settings.dart';
+import 'package:click/pages/shared/encomendas/list_encomendas.dart';
+import 'package:click/pages/shared/financeiro/list_financeiro.dart';
+import 'package:click/pages/shared/financeiro/morador_financeiro_view.dart';
 import 'package:click/pages/shared/funcionarios/edit_funcionario.dart';
 import 'package:click/pages/shared/morador/assinatura_morador.dart';
 import 'package:click/pages/shared/morador/edit_morador.dart';
 import 'package:click/pages/shared/my_condominium.dart';
+import 'package:click/pages/shared/ocorrencias/list_ocorrencias.dart';
+import 'package:click/pages/shared/visitantes/list_visitantes.dart';
 import 'package:click/pages/sindico/assinatura_sindico.dart';
 import 'package:click/pages/sindico/edit_sindico.dart';
 import 'package:click/pages/sindico/signup/signup_%20condominium_1.dart';
@@ -15,6 +21,7 @@ import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/local_storage.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/widgets/app/app_button.dart';
+import 'package:click/widgets/app/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -27,6 +34,7 @@ class ListCondomiums extends StatefulWidget {
 
 class _ListCondomiumsState extends State<ListCondomiums> {
   List<dynamic> _list = [];
+  Map<String, dynamic>? _summary;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -49,31 +57,47 @@ class _ListCondomiumsState extends State<ListCondomiums> {
     });
     try {
       final type = getUserType();
-      final locals = type == "sindico"
-          ? await getCondominios()
-          : type == "morador"
-              ? await getCondominiosMorador()
-              : await getCondominiosFuncionario();
+      
+      final results = await Future.wait<dynamic>([
+        type == "sindico"
+            ? getCondominios()
+            : type == "morador"
+                ? getCondominiosMorador()
+                : getCondominiosFuncionario(),
+        getDashboardSummary(),
+      ]);
+
       if (!mounted) return;
-      if (locals is List) {
-        setState(() => _list = locals);
+      if (results[0] is List) {
+        setState(() {
+          _list = results[0] as List;
+          _summary = results[1] as Map<String, dynamic>?;
+        });
       } else {
         setState(() => _errorMessage = getText('alert_generic_error'));
       }
-    } catch (_) {
+    } catch (e) {
+      print('[ListCondomiums] Error: $e');
       if (mounted) setState(() => _errorMessage = getText('alert_generic_error'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _goToNext(dynamic item) {
+  void _goToNext(dynamic item, {Widget? directPage}) {
+    Singleton.instance.id_condominio = item["id"];
     Singleton.instance.apartamento = item["apto"] ?? '';
     Singleton.instance.id_apartamento = item["apto_id"] ?? -1;
     Singleton.instance.bloco = item["apto_bloco"] ?? '';
     Singleton.instance.dias_restantes_morador = item["dias_restantes_morador"] ?? 10;
     Singleton.instance.vencimento_morador = item["vencimento_morador"] ?? "";
     Singleton.instance.moeda = item["moeda"] ?? "";
+
+    if (directPage != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => directPage))
+          .then((_) { if (mounted) _loadList(); });
+      return;
+    }
 
     final dias = item["dias_restantes_condominio"] ?? 0;
     final type = getUserType();
@@ -98,6 +122,28 @@ class _ListCondomiumsState extends State<ListCondomiums> {
     Navigator.push(context, MaterialPageRoute(
       builder: (_) => MyCondominium(id: id),
     )).then((_) { if (mounted) _loadList(); });
+  }
+
+  void _onDashboardTap(String module) {
+    if (_list.isEmpty) return;
+    
+    final cond = _list.first;
+    final type = getUserType();
+    
+    Widget? page;
+    if (module == 'debts') {
+      page = type == 'morador' ? const MoradorFinanceiroView() : const ListFinanceiro();
+    } else if (module == 'occurrences') {
+      page = const ListOcorrencias();
+    } else if (module == 'visits') {
+      page = const ListVisitantes();
+    } else if (module == 'packages') {
+      page = const ListEncomendas();
+    }
+    
+    if (page != null) {
+      _goToNext(cond, directPage: page);
+    }
   }
 
   void _editProfile() {
@@ -127,9 +173,13 @@ class _ListCondomiumsState extends State<ListCondomiums> {
             slivers: [
               SliverToBoxAdapter(child: _buildHeader(context)),
               if (_isLoading)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  sliver: SliverList.separated(
+                    itemCount: 5,
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (_, __) => AppSkeleton.listTile(context),
+                  ),
                 )
               else if (_errorMessage != null)
                 SliverToBoxAdapter(child: _buildError())
@@ -209,6 +259,17 @@ class _ListCondomiumsState extends State<ListCondomiums> {
                 tooltip: getText('editar_infos'),
               ),
               IconButton(
+                icon: Icon(PhosphorIcons.bell,
+                    color: AppColors.textSecondary(context)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                  );
+                },
+                tooltip: 'Notificações',
+              ),
+              IconButton(
                 icon: Icon(PhosphorIcons.signOut,
                     color: AppColors.textSecondary(context)),
                 tooltip: getText('lb_logout'),
@@ -220,6 +281,8 @@ class _ListCondomiumsState extends State<ListCondomiums> {
             ],
           ),
           const SizedBox(height: AppSpacing.xxl),
+          _buildDashboard(context),
+          const SizedBox(height: AppSpacing.xxl),
           Text(getText('meus_condominios'),
               style: AppTypography.title(context)),
           AppSpacing.gapXs,
@@ -228,6 +291,63 @@ class _ListCondomiumsState extends State<ListCondomiums> {
           AppSpacing.gapXl,
         ],
       ),
+    );
+  }
+
+  Widget _buildDashboard(BuildContext context) {
+    if (_summary == null) return const SizedBox.shrink();
+    final type = getUserType();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Resumo Geral', style: AppTypography.bodyMedium(context).copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: AppSpacing.md),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              if (type == 'sindico') ...[
+                _DashboardCard(
+                  title: 'Inadimplência',
+                  value: 'R\$ ${(_summary!['debts']['total'] ?? 0).toStringAsFixed(2)}',
+                  subtitle: '${_summary!['debts']['count']} pendências',
+                  icon: PhosphorIcons.money,
+                  color: AppColors.error,
+                  onTap: () => _onDashboardTap('debts'),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                _DashboardCard(
+                  title: 'Ocorrências',
+                  value: _summary!['occurrences'].toString(),
+                  subtitle: 'Aguardando resposta',
+                  icon: PhosphorIcons.warningCircle,
+                  color: AppColors.warning,
+                  onTap: () => _onDashboardTap('occurrences'),
+                ),
+              ] else if (type == 'morador') ...[
+                _DashboardCard(
+                  title: 'Visitas Hoje',
+                  value: _summary!['visits'].toString(),
+                  subtitle: 'Agendadas para hoje',
+                  icon: PhosphorIcons.userList,
+                  color: AppColors.primary,
+                  onTap: () => _onDashboardTap('visits'),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                _DashboardCard(
+                  title: 'Encomendas',
+                  value: _summary!['packages'].toString(),
+                  subtitle: 'Aguardando retirada',
+                  icon: PhosphorIcons.package,
+                  color: AppColors.success,
+                  onTap: () => _onDashboardTap('packages'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -283,6 +403,63 @@ class _ListCondomiumsState extends State<ListCondomiums> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _DashboardCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface(context),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Container(
+          width: 160,
+          height: 160,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: color.withOpacity(0.1), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(value, style: AppTypography.headline(context).copyWith(color: color)),
+              Text(title, style: AppTypography.captionMedium(context)),
+              const SizedBox(height: 4),
+              Text(subtitle, style: AppTypography.tiny(context).copyWith(color: AppColors.textTertiary(context))),
+            ],
+          ),
+        ),
       ),
     );
   }

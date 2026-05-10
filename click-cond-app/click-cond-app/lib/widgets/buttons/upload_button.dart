@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/utils/utils.dart';
 import 'package:click/widgets/label/label_default.dart';
@@ -21,8 +21,8 @@ class uploadFile extends StatefulWidget {
   final String title;
   final List<String> types;
   final int maxDocs;
-  final Function(List<File>) onPressed;
-  final List<File>? defaults;
+  final Function(List<dynamic>) onPressed;
+  final List<dynamic>? defaults;
 
   @override
   _uploadFileState createState() => _uploadFileState();
@@ -30,7 +30,7 @@ class uploadFile extends StatefulWidget {
 }
 
 class _uploadFileState extends State<uploadFile> {
-  List<File> list = [];
+  List<dynamic> list = [];
 
   @override
   void initState(){
@@ -73,7 +73,7 @@ class _uploadFileState extends State<uploadFile> {
               allowedExtensions: widget.types,
             );
             if (result != null) {
-              list.add(File(result.files.single.path.toString()));
+              list.add(result.files.single);
               widget.onPressed(list);
               setState(() {});
             } else {

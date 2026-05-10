@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_sindico.dart';
 import 'package:click/pages/sindico/list_condominiums.dart';
@@ -54,7 +54,7 @@ class _SignupSindicoPageState extends State<SignupSindico> {
   ImageProvider _getAvatarImage() {
     if (_imageFile == null) return const AssetImage('assets/images/defaultUser.png');
     if (kIsWeb) return NetworkImage(_imageFile.path);
-    return FileImage(File(_imageFile.path));
+    return const AssetImage('assets/images/defaultUser.png');
   }
 
   Future<void> _signup() async {

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:ui';
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/utils/localizable/localizable.dart';
@@ -22,7 +22,7 @@ class ModalFinalizarAssembleia extends StatefulWidget {
 
 class _ModalFinalizarAssembleiaState extends State<ModalFinalizarAssembleia> {
   var _isLoading = false;
-  List<File> list = [];
+  List<dynamic> list = [];
 
   save() async{
     try{

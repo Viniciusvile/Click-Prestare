@@ -13,8 +13,12 @@ import 'package:click/widgets/app/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../controllers/controller_funcionario.dart';
 import '../../controllers/controller_moradores.dart';
+import '../../utils/api_config.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginSindico extends StatefulWidget {
   const LoginSindico({Key? key, required this.loginType}) : super(key: key);
@@ -71,6 +75,8 @@ class _LoginSindicoPageState extends State<LoginSindico> {
     setState(() => _isLoading = false);
 
     if (message == "") {
+      await _updateFcmToken();
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ListCondomiums()),
@@ -83,6 +89,24 @@ class _LoginSindicoPageState extends State<LoginSindico> {
         icon: PhosphorIcons.warning,
         iconColor: AppColors.error,
       );
+    }
+  }
+
+  Future<void> _updateFcmToken() async {
+    try {
+      String? token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await http.post(
+          ApiConfig.buildUri('/users/update-fcm-token'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': getToken(),
+          },
+          body: jsonEncode({'fcm_token': token}),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating FCM token: $e');
     }
   }
 

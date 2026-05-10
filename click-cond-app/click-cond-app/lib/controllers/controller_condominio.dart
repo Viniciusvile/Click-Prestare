@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
 import 'package:click/pages/sindico/signup/signup_%20condominium_1.dart';
 import 'package:click/utils/api_config.dart';
@@ -147,7 +147,7 @@ updateAsinaturaCondominioApi(
       "id_condominio": idCondominio,
       "id_plano": plano,
       "codigo": codigo,
-      "plataforma": kIsWeb ? "Web" : Platform.isAndroid ? "Android" : "iOS",
+      "plataforma": kIsWeb ? "Web" : "Mobile",
     }
   });
   try {
@@ -176,5 +176,19 @@ updateMoedaCondominioApi(String idCondominio, String moeda) async {
     throw parsed["message"] ?? "Houve um erro, tente novamente!";
   } catch (e) {
     throw "Houve um erro, tente novamente!";
+  }
+}
+
+getDashboardSummary() async {
+  final url = _buildUri('/dashboard/summary');
+  try {
+    final response = await http.get(url, headers: _authHeaders()).timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return null;
+  } catch (e) {
+    print('[getDashboardSummary] Error: $e');
+    return null;
   }
 }

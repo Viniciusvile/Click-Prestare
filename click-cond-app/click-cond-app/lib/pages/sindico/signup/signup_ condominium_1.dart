@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/pages/sindico/signup/signup_%20condominium_2.dart';
 import 'package:click/theme/app_colors.dart';
@@ -49,7 +49,7 @@ class _SignupCondominuim1PageState extends State<SignupCondominuim1> {
   ImageProvider _getAvatarImage() {
     if (_imageFile == null) return const AssetImage('assets/images/business_default.png');
     if (kIsWeb) return NetworkImage(_imageFile.path);
-    return FileImage(File(_imageFile.path));
+    return const AssetImage('assets/images/defaultUser.png');
   }
 
   Future<void> _nextPage() async {

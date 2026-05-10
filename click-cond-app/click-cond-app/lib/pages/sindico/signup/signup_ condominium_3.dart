@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_condominio.dart';
 import 'package:click/pages/sindico/signup/signup_%20condominium_1.dart';
@@ -68,7 +68,7 @@ class _SignupCondominuim3PageState extends State<SignupCondominuim3> {
                   backgroundImage: widget.condominio.photo != null
                       ? (kIsWeb
                           ? NetworkImage(widget.condominio.photo!)
-                          : FileImage(File(widget.condominio.photo!))) as ImageProvider
+                          : NetworkImage(widget.condominio.photo!)) as ImageProvider
                       : const AssetImage('assets/images/business_default.png'),
                 ),
                 const SizedBox(width: AppSpacing.md),

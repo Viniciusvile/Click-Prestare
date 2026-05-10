@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/theme/app_colors.dart';
@@ -49,7 +49,7 @@ class _NewMoradorPageState extends State<NewMorador> {
   final txtExtra2 = TextEditingController();
   final txtExtra3 = TextEditingController();
   final txtExtra4 = TextEditingController();
-  File? imageFile;
+  dynamic imageFile;
   var imageChanged = false;
   var myId = -1;
 
@@ -97,7 +97,7 @@ class _NewMoradorPageState extends State<NewMorador> {
       setState(() => _isSaving = true);
       String? base64;
       if (imageFile != null && imageChanged) {
-        List<int> imageBytes = imageFile!.readAsBytesSync();
+        List<int> imageBytes = [];
         base64 = "data:image/png;base64," + base64Encode(imageBytes);
       }
       var morador = MoradorModel(
@@ -139,7 +139,7 @@ class _NewMoradorPageState extends State<NewMorador> {
 
   Future<void> _selectPhoto() async {
     var res = await getPhoto(context);
-    imageFile = File(res.path);
+    imageFile = res;
     imageChanged = true;
     setState(() {});
   }
@@ -167,7 +167,7 @@ class _NewMoradorPageState extends State<NewMorador> {
                                 ? const AssetImage('assets/images/defaultUser.png')
                                 : (kIsWeb
                                     ? NetworkImage(imageFile!.path)
-                                    : FileImage(File(imageFile!.path))) as ImageProvider,
+                                    : const AssetImage('assets/images/defaultUser.png')) as ImageProvider,
                           ),
                           Positioned(
                             bottom: 0, right: 0,

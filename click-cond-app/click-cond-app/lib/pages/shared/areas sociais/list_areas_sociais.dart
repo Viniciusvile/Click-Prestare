@@ -4,11 +4,13 @@ import 'package:click/pages/shared/areas%20sociais/areas_sociais_cells.dart';
 import 'package:click/pages/shared/areas%20sociais/meus_agendamentos_cells.dart';
 import 'package:click/pages/shared/areas%20sociais/new_area_social.dart';
 import 'package:click/theme/app_colors.dart';
+import 'package:click/theme/app_spacing.dart';
 import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/local_storage.dart';
 import 'package:click/utils/localizable/localizable.dart';
-import 'package:flutter/material.dart';
 import 'package:click/widgets/app/app_scaffold.dart';
+import 'package:click/widgets/app/app_skeleton.dart';
+import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ListAreasSociais extends StatefulWidget {
@@ -33,10 +35,19 @@ class _ListAreasSociaisPageState extends State<ListAreasSociais> {
   Future<void> loadAll() async {
     setState(() => _isLoading = true);
     try {
-      list = await apiGetAll("areas-sociais");
-      listMeusAgendamentos = await apiGetAll("areas-sociais/meus-agendamentos");
+      final List<Future<dynamic>> futures = [
+        apiGetAll("areas-sociais"),
+        apiGetAll("areas-sociais/meus-agendamentos"),
+      ];
       if (getUserType() == 'sindico') {
-        listAgendamentos = await apiGetAll("areas-sociais/agendamentos");
+        futures.add(apiGetAll("areas-sociais/agendamentos"));
+      }
+
+      final results = await Future.wait(futures);
+      list = results[0];
+      listMeusAgendamentos = results[1];
+      if (getUserType() == 'sindico') {
+        listAgendamentos = results[2];
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
@@ -89,7 +100,12 @@ class _ListAreasSociaisPageState extends State<ListAreasSociais> {
             ),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? ListView.separated(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      itemCount: 6,
+                      separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (_, __) => AppSkeleton.listTile(context),
+                    )
                   : TabBarView(children: views),
             ),
           ],

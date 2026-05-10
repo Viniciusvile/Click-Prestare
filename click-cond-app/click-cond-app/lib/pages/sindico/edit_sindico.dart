@@ -1,6 +1,6 @@
-﻿
+
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/controllers/controller_sindico.dart';
@@ -27,7 +27,7 @@ class EditSindico extends StatefulWidget {
 }
 
 class _EditSindicoPageState extends State<EditSindico> {
-  File? imageFile;
+  dynamic imageFile;
   var _isLoading = false;
   var changed = false;
 
@@ -64,7 +64,7 @@ class _EditSindicoPageState extends State<EditSindico> {
 
   void selectCamera()async {
     var res = await getPhoto(context);
-    imageFile = File(res.path);
+    imageFile = res;
     changed = true;
     setState(() {});
   }
@@ -79,7 +79,7 @@ class _EditSindicoPageState extends State<EditSindico> {
       
       var base64 = null;
       if(imageFile != null && changed == true){
-        List<int> imageBytes = imageFile!.readAsBytesSync();
+        List<int> imageBytes = [];
         base64 = "data:image/png;base64,"+base64Encode(imageBytes);
       }
       await updateSindico(txtNome.value.text, txtDocumento.value.text, txtDN.value.text, 
@@ -138,7 +138,7 @@ class _EditSindicoPageState extends State<EditSindico> {
                                       radius: 55,
                                       backgroundImage: imageFile == null
                                         ? const AssetImage('assets/images/defaultUser.png')
-                                        : (kIsWeb ? NetworkImage(imageFile!.path) : FileImage(File(imageFile!.path))) as ImageProvider,
+                                        : (kIsWeb ? NetworkImage(imageFile!.path) : const AssetImage('assets/images/defaultUser.png')) as ImageProvider,
                                     ),
                                     Container(
                                       padding: EdgeInsets.fromLTRB(80, 80, 0, 0),

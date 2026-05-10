@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
 import 'package:click/pages/singleton.dart';
 import 'package:click/utils/api_config.dart';
@@ -137,7 +137,7 @@ updateAsinaturaMoradorApi(
     "assinatura": {
       "id_plano": plano,
       "codigo": codigo,
-      "plataforma": kIsWeb ? "Web" : Platform.isAndroid ? "Android" : "iOS",
+      "plataforma": kIsWeb ? "Web" : "Mobile",
     }
   });
   try {

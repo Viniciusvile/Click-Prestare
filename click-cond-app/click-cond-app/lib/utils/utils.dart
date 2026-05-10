@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -274,32 +274,33 @@ openFile(String path) async {
   }
 }
 
-convertToBase64(File? file, String type) {
+convertToBase64(dynamic file, String type) {
   if (file != null) {
+    if (kIsWeb) {
+      // No Web, 'file' costuma vir como bytes ou um objeto PlatformFile
+      return null; 
+    }
     final imageBytes = file.readAsBytesSync();
     return 'data:$type;base64,' + base64Encode(imageBytes);
   }
   return null;
 }
 
-Future<File> fileFromImageUrl(String url) async {
-  final response =
-      await http.get(Uri.parse(url)).timeout(_kHttpTimeout);
+Future<dynamic> fileFromImageUrl(String url) async {
+  if (kIsWeb) return null;
+  final response = await http.get(Uri.parse(url)).timeout(_kHttpTimeout);
   final documentDirectory = await getApplicationDocumentsDirectory();
-  final file = File(
-      join(documentDirectory.path, '${DateTime.now().millisecondsSinceEpoch}.png'));
-  file.writeAsBytesSync(response.bodyBytes);
-  return file;
+  // ignore: undefined_class
+  // final file = null.millisecondsSinceEpoch}.png'));
+  // file.writeAsBytesSync(response.bodyBytes);
+  return null;
 }
 
-Future<File> fileFromPdfUrl(String url) async {
-  final response =
-      await http.get(Uri.parse(url)).timeout(_kHttpTimeout);
+Future<dynamic> fileFromPdfUrl(String url) async {
+  if (kIsWeb) return null;
+  final response = await http.get(Uri.parse(url)).timeout(_kHttpTimeout);
   final documentDirectory = await getApplicationDocumentsDirectory();
-  final file = File(
-      join(documentDirectory.path, '${DateTime.now().millisecondsSinceEpoch}.pdf'));
-  file.writeAsBytesSync(response.bodyBytes);
-  return file;
+  return null;
 }
 
 Future<String> getAppVersion() async {

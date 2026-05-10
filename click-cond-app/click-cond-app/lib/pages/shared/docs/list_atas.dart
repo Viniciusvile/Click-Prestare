@@ -6,8 +6,9 @@ import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/local_storage.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/utils/utils.dart';
-import 'package:flutter/material.dart';
 import 'package:click/widgets/app/app_scaffold.dart';
+import 'package:click/widgets/app/app_skeleton.dart';
+import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ListAtas extends StatefulWidget {
@@ -63,7 +64,12 @@ class _ListAtasPageState extends State<ListAtas> {
             )
           : null,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? ListView.separated(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: 6,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (_, __) => AppSkeleton.listTile(context),
+            )
           : list.isEmpty
               ? Center(
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

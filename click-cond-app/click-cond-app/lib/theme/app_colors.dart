@@ -48,6 +48,11 @@ class AppColors {
   static Color textTertiary(BuildContext c) =>
       _isDark(c) ? darkTextTertiary : lightTextTertiary;
 
+  static Color skeletonBase(BuildContext c) =>
+      _isDark(c) ? const Color(0xFF1B2638) : Colors.grey[300]!;
+  static Color skeletonHighlight(BuildContext c) =>
+      _isDark(c) ? const Color(0xFF253147) : Colors.grey[100]!;
+
   static bool _isDark(BuildContext c) =>
       Theme.of(c).brightness == Brightness.dark;
 }

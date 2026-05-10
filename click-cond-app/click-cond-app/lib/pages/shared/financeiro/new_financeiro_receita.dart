@@ -1,4 +1,5 @@
 import 'package:click/controllers/controller_generic.dart';
+import 'package:click/pages/singleton.dart';
 import 'package:click/pages/shared/financeiro/new_financeiro_morador.dart';
 import 'package:click/theme/app_colors.dart';
 import 'package:click/theme/app_spacing.dart';
@@ -16,8 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class NewFinanceiroReceita extends StatefulWidget {
-  final int id;
-  const NewFinanceiroReceita({Key? key, required this.id}) : super(key: key);
+  final int? id;
+  const NewFinanceiroReceita({Key? key, this.id}) : super(key: key);
 
   @override
   _NewFinanceiroReceitaPageState createState() => _NewFinanceiroReceitaPageState();
@@ -43,13 +44,13 @@ class _NewFinanceiroReceitaPageState extends State<NewFinanceiroReceita> {
   @override
   void initState() {
     super.initState();
-    if (widget.id != -1) load();
+    if (widget.id != null && widget.id != -1) load();
   }
 
   Future<void> load() async {
     try {
       setState(() => _isLoading = true);
-      var obj = await apiGetDetails('financeiro', widget.id);
+      var obj = await apiGetDetails('financeiro', widget.id!);
       txtTipo.text = obj['nome'] ?? '';
       txtCliente.text = obj['cliente'] ?? '';
       txtRecebimento.text = obj['data'] ?? '';
@@ -68,13 +69,16 @@ class _NewFinanceiroReceitaPageState extends State<NewFinanceiroReceita> {
     try {
       setState(() => _isSaving = true);
       var obj = FinanceiroModel(
-        id: widget.id, nome: txtTipo.text, tipo: 'C', categoria: "Receita",
-        data: convertStringToDate(txtRecebimento.text),
+        id: widget.id, 
+        id_condominio: Singleton.instance.id_condominio,
+        nome: txtTipo.text, tipo: 'C', categoria: "Receita",
+        data: txtRecebimento.text.isNotEmpty ? convertStringToDate(txtRecebimento.text) : null,
+        data_vencimento: txtRecebimento.text.isNotEmpty ? convertStringToDate(txtRecebimento.text) : null,
         conta: txtConta.text, descricao: txtDescricao.text,
-        valor: double.parse(txtValor.text.replaceAll('.', '').replaceAll(',', '.')),
+        valor: txtValor.text.isNotEmpty ? double.parse(txtValor.text.replaceAll('.', '').replaceAll(',', '.')) : 0.0,
         cliente: txtCliente.text,
       );
-      var res = await apiSaveObject("financeiro", "financeiro", obj, widget.id != -1);
+      var res = await apiSaveObject("financeiro", "financeiro", obj, widget.id != null && widget.id != -1);
       if (res.toString().isEmpty) {
         if (mounted) Navigator.of(context).pop(true);
       } else {
@@ -91,7 +95,7 @@ class _NewFinanceiroReceitaPageState extends State<NewFinanceiroReceita> {
     var choice = await showConfirmDialog(context);
     if (choice != null && choice) {
       setState(() => _isSaving = true);
-      var res = await apiDeleteObject('financeiro', widget.id);
+      var res = await apiDeleteObject('financeiro', widget.id!);
       if (mounted) setState(() => _isSaving = false);
       if (res) {
         if (mounted) Navigator.of(context).pop(true);
