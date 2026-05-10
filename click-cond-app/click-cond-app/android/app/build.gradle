@@ -45,9 +45,22 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        release {
+            keyAlias localProperties.getProperty('keyAlias')
+            keyPassword localProperties.getProperty('keyPassword')
+            storeFile localProperties.getProperty('storeFile') ? file(localProperties.getProperty('storeFile')) : null
+            storePassword localProperties.getProperty('storePassword')
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             signingConfig signingConfigs.debug
