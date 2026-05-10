@@ -12,6 +12,9 @@ router.get('/moradores/get-all', jwt({ typeAccess: ['Sindico'] }), controller.ge
 router.get('/inadimplentes/get-all', jwt({ typeAccess: ['Sindico'] }), controller.getAllInadimplentes);
 router.get('/inadimplente/get', jwt({ typeAccess: ['Sindico'] }), controller.getInadimplenteDetail);
 router.get('/grafico/get-all', jwt({ typeAccess: ['Sindico'] }), controller.getGrafico);
+router.get('/get-by-user', jwt({ typeAccess: ['Morador', 'Sindico'] }), controller.getByUser);
+router.post('/upload-shared-file', jwt({ typeAccess: ['Morador', 'Sindico'] }), controller.uploadSharedFile);
+router.post('/update-status', jwt({ typeAccess: ['Sindico'] }), controller.updateStatus);
 
 
 module.exports = router;

@@ -227,4 +227,43 @@ module.exports = {
     }
   },
 
+  async uploadSharedFile(req, res) {
+    try {
+      const { id, file, type } = req.body;
+      const folder = type === 'boleto' ? 'boletos' : 'comprovantes';
+      const urlFile = await saveToAWS(file, `condominios/${req.session.user.id_condominio}/financeiro/${folder}`, type);
+      
+      if (type === 'boleto') {
+        await db.updateBoleto(urlFile.url, id);
+      } else {
+        await db.updateComprovante(urlFile.url, id);
+      }
+      
+      return res.json({ url: urlFile.url });
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+
+  async updateStatus(req, res) {
+    try {
+      await db.updateStatus(req.body.status, req.body.id);
+      return res.json();
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+
+  async getByUser(req, res) {
+    try {
+      const results = await db.getByUser(req.query.id_user, req.query.id_condominio);
+      results.forEach(item => {
+        item.valorReal = doubleToReal.convertDoubleToReal(item.valor ?? 0);
+      });
+      return res.status(200).json(results);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+
 };
