@@ -54,7 +54,6 @@
       "exclude": ["apps/api-e2e/**/*"]
     }
   ],
-  "nxCloudId": "69fde382fae8a2001316f5d4",
   "analytics": false,
   "targetDefaults": {
     "test": {
