@@ -2,7 +2,10 @@
 cmds = ["cd click-cond-web && npm install"]
 
 [phases.build]
-cmds = ["cd click-cond-web && npx nx build api"]
+cmds = [
+  "cd click-cond-web && npx prisma generate",
+  "cd click-cond-web && npx nx build api"
+]
 
 [start]
-cmd = "cd click-cond-web && node dist/apps/api/main.js"
+cmd = "cd click-cond-web && node apps/api/dist/main.js"
