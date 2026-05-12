@@ -6,6 +6,7 @@
     "moduleResolution": "bundler",
     "module": "preserve",
     "composite": false,
+    "declarationMap": false,
     "emitDeclarationOnly": false,
     "noEmitOnError": false,
     "lib": ["es2022", "dom"]
