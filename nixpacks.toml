@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs-24_x", "npm-10_x"]
+
+[phases.install]
+cmds = ["cd click-cond-web && npm install"]
+
+[phases.build]
+cmds = ["cd click-cond-web && npx nx build api"]
+
+[start]
+cmd = "cd click-cond-web && node dist/apps/api/main.js"
