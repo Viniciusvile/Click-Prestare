@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://click-prestare-production.up.railway.app/$1"
+      "destination": "https://click-prestare-production.up.railway.app/api/$1"
     },
     {
       "source": "/(.*)",
