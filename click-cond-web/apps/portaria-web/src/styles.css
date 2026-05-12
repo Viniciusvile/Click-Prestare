@@ -4,24 +4,117 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Cores padronizadas para o Dark Mode (Padrão original) */
+  --bg-base: #0A1628;
+  --bg-surface: #131D2E;
+  --bg-elevated: #1B2638;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-main: #F7F8FA;
+  --text-sub: #98A2B3;
+  --text-muted: #5A6677;
+  --scrollbar-track: #0A1628;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.15);
+}
+
+/* Quando a classe light estiver ativa no html ou body */
+html.light, body.light, .light {
+  /* Cores baseadas perfeitamente no AppColors.dart do modo Claro */
+  --bg-base: #FFFFFF;
+  --bg-surface: #F7F8FA;
+  --bg-elevated: #FFFFFF;
+  --border-color: #EAECEF;
+  --text-main: #0A1628;
+  --text-sub: #5A6677;
+  --text-muted: #98A2B3;
+  --scrollbar-track: #FFFFFF;
+  --scrollbar-thumb: rgba(10, 22, 40, 0.12);
+  --scrollbar-thumb-hover: rgba(10, 22, 40, 0.22);
+}
+
 html, body {
   height: 100%;
-  background: #111418;
-  color: #E5E7EB;
+  background: var(--bg-base);
+  color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Fundo plano, sem efeitos de festa */
 .app-bg {
-  background: #111418;
+  background: var(--bg-base) !important;
+  transition: background-color 0.3s ease;
 }
 
-/* Scrollbar discreta */
+/* Mapeamento dinâmico e inteligente para os utilitários fixos de UI no modo Claro */
+.light .bg-graphite-200 {
+  background-color: var(--bg-surface) !important;
+}
+
+.light .bg-graphite,
+.light .bg-graphite-100 {
+  background-color: var(--bg-elevated) !important;
+}
+
+.light .text-white {
+  color: var(--text-main) !important;
+}
+
+/* Proteção de contraste para garantir que botões/badges com fundo primário preservem texto branco */
+.light button.bg-accent .text-white,
+.light button.bg-accent,
+.light .bg-accent .text-white,
+.light .bg-accent {
+  color: #FFFFFF !important;
+}
+
+.light .text-slate-400,
+.light .text-slate-300,
+.light .text-slate-200 {
+  color: var(--text-sub) !important;
+}
+
+.light .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+.light .border-white\/10,
+.light .border-white\/5,
+.light .border-white\/20,
+.light .border-r {
+  border-color: var(--border-color) !important;
+}
+
+/* Ajustes finos de hover e backgrounds em tabelas/listas no modo Claro */
+.light thead.bg-white\/\[0\.02\] {
+  background-color: rgba(10, 22, 40, 0.03) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+.light tr.border-t.border-white\/5 {
+  border-top-color: var(--border-color) !important;
+}
+
+.light tr:hover.hover\:bg-white\/\[0\.02\] {
+  background-color: rgba(10, 22, 40, 0.02) !important;
+}
+
+.light input, .light select {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+
+.light input::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Scrollbar com cores dinâmicas */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #111418; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.08);
+  background: var(--scrollbar-thumb);
   border-radius: 6px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }

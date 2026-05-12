@@ -2,10 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>portaria-web</title>
+    <title>Click Portaria - Web Console</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script>
+      if (localStorage.getItem('theme_mode') === 'light') {
+        document.documentElement.classList.add('light');
+        window.addEventListener('DOMContentLoaded', () => document.body.classList.add('light'));
+      }
+    </script>
   </head>
   <body>
     <app-root></app-root>

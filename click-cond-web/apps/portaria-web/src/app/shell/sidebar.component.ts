@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
@@ -17,6 +17,34 @@ interface NavItem {
 })
 export class SidebarComponent {
   readonly auth = inject(AuthService);
+  readonly isLight = signal<boolean>(false);
+
+  constructor() {
+    const saved = localStorage.getItem('theme_mode');
+    if (saved === 'light') {
+      this.isLight.set(true);
+      document.body.classList.add('light');
+      document.documentElement.classList.add('light');
+    } else {
+      this.isLight.set(false);
+      document.body.classList.remove('light');
+      document.documentElement.classList.remove('light');
+    }
+  }
+
+  toggleTheme() {
+    if (this.isLight()) {
+      this.isLight.set(false);
+      localStorage.setItem('theme_mode', 'dark');
+      document.body.classList.remove('light');
+      document.documentElement.classList.remove('light');
+    } else {
+      this.isLight.set(true);
+      localStorage.setItem('theme_mode', 'light');
+      document.body.classList.add('light');
+      document.documentElement.classList.add('light');
+    }
+  }
 
   readonly nav: NavItem[] = [
     { label: 'Dashboard',    path: '/dashboard',    icon: '◉' },
