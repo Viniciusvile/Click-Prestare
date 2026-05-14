@@ -1,0 +1,8 @@
+{
+  "name": "click-prestare-root",
+  "private": true,
+  "scripts": {
+    "build": "cd click-cond-web && npm install && npx nx build portaria-web",
+    "install": "cd click-cond-web && npm install"
+  }
+}
