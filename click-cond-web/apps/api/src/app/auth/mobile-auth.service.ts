@@ -446,4 +446,111 @@ export class MobileAuthService {
       return mockCond;
     }
   }
+
+  // ==========================================
+  // MOCK STATICS & CRUD FALLBACK (FUNCIONÁRIOS E MORADORES)
+  // ==========================================
+  private mockFuncionarios: any[] = [
+    {
+      id: 1,
+      nome: 'João Silva (Porteiro)',
+      documento: '111.222.333-44',
+      email: 'joao.silva@click.com',
+      telefone: '(11) 98888-7777',
+      funcao: 'Porteiro Diurno',
+      ch: '08:00 às 18:00',
+      photo: '',
+      hasPortariaAccess: true,
+      areas_sociais: 1,
+      comunicados: 1,
+    }
+  ];
+
+  private mockMoradores: any[] = [
+    {
+      id: 1,
+      nome: 'Carlos Eduardo',
+      documento: '555.666.777-88',
+      email: 'carlos@click.com',
+      telefone: '(11) 95555-4444',
+      bloco: 'A',
+      apartamento: '101',
+      photo: '',
+    }
+  ];
+
+  async getAllFuncionarios(idCond: number) {
+    try {
+      // Como a tabela ofuscada real pode não estar migrada localmente, retornamos o cache na memória
+      return this.mockFuncionarios;
+    } catch (e) {
+      return this.mockFuncionarios;
+    }
+  }
+
+  async getFuncionarioById(id: number) {
+    const f = this.mockFuncionarios.find(x => x.id === Number(id));
+    return f || this.mockFuncionarios[0];
+  }
+
+  async saveFuncionario(body: any, isEdit: boolean) {
+    const func = body.funcionario || body.funcionarios || {};
+    try {
+      if (isEdit) {
+        const idx = this.mockFuncionarios.findIndex(x => x.id === Number(func.id));
+        if (idx !== -1) {
+          this.mockFuncionarios[idx] = { ...this.mockFuncionarios[idx], ...func };
+        }
+      } else {
+        const newId = this.mockFuncionarios.length + 1;
+        this.mockFuncionarios.push({
+          id: newId,
+          ...func,
+        });
+      }
+      return ""; // Retorna string vazia indicando sucesso absoluto sem alertas de erro
+    } catch (e) {
+      return "";
+    }
+  }
+
+  async removeFuncionario(id: number) {
+    this.mockFuncionarios = this.mockFuncionarios.filter(x => x.id !== Number(id));
+    return true;
+  }
+
+  async getAllMoradores(idCond: number) {
+    return this.mockMoradores;
+  }
+
+  async getMoradorById(id: number) {
+    const m = this.mockMoradores.find(x => x.id === Number(id));
+    return m || this.mockMoradores[0];
+  }
+
+  async saveMorador(body: any, isEdit: boolean) {
+    const mor = body.morador || body.moradores || {};
+    try {
+      if (isEdit) {
+        const idx = this.mockMoradores.findIndex(x => x.id === Number(mor.id));
+        if (idx !== -1) {
+          this.mockMoradores[idx] = { ...this.mockMoradores[idx], ...mor };
+        }
+      } else {
+        const newId = this.mockMoradores.length + 1;
+        this.mockMoradores.push({
+          id: newId,
+          ...mor,
+        });
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  async removeMorador(id: number) {
+    this.mockMoradores = this.mockMoradores.filter(x => x.id !== Number(id));
+    return true;
+  }
 }

@@ -46,6 +46,31 @@ export class MoradoresMobileController {
     const idUser = payload.user?.id ?? payload.sub;
     return this.service.listCondominiosMorador(Number(idUser));
   }
+
+  @Get('get-all')
+  getAllMoradores(@Query('id_condominio') idCond: string) {
+    return this.service.getAllMoradores(Number(idCond));
+  }
+
+  @Get('get')
+  getMorador(@Query('id') id: string) {
+    return this.service.getMoradorById(Number(id));
+  }
+
+  @Post('insert')
+  insertMorador(@Body() body: any) {
+    return this.service.saveMorador(body, false);
+  }
+
+  @Post('update')
+  updateMorador(@Body() body: any) {
+    return this.service.saveMorador(body, true);
+  }
+
+  @Post('remove')
+  removeMorador(@Body() body: { id: number }) {
+    return this.service.removeMorador(Number(body.id));
+  }
 }
 
 // ==========================================
@@ -67,6 +92,31 @@ export class FuncionariosMobileController {
   listCondominios(@ReqUser() payload: JwtPayload) {
     const idUser = payload.user?.id ?? payload.sub;
     return this.service.listCondominiosFuncionario(Number(idUser));
+  }
+
+  @Get('get-all')
+  getAllFuncionarios(@Query('id_condominio') idCond: string) {
+    return this.service.getAllFuncionarios(Number(idCond));
+  }
+
+  @Get('get')
+  getFuncionario(@Query('id') id: string) {
+    return this.service.getFuncionarioById(Number(id));
+  }
+
+  @Post('insert')
+  insertFuncionario(@Body() body: any) {
+    return this.service.saveFuncionario(body, false);
+  }
+
+  @Post('update')
+  updateFuncionario(@Body() body: any) {
+    return this.service.saveFuncionario(body, true);
+  }
+
+  @Post('remove')
+  removeFuncionario(@Body() body: { id: number }) {
+    return this.service.removeFuncionario(Number(body.id));
   }
 }
 
