@@ -55,5 +55,9 @@ export class SidebarComponent {
     { label: 'Ocorrências',  path: '/ocorrencias',  icon: '!' },
     { label: 'Comunicados',  path: '/comunicados',  icon: '✉' },
     { label: 'Encomendas',   path: '/encomendas',   icon: '⬚' },
+    { label: 'Áreas Sociais', path: '/areas-sociais', icon: '☕' },
+    { label: 'Assembleias',  path: '/assembleias',   icon: '⚖' },
+    { label: 'Financeiro',   path: '/financeiro',    icon: '💲' },
+    { label: 'Documentos',   path: '/documentos',    icon: '📄' },
   ];
 }

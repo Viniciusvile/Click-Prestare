@@ -41,4 +41,43 @@ module.exports = {
       })    
     },
 
+    mailWelcomeMorador: async function(emailToSend, nomeMorador, documentoSenha){
+      return new Promise( (resolve, reject) => {
+        const message = `
+                    Olá, <b>${nomeMorador}</b>!<br><br>
+                    O seu acesso ao aplicativo <b>CLICK Condomínios</b> foi criado com sucesso.<br><br>
+                    Para acessar sua conta como <b>Morador</b>, baixe o aplicativo e utilize as credenciais abaixo:<br><br>
+                    <b>Login (E-mail):</b> ${emailToSend}<br>
+                    <b>Senha Inicial:</b> ${documentoSenha || '123456'}<br><br>
+                    <i>Recomendamos que você altere sua senha após o primeiro acesso no menu de Configurações do App.</i><br><br>
+                    Seja muito bem-vindo(a)!<br>
+                    Equipe CLICK
+                    `;        
+
+        var remetente = nodemailer.createTransport({
+            service: "gmail",
+            port: 465,
+            secure: true,
+            auth: {
+              user: "nao.responder.click@gmail.com",
+              pass: "ckwx hqdm vabv rdre"
+            }
+          });
+          var emailASerEnviado = {
+            from: 'nao.responder.click@gmail.com',
+            to: emailToSend,
+            subject: "CLICK - Bem-vindo(a)! Suas credenciais de acesso",
+            text: '',
+            html: message,
+          };
+          remetente.sendMail(emailASerEnviado, function(error){
+              if (error) {
+                reject(Error("Falha no envio do e-mail"))
+              } else {
+                resolve(true)
+              }
+          });
+      })    
+    },
+
 }

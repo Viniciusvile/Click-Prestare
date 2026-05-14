@@ -1,0 +1,102 @@
+import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import { FinanceiroService } from './financeiro.service';
+import { ReqUser } from '../auth/req-user.decorator';
+import { JwtPayload } from '../auth/jwt-payload.interface';
+
+@Controller('financeiro')
+export class FinanceiroController {
+  constructor(private readonly service: FinanceiroService) {}
+
+  @Post('insert')
+  @HttpCode(200)
+  insert(
+    @Body() body: { id_condominio: string | number; financeiro: any },
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const operatorName = payload?.user?.name ?? payload?.user?.nome ?? 'Administrador';
+    return this.service.insert(Number(body.id_condominio), body.financeiro, operatorName);
+  }
+
+  @Post('update')
+  @HttpCode(200)
+  update(
+    @Body() body: { id_condominio: string | number; financeiro: any },
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const operatorName = payload?.user?.name ?? payload?.user?.nome ?? 'Administrador';
+    return this.service.update(Number(body.id_condominio), body.financeiro, operatorName);
+  }
+
+  @Post('remove')
+  @HttpCode(200)
+  remove(@Body() body: { id: string | number }) {
+    return this.service.remove(Number(body.id));
+  }
+
+  @Get('get-all')
+  getAll(
+    @Query('id_condominio') idCondominio: string,
+    @Query('mes') mes: string,
+    @Query('ano') ano: string,
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const isSindico = payload?.user?.typeAccess === 'Sindico';
+    return this.service.getAll(Number(idCondominio), mes, ano, isSindico);
+  }
+
+  @Get('get')
+  get(@Query('id_condominio') idCondominio: string, @Query('id') id: string, @ReqUser() payload: JwtPayload) {
+    return this.service.get(Number(idCondominio), Number(id), payload?.user);
+  }
+
+  @Get('moradores/get-all')
+  getAllMoradores(
+    @Query('id_condominio') idCondominio: string,
+    @Query('mes') mes: string,
+    @Query('ano') ano: string,
+  ) {
+    return this.service.getAllMoradores(Number(idCondominio), mes, ano);
+  }
+
+  @Get('inadimplentes/get-all')
+  getAllInadimplentes(@Query('id_condominio') idCondominio: string) {
+    return this.service.getAllInadimplentes(Number(idCondominio));
+  }
+
+  @Get('inadimplente/get')
+  getInadimplenteDetail(
+    @Query('id_condominio') idCondominio: string,
+    @Query('apto') apto: string,
+    @Query('bloco') bloco: string,
+  ) {
+    return this.service.getInadimplenteDetail(Number(idCondominio), apto, bloco);
+  }
+
+  @Get('grafico/get-all')
+  getGrafico(
+    @Query('id_condominio') idCondominio: string,
+    @Query('mes') mes: string,
+    @Query('ano') ano: string,
+  ) {
+    return this.service.getGrafico(Number(idCondominio), mes, ano);
+  }
+
+  @Get('get-by-user')
+  getByUser(@Query('id_user') idUser: string, @Query('id_condominio') idCondominio: string, @ReqUser() payload: JwtPayload) {
+    const isMorador = payload?.user?.typeAccess === 'Morador';
+    const targetUserId = isMorador ? (payload?.user?.id ?? Number(idUser)) : Number(idUser);
+    return this.service.getByUser(targetUserId, Number(idCondominio));
+  }
+
+  @Post('upload-shared-file')
+  @HttpCode(200)
+  uploadSharedFile(@Body() body: { id: string | number; file: string; type: string }) {
+    return this.service.uploadSharedFile(Number(body.id), body.file, body.type);
+  }
+
+  @Post('update-status')
+  @HttpCode(200)
+  updateStatus(@Body() body: { id: string | number; status: string | number }) {
+    return this.service.updateStatus(Number(body.id), body.status);
+  }
+}

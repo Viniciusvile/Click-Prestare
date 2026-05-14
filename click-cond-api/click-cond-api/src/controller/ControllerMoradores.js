@@ -23,6 +23,9 @@ module.exports = {
         const urlPhotoProfile = await saveToAWS(photo, `condominios/${req.body.id_condominio}/moradores`, 'profile');
         await db.updateProfilePhoto(urlPhotoProfile.url, userId);
       }
+      if (req.body.sendCredentials && email) {
+        mail.mailWelcomeMorador(email, nome, documento).catch(e => console.log('Erro ao enviar email de welcome:', e));
+      }
       return res.json();
     } catch (err) {
       return res.status(500).json({ message: err.message });
@@ -136,6 +139,19 @@ module.exports = {
       return res.json();
     } catch (err) {
       return res.status(400).json({ message: err.message });
+    }
+  },
+
+  async sendCredentials(req, res) {
+    try {
+      const { email, nome, documento } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: 'E-mail do morador não fornecido.' });
+      }
+      await mail.mailWelcomeMorador(email, nome || 'Morador', documento || '123456');
+      return res.json({ message: 'Credenciais enviadas com sucesso!' });
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
     }
   },
 

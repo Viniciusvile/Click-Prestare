@@ -14,6 +14,10 @@ import { OcorrenciasModule } from './ocorrencias/ocorrencias.module';
 import { ComunicadosModule } from './comunicados/comunicados.module';
 import { EncomendasModule } from './encomendas/encomendas.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AreasSociaisModule } from './areas-sociais/areas-sociais.module';
+import { AssembleiasModule } from './assembleias/assembleias.module';
+import { FinanceiroModule } from './financeiro/financeiro.module';
+import { DocumentosModule } from './documentos/documentos.module';
 
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -34,6 +38,10 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     ComunicadosModule,
     EncomendasModule,
     NotificationsModule,
+    AreasSociaisModule,
+    AssembleiasModule,
+    FinanceiroModule,
+    DocumentosModule,
   ],
   controllers: [AppController],
   providers: [

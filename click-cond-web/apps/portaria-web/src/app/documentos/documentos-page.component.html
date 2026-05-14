@@ -1,0 +1,164 @@
+<div class="min-h-screen p-6 lg:p-8 space-y-6">
+
+  <!-- Header Principal -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="flex items-start gap-4">
+      <div class="w-11 h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-semibold text-white tracking-tight">Documentos Oficiais</h1>
+        <p class="text-sm text-slate-400 mt-0.5">Publicação de Atas, Convenções, Regimentos e Balancetes</p>
+      </div>
+    </div>
+
+    <button
+      (click)="abrirModalUpload()"
+      class="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white font-semibold text-sm
+             hover:bg-indigo-400 shadow-lg shadow-indigo-500/10 transition active:scale-95"
+    >
+      + Publicar Documento
+    </button>
+  </div>
+
+  <!-- Abas de Navegação -->
+  <div class="flex items-center gap-2 border-b border-white/10 pb-px">
+    <button
+      (click)="mudarAba(false)"
+      [class.text-white]="!isAtaTab()"
+      [class.border-indigo-400]="!isAtaTab()"
+      [class.text-slate-400]="isAtaTab()"
+      [class.border-transparent]="isAtaTab()"
+      class="px-4 py-2 text-sm font-medium border-b-2 transition hover:text-slate-200"
+    >
+      Normas e Regimentos
+    </button>
+
+    <button
+      (click)="mudarAba(true)"
+      [class.text-white]="isAtaTab()"
+      [class.border-indigo-400]="isAtaTab()"
+      [class.text-slate-400]="!isAtaTab()"
+      [class.border-transparent]="!isAtaTab()"
+      class="px-4 py-2 text-sm font-medium border-b-2 transition hover:text-slate-200"
+    >
+      Atas de Assembleia
+    </button>
+  </div>
+
+  <!-- Grid de Documentos -->
+  @if (loading()) {
+    <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+      <div class="inline-block w-6 h-6 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin"></div>
+    </div>
+  } @else if (documentos().length === 0) {
+    <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10 space-y-2 animate-fadeIn">
+      <p class="text-sm text-slate-300 font-medium">Nenhum documento publicado nesta categoria</p>
+      <p class="text-xs text-slate-500">Utilize o botão superior para disponibilizar arquivos PDF aos condôminos</p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn">
+      @for (doc of documentos(); track doc.id) {
+        <div class="p-5 rounded-2xl bg-graphite-200 border border-white/5 hover:border-white/10 transition flex flex-col justify-between gap-4 group">
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition">
+              PDF
+            </div>
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm font-semibold text-white leading-snug line-clamp-2" [title]="doc.nome">{{ doc.nome }}</h3>
+              <p class="text-[11px] text-slate-500 mt-1">Disponível para download</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/5">
+            <button
+              (click)="removerDocumento(doc.id)"
+              class="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition text-xs font-medium"
+              title="Excluir arquivo"
+            >
+              Excluir
+            </button>
+
+            <a
+              [href]="doc.link_doc"
+              target="_blank"
+              class="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition text-xs font-semibold flex items-center gap-1"
+            >
+              <span>Abrir</span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- MODAL DE UPLOAD -->
+  @if (modalUpload()) {
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div class="w-full max-w-md rounded-3xl bg-graphite-200 border border-white/10 overflow-hidden shadow-2xl flex flex-col">
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-white">Publicar Novo Documento</h3>
+          <button (click)="modalUpload.set(false)" class="text-slate-400 hover:text-white transition">×</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Título do Documento</label>
+            <input
+              [(ngModel)]="novoDoc.nome"
+              type="text"
+              placeholder="Ex: Balancete Financeiro - Abril/2026"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Classificação</label>
+            <select
+              [(ngModel)]="novoDoc.isAta"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-400 cursor-pointer"
+            >
+              <option [ngValue]="false">Normas, Convenção ou Regimento</option>
+              <option [ngValue]="true">Ata Oficial de Assembleia</option>
+            </select>
+          </div>
+
+          <!-- Área de Drop Simulado -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Arquivo PDF</label>
+            <div class="border-2 border-dashed border-white/10 rounded-xl p-6 text-center space-y-2 bg-slate-900/50 hover:border-indigo-500/30 transition cursor-pointer relative">
+              <input
+                type="file"
+                accept=".pdf"
+                (change)="onFileSelected($event)"
+                class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+              <div class="text-2xl">📄</div>
+              <p class="text-xs font-medium text-slate-300">
+                {{ selectedFileName() || 'Clique ou arraste o arquivo PDF aqui' }}
+              </p>
+              <p class="text-[10px] text-slate-500">Tamanho máximo suportado: 15MB</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-white/10 bg-slate-900/40 flex items-center justify-end gap-3">
+          <button (click)="modalUpload.set(false)" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition">Cancelar</button>
+          <button
+            (click)="salvarDocumento()"
+            [disabled]="!novoDoc.nome || !novoDoc.base64"
+            class="px-4 py-2 rounded-xl bg-indigo-500 text-white text-xs font-semibold hover:bg-indigo-400 transition disabled:opacity-50"
+          >
+            Disponibilizar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

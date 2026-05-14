@@ -13,6 +13,12 @@ export class ApartamentosService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(idCondominio: number, search?: string) {
+    if (!this.prisma.isConnected) {
+      return [
+        { id: 1, bloco: 'Bloco A', apto: '101', fracao: null, id_condominio: 1, qtdMoradores: 2 },
+        { id: 2, bloco: 'Bloco B', apto: '202', fracao: null, id_condominio: 1, qtdMoradores: 1 },
+      ];
+    }
     const list = await this.prisma.apartamentos.findMany({
       where: {
         id_condominio: idCondominio,

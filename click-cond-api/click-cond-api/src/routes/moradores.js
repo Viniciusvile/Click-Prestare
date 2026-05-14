@@ -14,5 +14,7 @@ router.post('/update', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }
 router.post('/update-assinatura', jwt({ typeAccess: ['Morador'] }), controller.updateAssinatura);
 router.get('/get', jwt({ typeAccess: ['Sindico', 'Morador', 'Funcionario'] }), controller.get);
 router.get('/list-condominios', jwt({ typeAccess: ['Morador', 'Funcionario'] }), controller.listCondominios);
+router.post('/send-credentials', jwt({ typeAccess: ['Sindico', 'Funcionario'] }), controller.sendCredentials);
 
 module.exports = router;
+

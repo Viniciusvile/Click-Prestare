@@ -26,6 +26,7 @@ export interface CreateMorador {
   telefone?: string;
   tipo?: string;
   id_apartamento: number;
+  sendCredentials?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -45,4 +46,7 @@ export class MoradoresApi {
   }
   create(dto: CreateMorador) { return this.http.post<Morador>(this.base, dto); }
   remove(id: number) { return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`); }
+  sendCredentials(id: number) { return this.http.post<{ ok: boolean }>(`${this.base}/${id}/send-credentials`, {}); }
+  exportExcel() { return this.http.get<{ base64: string; filename: string }>(`${this.base}/export-excel`); }
+  importBulk(linhas: any[]) { return this.http.post<{ ok: boolean; total: number; criados: any[] }>(`${this.base}/import-bulk`, { linhas }); }
 }

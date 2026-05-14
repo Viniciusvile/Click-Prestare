@@ -49,9 +49,18 @@ dependencies:
 
 dev_dependencies:
   flutter_lints: any
+  flutter_native_splash: ^2.4.0
 
   flutter_test:
     sdk: flutter 
+
+flutter_native_splash:
+  color: "#18181b"
+  image: assets/images/logo.png
+  android_12:
+    image: assets/images/logo.png
+    icon_background_color: "#18181b"
+    color: "#18181b"
 
 # The following section is specific to Flutter.
 flutter:

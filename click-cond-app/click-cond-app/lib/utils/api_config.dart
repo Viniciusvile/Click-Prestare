@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class ApiConfig {
   /// Mude para 'true' para usar o servidor do Railway (Nuvem)
   /// Mude para 'false' para usar o servidor local (Seu PC)
-  static const bool isProduction = false;
+  static const bool isProduction = true;
 
   /// Host dinâmico
   static String get host {
@@ -21,8 +21,9 @@ class ApiConfig {
 
   /// Constrói uma Uri completa para o endpoint.
   static Uri buildUri(String path, [Map<String, String>? params]) {
+    final cleanPath = path.startsWith('/api') ? path : '/api$path';
     return useHttps
-        ? Uri.https(host, path, params)
-        : Uri.http(host, path, params);
+        ? Uri.https(host, cleanPath, params)
+        : Uri.http(host, cleanPath, params);
   }
 }

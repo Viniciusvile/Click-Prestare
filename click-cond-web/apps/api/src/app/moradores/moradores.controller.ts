@@ -15,6 +15,19 @@ export class MoradoresController {
     return this.service.findAll(idCondominio, search);
   }
 
+  @Get('export-excel')
+  exportExcel(@Param('idCondominio', ParseIntPipe) idCondominio: number) {
+    return this.service.exportExcel(idCondominio);
+  }
+
+  @Post('import-bulk')
+  importBulk(
+    @Param('idCondominio', ParseIntPipe) idCondominio: number,
+    @Body() body: { linhas: any[] },
+  ) {
+    return this.service.importBulk(idCondominio, body.linhas);
+  }
+
   @Get(':id')
   get(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
@@ -40,5 +53,10 @@ export class MoradoresController {
   remove(@Param('id', ParseIntPipe) id: number) {
     this.service.remove(id);
     return { ok: true };
+  }
+
+  @Post(':id/send-credentials')
+  sendCredentials(@Param('id', ParseIntPipe) id: number) {
+    return this.service.sendCredentials(id);
   }
 }

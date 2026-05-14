@@ -38,6 +38,7 @@ class NewMorador extends StatefulWidget {
 class _NewMoradorPageState extends State<NewMorador> {
   var _isLoading = false;
   var _isSaving = false;
+  var _sendCredentials = true;
   final txtNome = TextEditingController();
   final txtDocumento = TextEditingController();
   final txtDN = TextEditingController();
@@ -106,6 +107,7 @@ class _NewMoradorPageState extends State<NewMorador> {
         data_nascimento: txtDN.text, id_apto: widget.id_apto,
         extra1: txtExtra1.text, extra2: txtExtra2.text,
         extra3: txtExtra3.text, extra4: txtExtra4.text, photo: base64,
+        sendCredentials: _sendCredentials,
       );
       var res = await apiSaveObject("moradores", "morador", morador, widget.isEdit);
       if (res.toString().isEmpty) {
@@ -221,14 +223,20 @@ class _NewMoradorPageState extends State<NewMorador> {
                   const SizedBox(height: AppSpacing.md),
                   AppInput(label: getText('telefone'), controller: txtTelefone, prefixIcon: PhosphorIcons.phone, keyboard: TextInputType.phone),
                   const SizedBox(height: AppSpacing.xl),
-                  _section(getText('funcionario_infos_extra')),
-                  AppInput(label: getText('funcionario_infos_extra_1'), controller: txtExtra1, maxLines: 2),
-                  const SizedBox(height: AppSpacing.md),
-                  AppInput(label: getText('funcionario_infos_extra_2'), controller: txtExtra2, maxLines: 2),
-                  const SizedBox(height: AppSpacing.md),
-                  AppInput(label: getText('funcionario_infos_extra_3'), controller: txtExtra3, maxLines: 2),
-                  const SizedBox(height: AppSpacing.md),
-                  AppInput(label: getText('funcionario_infos_extra_4'), controller: txtExtra4, maxLines: 2),
+                  SwitchListTile(
+                    title: Text(
+                      'Enviar credenciais e acesso por e-mail',
+                      style: AppTypography.bodyMedium(context),
+                    ),
+                    subtitle: Text(
+                      'Envia link do App, login e senha inicial ao morador.',
+                      style: AppTypography.caption(context),
+                    ),
+                    value: _sendCredentials,
+                    onChanged: (val) => setState(() => _sendCredentials = val),
+                    activeColor: AppColors.primary,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                   const SizedBox(height: AppSpacing.xl),
                   AppButton(
                     label: getText('btn_save'),
@@ -263,14 +271,17 @@ class MoradorModel {
   int? id;
   String? nome, documento, data_nascimento, email, telefone, tipo, id_apto;
   String? extra1, extra2, extra3, extra4, photo;
+  bool? sendCredentials;
 
   MoradorModel({this.id, this.nome, this.documento, this.data_nascimento,
       this.email, this.telefone, this.tipo, this.id_apto,
-      this.extra1, this.extra2, this.extra3, this.extra4, this.photo});
+      this.extra1, this.extra2, this.extra3, this.extra4, this.photo,
+      this.sendCredentials});
 
   Map toJson() => {
         'id': id, 'nome': nome, 'email': email, 'data_nascimento': data_nascimento,
         'documento': documento, 'telefone': telefone, 'tipo': tipo, 'id_apto': id_apto,
         'extra1': extra1, 'extra2': extra2, 'extra3': extra3, 'extra4': extra4, 'photo': photo,
+        'sendCredentials': sendCredentials,
       };
 }

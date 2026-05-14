@@ -156,3 +156,39 @@ updateAsinaturaMoradorApi(
     throw "Houve um erro, tente novamente!";
   }
 }
+
+apiGetAllMoradoresGeral(int idCondominio) async {
+  final url = _buildUri('/moradores/get-all', {'id_condominio': idCondominio.toString()});
+  try {
+    final response = await http
+        .get(url, headers: _authHeaders())
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      final parsed = jsonDecode(response.body);
+      return (parsed == null || parsed == "") ? [] : parsed;
+    }
+    return [];
+  } catch (e) {
+    return "Houve um erro, tente novamente!";
+  }
+}
+
+apiSendCredentialsGeral(String email, String nome, String documento) async {
+  final url = _buildUri('/moradores/send-credentials');
+  final body = jsonEncode({
+    'email': email,
+    'nome': nome,
+    'documento': documento,
+  });
+  try {
+    final response = await http
+        .post(url, headers: _authHeaders(withContentType: true), body: body)
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      return true;
+    }
+    throw 'Erro ao enviar credenciais';
+  } catch (e) {
+    throw 'Houve um erro, tente novamente!';
+  }
+}

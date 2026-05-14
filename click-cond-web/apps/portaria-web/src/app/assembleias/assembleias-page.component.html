@@ -1,0 +1,475 @@
+<div class="min-h-screen p-6 lg:p-8 space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="flex items-start gap-4">
+      <div class="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-semibold text-white tracking-tight">Assembleias e Votações</h1>
+        <p class="text-sm text-slate-400 mt-0.5">Convocações oficiais, deliberações remotas e enquetes de engajamento</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        (click)="abrirModalEnquete()"
+        class="px-4 py-2.5 rounded-xl bg-graphite-200 border border-white/10 text-slate-300 font-medium text-sm
+               hover:text-white hover:border-white/20 transition active:scale-95"
+      >
+        Nova Enquete
+      </button>
+
+      <button
+        (click)="abrirModalAssembleia()"
+        class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-slate-950 font-medium text-sm
+               hover:bg-accent/90 shadow-lg shadow-accent/10 transition active:scale-95"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Agendar Assembleia
+      </button>
+    </div>
+  </div>
+
+  <!-- Abas (Tabs) -->
+  <div class="flex items-center gap-2 border-b border-white/10 pb-px">
+    <button
+      (click)="tab.set('assembleias')"
+      [class.text-white]="tab() === 'assembleias'"
+      [class.border-accent]="tab() === 'assembleias'"
+      [class.text-slate-400]="tab() !== 'assembleias'"
+      [class.border-transparent]="tab() !== 'assembleias'"
+      class="px-4 py-2 text-sm font-medium border-b-2 transition hover:text-slate-200 flex items-center gap-2"
+    >
+      Assembleias Oficiais
+      <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-slate-400">{{ assembleias().length }}</span>
+    </button>
+
+    <button
+      (click)="tab.set('enquetes')"
+      [class.text-white]="tab() === 'enquetes'"
+      [class.border-accent]="tab() === 'enquetes'"
+      [class.text-slate-400]="tab() !== 'enquetes'"
+      [class.border-transparent]="tab() !== 'enquetes'"
+      class="px-4 py-2 text-sm font-medium border-b-2 transition hover:text-slate-200 flex items-center gap-2"
+    >
+      Enquetes Comunitárias
+      <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-slate-400">{{ enquetes().length }}</span>
+    </button>
+  </div>
+
+  <!-- CONTEÚDO -->
+  @if (loading()) {
+    <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+      <div class="inline-block w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin"></div>
+    </div>
+  } @else if (tab() === 'assembleias') {
+
+    <!-- Detalhes da Assembleia Selecionada -->
+    @if (selectedAssembleia(); as sel) {
+      <div class="p-6 rounded-2xl bg-graphite-200 border border-accent/30 space-y-6 animate-fadeIn">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <button (click)="voltarLista()" class="text-xs text-accent hover:underline mb-2 flex items-center gap-1">
+              ← Voltar para lista de assembleias
+            </button>
+            <h2 class="text-xl font-bold text-white">{{ sel.assembleia.titulo }}</h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Data: <span class="text-slate-200 font-medium">{{ sel.assembleia.data }} às {{ sel.assembleia.hora }}</span> ·
+              Local: <span class="text-slate-200 font-medium">{{ sel.assembleia.local || 'Não definido' }}</span>
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              (click)="abrirModalPauta(sel.assembleia.id)"
+              class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300 hover:text-white transition"
+            >
+              + Adicionar Pauta de Votação
+            </button>
+
+            <button
+              (click)="finalizarAssembleia(sel.assembleia)"
+              class="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 text-xs font-medium transition"
+              title="Encerra a assembleia e gera documento de ATA oficial"
+            >
+              Finalizar e Gerar ATA
+            </button>
+          </div>
+        </div>
+
+        @if (sel.assembleia.descricao) {
+          <div class="p-4 rounded-xl bg-slate-900/50 border border-white/5 text-sm text-slate-300 whitespace-pre-line">
+            {{ sel.assembleia.descricao }}
+          </div>
+        }
+
+        @if (sel.assembleia.link) {
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span class="font-medium text-slate-500 shrink-0">Videoconferência:</span>
+            <a [href]="sel.assembleia.link" target="_blank" class="text-accent hover:underline truncate">{{ sel.assembleia.link }}</a>
+          </div>
+        }
+
+        <!-- Pautas de Votação da Assembleia -->
+        <div class="space-y-4 pt-2 border-t border-white/5">
+          <h3 class="text-sm font-semibold text-white">Pautas e Deliberações da Assembleia</h3>
+
+          @if (sel.votacoes.length === 0) {
+            <p class="text-xs text-slate-500 italic">Nenhuma pauta de votação cadastrada para esta assembleia.</p>
+          } @else {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (v of sel.votacoes; track v.id) {
+                <div class="p-4 rounded-xl bg-slate-900/60 border border-white/5 flex flex-col justify-between gap-4">
+                  <div>
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                      <h4 class="text-sm font-bold text-slate-200">{{ v.titulo }}</h4>
+                      <button (click)="removerVotacao(v.id, sel.assembleia.id)" class="text-slate-500 hover:text-red-400 transition text-xs">Excluir</button>
+                    </div>
+                    @if (v.descricao) {
+                      <p class="text-xs text-slate-400 mb-3">{{ v.descricao }}</p>
+                    }
+
+                    <!-- Contagem de Votos -->
+                    <div class="space-y-2 pt-1">
+                      @for (opInfo of parseOpcoes(v.opcoes); track opInfo.id) {
+                        <div class="space-y-1">
+                          <div class="flex justify-between text-xs">
+                            <span class="text-slate-300 font-medium truncate">{{ opInfo.nome }}</span>
+                            <span class="text-slate-400 font-mono text-[11px]">{{ opInfo.votos }} voto(s) ({{ calcPerc(opInfo.votos, getTotalVotos(v.opcoes)) }}%)</span>
+                          </div>
+                          <!-- Barra de Progresso Elegante -->
+                          <div class="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                            <div
+                              class="h-full bg-accent rounded-full transition-all duration-500"
+                              [style.width.%]="calcPerc(opInfo.votos, getTotalVotos(v.opcoes))"
+                            ></div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="text-[10px] text-slate-500 text-right pt-2 border-t border-white/5 font-mono">
+                    Total apurado: {{ getTotalVotos(v.opcoes) }} voto(s)
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- Lista Geral de Assembleias -->
+      @if (assembleias().length === 0) {
+        <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+          <p class="text-sm text-slate-300 font-medium">Nenhuma assembleia agendada</p>
+          <p class="text-xs text-slate-500 mt-1">Utilize o botão "Agendar Assembleia" para convocar os moradores</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          @for (a of assembleias(); track a.id) {
+            <div class="p-5 rounded-2xl bg-graphite-200 border border-white/10 flex flex-col justify-between gap-4 hover:border-white/20 transition">
+              <div class="space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <span class="text-[10px] px-2 py-0.5 rounded-md bg-accent/10 text-accent font-semibold uppercase tracking-wide">
+                    Assembleia
+                  </span>
+                  <span class="text-xs text-slate-400 font-mono">{{ a.data }}</span>
+                </div>
+
+                <h3 class="text-base font-bold text-white line-clamp-2 hover:text-accent transition cursor-pointer" (click)="verAssembleia(a.id)">
+                  {{ a.titulo }}
+                </h3>
+
+                @if (a.descricao) {
+                  <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed">{{ a.descricao }}</p>
+                }
+              </div>
+
+              <div class="pt-3 border-t border-white/5 flex items-center justify-between gap-2 mt-auto">
+                <span class="text-xs text-slate-500 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ a.hora }}
+                </span>
+
+                <div class="flex items-center gap-1.5">
+                  <button
+                    (click)="excluirAssembleia(a.id)"
+                    class="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition"
+                    title="Excluir"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+
+                  <button
+                    (click)="verAssembleia(a.id)"
+                    class="px-3 py-1.5 rounded-lg bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white transition text-xs font-medium"
+                  >
+                    Painel de Pautas →
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  } @else {
+    <!-- Grade de Enquetes -->
+    @if (enquetes().length === 0) {
+      <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+        <p class="text-sm text-slate-300 font-medium">Nenhuma enquete cadastrada</p>
+        <p class="text-xs text-slate-500 mt-1">Faça perguntas rápidas para entender a preferência da vizinhança</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        @for (e of enquetes(); track e.id) {
+          <div class="p-5 rounded-2xl bg-graphite-200 border border-white/10 flex flex-col justify-between gap-4">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span
+                  class="text-[10px] px-2 py-0.5 rounded-md font-semibold uppercase tracking-wider"
+                  [class.bg-emerald-500/10]="e.status === 1"
+                  [class.text-emerald-400]="e.status === 1"
+                  [class.bg-amber-500/10]="e.status === 0"
+                  [class.text-amber-400]="e.status === 0"
+                  [class.bg-slate-500/10]="e.status === 2"
+                  [class.text-slate-400]="e.status === 2"
+                >
+                  {{ e.status === 1 ? 'Ativa' : e.status === 0 ? 'Agendada' : 'Encerrada' }}
+                </span>
+
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500 font-mono">{{ e.data_inicio }} a {{ e.data_termino }}</span>
+                  <button (click)="removerVotacao(e.id)" class="text-slate-500 hover:text-red-400 transition text-xs">×</button>
+                </div>
+              </div>
+
+              <h3 class="text-base font-bold text-white mb-1">{{ e.titulo }}</h3>
+              @if (e.descricao) {
+                <p class="text-xs text-slate-400 mb-4 leading-relaxed">{{ e.descricao }}</p>
+              }
+
+              <!-- Apuração Dinâmica em Barras -->
+              <div class="space-y-2.5 pt-1">
+                @for (op of parseOpcoes(e.opcoes); track op.id) {
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                      <span class="text-slate-300 font-medium truncate">{{ op.nome }}</span>
+                      <span class="text-slate-400 font-mono text-[11px]">{{ op.votos }} voto(s) ({{ calcPerc(op.votos, getTotalVotos(e.opcoes)) }}%)</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-slate-900 overflow-hidden">
+                      <div
+                        class="h-full bg-accent rounded-full transition-all duration-500"
+                        [style.width.%]="calcPerc(op.votos, getTotalVotos(e.opcoes))"
+                      ></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-white/5 text-xs text-slate-500 font-mono mt-2">
+              <span>Total apurado: {{ getTotalVotos(e.opcoes) }}</span>
+              @if (e.status === 1) {
+                <button (click)="encerrarVotacao(e.id)" class="text-accent hover:underline">Encerrar Imediatamente</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- MODAL DE ASSEMBLEIA -->
+  @if (modalAssembleia()) {
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div class="w-full max-w-lg rounded-3xl bg-graphite-200 border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-white">Convocação de Assembleia</h3>
+          <button (click)="modalAssembleia.set(false)" class="text-slate-400 hover:text-white transition">×</button>
+        </div>
+
+        <div class="p-6 overflow-y-auto space-y-4 flex-1">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Título Oficial</label>
+            <input
+              [(ngModel)]="novaAssembleia.titulo"
+              type="text"
+              placeholder="Ex: Assembleia Geral Extraordinária"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Pauta Principal / Descrição</label>
+            <textarea
+              [(ngModel)]="novaAssembleia.descricao"
+              rows="3"
+              placeholder="Itens a serem deliberados..."
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition resize-none"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Data (DD/MM/YYYY)</label>
+              <input
+                [(ngModel)]="novaAssembleia.data"
+                type="text"
+                placeholder="25/05/2026"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Horário</label>
+              <input
+                [(ngModel)]="novaAssembleia.hora"
+                type="text"
+                placeholder="19:30"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Local Físico</label>
+              <input
+                [(ngModel)]="novaAssembleia.local"
+                type="text"
+                placeholder="Salão Principal"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Link Videoconferência</label>
+              <input
+                [(ngModel)]="novaAssembleia.link"
+                type="text"
+                placeholder="https://meet..."
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-white/10 bg-slate-900/40 flex items-center justify-end gap-3">
+          <button (click)="modalAssembleia.set(false)" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition">Cancelar</button>
+          <button
+            (click)="salvarAssembleia()"
+            [disabled]="!novaAssembleia.titulo || !novaAssembleia.data"
+            class="px-4 py-2 rounded-xl bg-accent text-slate-950 text-xs font-medium hover:bg-accent/90 transition disabled:opacity-50"
+          >
+            Concluir Agendamento
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL DE ENQUETE / PAUTA -->
+  @if (modalEnquete()) {
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div class="w-full max-w-lg rounded-3xl bg-graphite-200 border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-white">
+            {{ novaVotacao.id_assembleia ? 'Nova Pauta de Votação' : 'Nova Enquete Comunitária' }}
+          </h3>
+          <button (click)="modalEnquete.set(false)" class="text-slate-400 hover:text-white transition">×</button>
+        </div>
+
+        <div class="p-6 overflow-y-auto space-y-4 flex-1">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Pergunta / Título</label>
+            <input
+              [(ngModel)]="novaVotacao.titulo"
+              type="text"
+              placeholder="Ex: Aprovação do orçamento para fachada"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+            />
+          </div>
+
+          @if (!novaVotacao.id_assembleia) {
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Contexto / Detalhes</label>
+              <textarea
+                [(ngModel)]="novaVotacao.descricao"
+                rows="2"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition resize-none"
+              ></textarea>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Início (DD/MM/YYYY)</label>
+              <input
+                [(ngModel)]="novaVotacao.data_inicio"
+                type="text"
+                placeholder="10/05/2026"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Término (DD/MM/YYYY)</label>
+              <input
+                [(ngModel)]="novaVotacao.data_termino"
+                type="text"
+                placeholder="30/05/2026"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-white/5">
+            <label class="block text-xs font-semibold text-slate-300">Opções de Voto</label>
+
+            @for (opt of novaVotacao.opcoes; track $index; let idx = $index) {
+              <div class="flex items-center gap-2">
+                <input
+                  [(ngModel)]="novaVotacao.opcoes[idx]"
+                  type="text"
+                  placeholder="Nome da opção"
+                  class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-accent"
+                />
+                @if (novaVotacao.opcoes.length > 2) {
+                  <button (click)="novaVotacao.opcoes.splice(idx, 1)" class="text-slate-500 hover:text-red-400 px-2 py-1">×</button>
+                }
+              </div>
+            }
+
+            <button
+              (click)="novaVotacao.opcoes.push('')"
+              class="text-xs text-accent hover:underline block pt-1 font-medium"
+            >
+              + Adicionar mais uma opção
+            </button>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-white/10 bg-slate-900/40 flex items-center justify-end gap-3">
+          <button (click)="modalEnquete.set(false)" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition">Cancelar</button>
+          <button
+            (click)="salvarVotacao()"
+            [disabled]="!novaVotacao.titulo || novaVotacao.opcoes[0] === ''"
+            class="px-4 py-2 rounded-xl bg-accent text-slate-950 text-xs font-medium hover:bg-accent/90 transition disabled:opacity-50"
+          >
+            Confirmar Cadastro
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -4,16 +4,29 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { MobileAuthService } from './mobile-auth.service';
+import {
+  SindicoMobileController,
+  MoradoresMobileController,
+  FuncionariosMobileController,
+  DashboardMobileController,
+} from './mobile-auth.controller';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
       secret: process.env['JWT_SECRET'] ?? 'fallback-secret',
-      signOptions: { expiresIn: process.env['JWT_EXPIRES_IN'] ?? '12h' },
+      signOptions: { expiresIn: process.env['JWT_EXPIRES_IN'] ?? '7d' },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  controllers: [
+    AuthController,
+    SindicoMobileController,
+    MoradoresMobileController,
+    FuncionariosMobileController,
+    DashboardMobileController,
+  ],
+  providers: [AuthService, MobileAuthService, JwtStrategy],
 })
 export class AuthModule {}

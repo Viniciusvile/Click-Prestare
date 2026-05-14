@@ -1,0 +1,295 @@
+<div class="min-h-screen p-6 lg:p-8 space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="flex items-start gap-4">
+      <div class="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-semibold text-white tracking-tight">Áreas Sociais e Reservas</h1>
+        <p class="text-sm text-slate-400 mt-0.5">Gestão de espaços de lazer, regras de uso e aprovação de reservas</p>
+      </div>
+    </div>
+
+    <!-- Botão Nova Área -->
+    <button
+      (click)="abrirModalArea()"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-slate-950 font-medium text-sm
+             hover:bg-accent/90 shadow-lg shadow-accent/10 transition active:scale-95"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Cadastrar Espaço
+    </button>
+  </div>
+
+  <!-- Stats Ricos -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="p-4 rounded-2xl bg-graphite-200 border border-white/10 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition">
+        <svg class="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 3v18m9-9H3"/>
+        </svg>
+      </div>
+      <p class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Espaços Cadastrados</p>
+      <p class="text-3xl font-bold text-white tabular-nums mt-1">{{ areas().length }}</p>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-graphite-200 border border-white/10 relative overflow-hidden">
+      <p class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Reservas Pendentes</p>
+      <p class="text-3xl font-bold text-amber-500 tabular-nums mt-1">{{ pendentesCount() }}</p>
+    </div>
+
+    <div class="p-4 rounded-2xl bg-graphite-200 border border-white/10 relative overflow-hidden">
+      <p class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Reservas Aprovadas</p>
+      <p class="text-3xl font-bold text-emerald-400 tabular-nums mt-1">{{ aprovadasCount() }}</p>
+    </div>
+  </div>
+
+  <!-- Navegação por Abas (Tabs) -->
+  <div class="flex items-center gap-2 border-b border-white/10 pb-px">
+    <button
+      (click)="tab.set('areas')"
+      [class.text-white]="tab() === 'areas'"
+      [class.border-accent]="tab() === 'areas'"
+      [class.text-slate-400]="tab() !== 'areas'"
+      [class.border-transparent]="tab() !== 'areas'"
+      class="px-4 py-2 text-sm font-medium border-b-2 transition hover:text-slate-200 flex items-center gap-2"
+    >
+      Espaços de Lazer
+      <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-slate-400">{{ areas().length }}</span>
+    </button>
+
+    <button
+      (click)="tab.set('reservas')"
+      [class.text-white]="tab() === 'reservas'"
+      [class.border-accent]="tab() === 'reservas'"
+      [class.text-slate-400]="tab() !== 'reservas'"
+      [class.border-transparent]="tab() !== 'reservas'"
+      class="px-4 py-2 text-sm font-medium border-b-2 transition hover:text-slate-200 flex items-center gap-2"
+    >
+      Solicitações de Reserva
+      @if (pendentesCount() > 0) {
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold">
+          {{ pendentesCount() }}
+        </span>
+      }
+    </button>
+  </div>
+
+  <!-- CONTEÚDO DAS ABAS -->
+  @if (loading()) {
+    <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+      <div class="inline-block w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin"></div>
+    </div>
+  } @else if (tab() === 'areas') {
+    <!-- Grade de Espaços -->
+    @if (areas().length === 0) {
+      <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+        <p class="text-sm text-slate-300 font-medium">Nenhum espaço cadastrado</p>
+        <p class="text-xs text-slate-500 mt-1">Utilize o botão acima para adicionar churrasqueiras, salões ou academias</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        @for (area of areas(); track area.id) {
+          <div class="rounded-2xl bg-graphite-200 border border-white/10 overflow-hidden flex flex-col group hover:border-white/20 transition">
+            <div class="h-48 relative overflow-hidden bg-slate-900">
+              <img
+                [src]="area.imagem || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600'"
+                class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                alt="Espaço"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+              <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                <h3 class="text-lg font-semibold text-white truncate drop-shadow">{{ area.nome }}</h3>
+                @if (area.capacidade) {
+                  <span class="text-[10px] px-2 py-1 rounded-md bg-slate-950/80 backdrop-blur text-slate-300 border border-white/10 shrink-0">
+                    Até {{ area.capacidade }} pessoas
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div class="p-4 flex-1 flex flex-col justify-between gap-4">
+              <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                  Reserva: {{ area.precisa_agendar ? 'Obrigatória' : 'Livre' }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2 pt-3 border-t border-white/5 mt-auto justify-end">
+                <button
+                  (click)="excluirArea(area.id)"
+                  class="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+                  title="Excluir Espaço"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <!-- Lista de Reservas -->
+    @if (agendamentos().length === 0) {
+      <div class="p-12 text-center rounded-2xl bg-graphite-200 border border-white/10">
+        <p class="text-sm text-slate-300 font-medium">Nenhuma solicitação de reserva encontrada</p>
+        <p class="text-xs text-slate-500 mt-1">Os pedidos feitos pelos moradores aparecerão aqui</p>
+      </div>
+    } @else {
+      <div class="space-y-3">
+        @for (ag of agendamentos(); track ag.id) {
+          <div class="p-4.5 rounded-2xl bg-graphite-200 border border-white/10 flex items-center justify-between gap-4 flex-wrap hover:bg-white/[0.02] transition">
+            <div class="flex items-start gap-3.5 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4.5 h-4.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+
+              <div class="min-w-0">
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <h4 class="text-sm font-semibold text-white">{{ ag.nomeArea }}</h4>
+                  <span
+                    class="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
+                    [class.bg-amber-500/10]="ag.status === 'pendente'"
+                    [class.text-amber-400]="ag.status === 'pendente'"
+                    [class.bg-emerald-500/10]="ag.status === 'aprovado'"
+                    [class.text-emerald-400]="ag.status === 'aprovado'"
+                    [class.bg-red-500/10]="ag.status === 'recusado'"
+                    [class.text-red-400]="ag.status === 'recusado'"
+                  >
+                    {{ ag.status }}
+                  </span>
+                </div>
+
+                <p class="text-xs text-slate-300 mt-1">
+                  Morador: <span class="font-medium text-white">Apto {{ ag.apto }} {{ ag.bloco }}</span> ·
+                  Data: <span class="text-accent font-medium">{{ ag.data }}</span> das <span class="text-slate-200">{{ ag.horaDe }}</span> às <span class="text-slate-200">{{ ag.horaAte }}</span>
+                </p>
+                <p class="text-[10px] text-slate-500 mt-0.5 font-mono">Solicitado em {{ ag.data_criacao }}</p>
+              </div>
+            </div>
+
+            <!-- Ações de Aprovação -->
+            @if (ag.status === 'pendente') {
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  (click)="alterarStatus(ag.id, true)"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
+                         hover:bg-emerald-500/20 text-xs font-medium transition"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Aprovar
+                </button>
+                <button
+                  (click)="alterarStatus(ag.id, false)"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20
+                         hover:bg-red-500/20 text-xs font-medium transition"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  Recusar
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- MODAL DE CADASTRO -->
+  @if (modalAberto()) {
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div class="w-full max-w-lg rounded-3xl bg-graphite-200 border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-white">Novo Espaço de Lazer</h3>
+          <button (click)="fecharModal()" class="text-slate-400 hover:text-white transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto space-y-4 flex-1">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">Nome do Espaço</label>
+            <input
+              [(ngModel)]="novaArea.nome"
+              type="text"
+              placeholder="Ex: Salão de Festas Principal"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm
+                     focus:outline-none focus:border-accent transition placeholder:text-slate-600"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Capacidade Máxima</label>
+              <input
+                [(ngModel)]="novaArea.capacidade"
+                type="number"
+                placeholder="Pessoas"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm
+                       focus:outline-none focus:border-accent transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">URL da Imagem</label>
+              <input
+                [(ngModel)]="novaArea.imagem"
+                type="text"
+                placeholder="https://..."
+                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm
+                       focus:outline-none focus:border-accent transition"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2.5 pt-2">
+            <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-white/5 cursor-pointer hover:border-white/10 transition">
+              <input [(ngModel)]="novaArea.agendar" type="checkbox" class="rounded border-white/10 text-accent focus:ring-0 w-4 h-4 bg-slate-950" />
+              <span class="text-xs text-slate-300 font-medium">Exigir solicitação de reserva prévia</span>
+            </label>
+
+            <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-white/5 cursor-pointer hover:border-white/10 transition">
+              <input [(ngModel)]="novaArea.autorizacao" type="checkbox" class="rounded border-white/10 text-accent focus:ring-0 w-4 h-4 bg-slate-950" />
+              <span class="text-xs text-slate-300 font-medium">Exigir aprovação manual do síndico</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-white/10 bg-slate-900/40 flex items-center justify-end gap-3">
+          <button
+            (click)="fecharModal()"
+            class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition"
+          >
+            Cancelar
+          </button>
+          <button
+            (click)="salvarArea()"
+            [disabled]="!novaArea.nome"
+            class="px-4 py-2 rounded-xl bg-accent text-slate-950 text-xs font-medium
+                   hover:bg-accent/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Confirmar Cadastro
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

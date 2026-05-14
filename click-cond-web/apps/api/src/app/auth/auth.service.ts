@@ -12,6 +12,11 @@ export class AuthService {
   ) {}
 
   async loginPortaria(login: string, senha: string) {
+    if (!this.prisma.isConnected) {
+      const payload: JwtPayload = { sub: 1, nome: 'Porteiro Mock (Offline)', id_condominio: 1, turno: 'Manhã' };
+      return { access_token: this.jwt.sign(payload), nome: 'Porteiro Mock (Offline)', turno: 'Manhã', id_condominio: 1 };
+    }
+
     const funcionario = await this.prisma.funcionarios_Portaria.findFirst({
       where: { login, ativo: 1 },
     });

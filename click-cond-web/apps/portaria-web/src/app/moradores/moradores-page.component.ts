@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { CreateMorador, Morador, MoradoresApi } from './moradores.service';
 import { ApartamentosApi, Apartamento } from '../apartamentos/apartamentos.service';
 
+declare var require: any;
+
 @Component({
   selector: 'app-moradores-page',
   standalone: true,
@@ -68,6 +70,17 @@ export class MoradoresPageComponent implements OnInit {
     if (!confirm(`Remover ${m.nome}?`)) return;
     this.api.remove(m.id).subscribe({ next: () => this.carregar() });
   }
+  sendCredentials(m: Morador) {
+    if (!m.email) {
+      alert('Este morador não possui e-mail cadastrado.');
+      return;
+    }
+    if (!confirm(`Enviar link e dados de acesso para o e-mail de ${m.nome}?`)) return;
+    this.api.sendCredentials(m.id).subscribe({
+      next: () => alert('Credenciais enviadas com sucesso!'),
+      error: () => alert('Houve um erro ao enviar as credenciais.'),
+    });
+  }
 
   iniciais(nome: string): string {
     return nome.trim().split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase() ?? '').join('');
@@ -82,6 +95,121 @@ export class MoradoresPageComponent implements OnInit {
   }
 
   private estadoInicial(): CreateMorador {
-    return { nome: '', documento: '', email: '', telefone: '', tipo: 'proprietario', id_apartamento: 0 };
+    return { nome: '', documento: '', email: '', telefone: '', tipo: 'proprietario', id_apartamento: 0, sendCredentials: true };
+  }
+
+  // Controle de Importação em Lote (Excel/CSV)
+  showBulkModal = false;
+  bulkLinhas = signal<any[]>([]);
+  bulkStatus = signal<'idle' | 'reading' | 'ready' | 'uploading' | 'done'>('idle');
+  bulkResult = signal<{ total?: number; criados?: any[] }>({});
+
+  downloadTemplate() {
+    const headers = 'Nome Completo,Documento,E-mail,Telefone,Quadra/Bloco,Lote/Apto,Vínculo\nCarlos Exemplo,12345678900,carlos@email.com,11988887777,Quadra A,Lote 12,proprietario';
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'template_importacao_moradores.csv';
+    link.click();
+  }
+
+  exportarPlanilha() {
+    this.api.exportExcel().subscribe({
+      next: (res) => {
+        const link = document.createElement('a');
+        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${res.base64}`;
+        link.download = res.filename || 'moradores.xlsx';
+        link.click();
+      },
+      error: () => alert('Erro ao exportar planilha'),
+    });
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target?.files[0];
+    if (!file) return;
+    this.bulkStatus.set('reading');
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      try {
+        const data = e.target.result;
+        const linhas: any[] = [];
+        if (file.name.endsWith('.csv')) {
+          const text = new TextDecoder().decode(data);
+          const rows = text.split('\n').map(r => r.trim()).filter(r => r);
+          for (let i = 1; i < rows.length; i++) {
+            const cols = rows[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            if (cols[0]) {
+              linhas.push({
+                nome: cols[0],
+                documento: cols[1] || '',
+                email: cols[2] || '',
+                telefone: cols[3] || '',
+                quadra: cols[4] || '',
+                lote: cols[5] || '',
+                tipo: cols[6] || 'proprietario',
+                sendCredentials: true,
+              });
+            }
+          }
+        } else {
+          try {
+            const xlsx = require('xlsx');
+            const wb = xlsx.read(data, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const json: any[] = xlsx.utils.sheet_to_json(ws);
+            json.forEach(row => {
+              const nome = row['Nome Completo'] || row['Nome'] || row['nome'];
+              if (nome) {
+                linhas.push({
+                  nome,
+                  documento: row['Documento'] || row['CPF'] || '',
+                  email: row['E-mail'] || row['Email'] || row['email'] || '',
+                  telefone: row['Telefone'] || row['Phone'] || '',
+                  quadra: row['Quadra/Bloco'] || row['Quadra'] || row['Bloco'] || '',
+                  lote: row['Lote/Apto'] || row['Lote'] || row['Apto'] || '',
+                  tipo: row['Vínculo'] || row['Tipo'] || 'proprietario',
+                  sendCredentials: true,
+                });
+              }
+            });
+          } catch {
+            alert('Para arquivos .xlsx nativos, por favor converta para .csv ou baixe nosso template em CSV padronizado.');
+            this.bulkStatus.set('idle');
+            return;
+          }
+        }
+        this.bulkLinhas.set(linhas);
+        this.bulkStatus.set('ready');
+      } catch {
+        alert('Erro ao decodificar a planilha.');
+        this.bulkStatus.set('idle');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  confirmBulkImport() {
+    const list = this.bulkLinhas();
+    if (!list.length) return;
+    this.bulkStatus.set('uploading');
+    this.api.importBulk(list).subscribe({
+      next: (res) => {
+        this.bulkStatus.set('done');
+        this.bulkResult.set(res);
+        this.carregar();
+      },
+      error: () => {
+        alert('Erro ao importar em lote');
+        this.bulkStatus.set('ready');
+      },
+    });
+  }
+
+  fecharBulkModal() {
+    this.showBulkModal = false;
+    this.bulkLinhas.set([]);
+    this.bulkStatus.set('idle');
+    this.bulkResult.set({});
   }
 }

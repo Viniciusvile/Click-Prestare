@@ -8,6 +8,11 @@ export const appRoutes: Route[] = [
       import('./auth/login-page.component').then((m) => m.LoginPageComponent),
   },
   {
+    path: 'politica-de-privacidade',
+    loadComponent: () =>
+      import('./legal/politica-privacidade.component').then((m) => m.PoliticaPrivacidadeComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -68,6 +73,34 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./encomendas/encomendas-page.component').then(
             (m) => m.EncomendasPageComponent,
+          ),
+      },
+      {
+        path: 'areas-sociais',
+        loadComponent: () =>
+          import('./areas-sociais/areas-sociais-page.component').then(
+            (m) => m.AreasSociaisPageComponent,
+          ),
+      },
+      {
+        path: 'assembleias',
+        loadComponent: () =>
+          import('./assembleias/assembleias-page.component').then(
+            (m) => m.AssembleiasPageComponent,
+          ),
+      },
+      {
+        path: 'financeiro',
+        loadComponent: () =>
+          import('./financeiro/financeiro-page.component').then(
+            (m) => m.FinanceiroPageComponent,
+          ),
+      },
+      {
+        path: 'documentos',
+        loadComponent: () =>
+          import('./documentos/documentos-page.component').then(
+            (m) => m.DocumentosPageComponent,
           ),
       },
     ],

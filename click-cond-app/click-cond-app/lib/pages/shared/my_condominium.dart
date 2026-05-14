@@ -9,6 +9,7 @@ import 'package:click/pages/shared/financeiro/list_financeiro.dart';
 import 'package:click/pages/shared/financeiro/morador_financeiro_view.dart';
 import 'package:click/pages/shared/funcionarios/list_funcionarios.dart';
 import 'package:click/pages/shared/morador/list_moradores.dart';
+import 'package:click/pages/shared/morador/list_moradores_geral.dart';
 import 'package:click/pages/shared/mudancas/list_mudancas.dart';
 import 'package:click/pages/shared/ocorrencias/list_ocorrencias.dart';
 import 'package:click/pages/shared/prestador%20de%20servico/list_prestadores.dart';
@@ -65,6 +66,9 @@ class _MyCondominiumState extends State<MyCondominium> {
       _MenuItem(getText('lb_cadastrar_visitante'), PhosphorIcons.userPlus, ListVisitantes()),
       _MenuItem(getText('lb_apartamentos'), PhosphorIcons.house, ListMoradores()),
     ];
+    if (getUserType() == 'sindico') {
+      all.add(_MenuItem('Moradores', PhosphorIcons.usersThree, const ListMoradoresGeral()));
+    }
     if (getUserType() == 'funcionario') {
       return all.where((i) =>
           i.label != getText('lb_financeiro') &&

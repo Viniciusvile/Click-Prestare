@@ -7,7 +7,14 @@ import { JwtPayload } from './jwt-payload.interface';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: (req: any) => {
+        if (!req || !req.headers) return null;
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) return null;
+        return authHeader.startsWith('Bearer ')
+          ? authHeader.substring(7)
+          : authHeader;
+      },
       ignoreExpiration: false,
       secretOrKey: process.env['JWT_SECRET'] ?? 'fallback-secret',
     });
