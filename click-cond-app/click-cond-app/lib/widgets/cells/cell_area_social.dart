@@ -39,25 +39,20 @@ class CellAreaSocial extends StatelessWidget {
                   children: <Widget>[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8.0),
-                      child: item["imagem"] != null && item["imagem"].toString().isNotEmpty
-                        ? Image.network(
-                            item["imagem"], 
-                            width: MediaQuery.of(context).size.width, 
-                            height: 150,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              width: MediaQuery.of(context).size.width,
-                              height: 150,
-                              color: Colors.grey.shade200,
-                              child: Icon(Icons.image, size: 50, color: Colors.grey.shade400),
-                            ),
-                          )
-                        : Container(
-                            width: MediaQuery.of(context).size.width,
-                            height: 150,
-                            color: Colors.grey.shade200,
-                            child: Icon(Icons.image, size: 50, color: Colors.grey.shade400),
-                          )
+                      child: Image.network(
+                        (item["imagem"] != null && item["imagem"].toString().isNotEmpty)
+                            ? item["imagem"]
+                            : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600',
+                        width: MediaQuery.of(context).size.width,
+                        height: 150,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: MediaQuery.of(context).size.width,
+                          height: 150,
+                          color: Colors.grey.shade200,
+                          child: Icon(Icons.image, size: 50, color: Colors.grey.shade400),
+                        ),
+                      ),
                     ),
                     SizedBox(height: 10),
                     LabelTitle(title: item["nome"], size: 16),

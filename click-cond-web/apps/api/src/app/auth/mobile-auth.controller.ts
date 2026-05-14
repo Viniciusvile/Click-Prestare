@@ -170,4 +170,19 @@ export class ApartamentosMobileController {
   getMoradoresApto(@Query('id_apto') idApto: string, @Query('tipo') tipo?: string) {
     return this.service.getMoradoresApto(Number(idApto), tipo);
   }
+
+  @Post('insert')
+  insertApto(@Body() body: any) {
+    return this.service.saveApto(body, false);
+  }
+
+  @Post('update')
+  updateApto(@Body() body: any) {
+    return this.service.saveApto(body, true);
+  }
+
+  @Post('remove')
+  removeApto(@Body() body: any) {
+    return this.service.removeApto(Number(body.id));
+  }
 }

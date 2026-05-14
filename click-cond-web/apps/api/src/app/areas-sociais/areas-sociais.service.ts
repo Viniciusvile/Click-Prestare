@@ -89,10 +89,23 @@ export class AreasSociaisService {
     const areas = await this.prisma.areas_Sociais.findMany({
       where: { id_condominio: Number(idCondominio) },
       orderBy: { created_at: 'desc' },
-      select: { id: true, nome: true, imagem: true },
+      select: {
+        id: true,
+        nome: true,
+        imagem: true,
+        capacidade: true,
+        precisa_agendar: true,
+        precisa_autorizacao: true,
+        precisa_pagamento: true
+      },
     });
 
-    return areas;
+    const defaultImage = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600';
+
+    return areas.map(a => ({
+      ...a,
+      imagem: a.imagem && a.imagem.trim() !== '' ? a.imagem : defaultImage
+    }));
   }
 
   async get(idCondominio: number, idArea: number) {

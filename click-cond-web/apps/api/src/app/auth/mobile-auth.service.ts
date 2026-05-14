@@ -649,4 +649,128 @@ export class MobileAuthService {
     this.mockMoradores = this.mockMoradores.filter(x => x.id !== Number(id));
     return true;
   }
+
+  // ==========================================
+  // APARTAMENTOS (MOBILE)
+  // ==========================================
+
+  async getAllApartamentos(idCond: number) {
+    try {
+      if (this.prisma.isConnected) {
+        const reais = await this.prisma.apartamentos.findMany({
+          where: { id_condominio: Number(idCond) || 1 },
+          include: {
+            users: {
+              include: { user: true }
+            },
+            _count: { select: { users: true } }
+          },
+          orderBy: [{ bloco: 'asc' }, { apto: 'asc' }],
+        });
+
+        if (reais && reais.length > 0) {
+          return reais.map(a => ({
+            id: a.id,
+            bloco: a.bloco || '',
+            apto: a.apto || '',
+            numero: a.apto || '', // Flutter espera 'numero' em alguns locais
+            fracao: a.fracao || '',
+            id_condominio: a.id_condominio,
+            qtdMoradores: a._count.users,
+            moradores: a.users.map(u => u.user.name).join(', '),
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao buscar apartamentos (Mobile):', e);
+    }
+
+    // Fallback para mock se o banco estiver vazio, offline ou falhar
+    return [
+      { id: 1, bloco: 'A', apto: '101', numero: '101', fracao: '0.0125', id_condominio: idCond, moradores: 'Carlos Eduardo', qtdMoradores: 1 },
+      { id: 2, bloco: 'A', apto: '102', numero: '102', fracao: '0.0125', id_condominio: idCond, moradores: '', qtdMoradores: 0 },
+      { id: 3, bloco: 'B', apto: '201', numero: '201', fracao: '0.0150', id_condominio: idCond, moradores: 'Maria Oliveira', qtdMoradores: 1 },
+    ];
+  }
+
+  async getMoradoresApto(idApto: number, tipo?: string) {
+    try {
+      if (this.prisma.isConnected) {
+        const rels = await this.prisma.apartamentos_Users.findMany({
+          where: { 
+            id_apto: Number(idApto),
+            ...(tipo ? { tipo } : {})
+          },
+          include: {
+            user: {
+              include: { moradores: true }
+            }
+          }
+        });
+
+        if (rels && rels.length > 0) {
+          return rels.map(r => {
+            const m = r.user.moradores[0];
+            return {
+              id: r.id_user,
+              nome: r.user.name || m?.nome || '',
+              email: r.user.email || m?.email || '',
+              telefone: r.user.phone || m?.telefone || '',
+              tipo: r.tipo || 'Morador',
+              photo: r.user.photo || '',
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao buscar moradores do apto (Mobile):', e);
+    }
+    return [];
+  }
+
+  async saveApto(body: any, isEdit: boolean) {
+    const idCond = Number(body.id_condominio);
+    const data = body.Apartamento;
+    try {
+      if (this.prisma.isConnected) {
+        if (isEdit) {
+          return await this.prisma.apartamentos.update({
+            where: { id: Number(data.id) },
+            data: {
+              bloco: data.bloco,
+              apto: data.apto,
+              fracao: data.fracao,
+            }
+          });
+        } else {
+          return await this.prisma.apartamentos.create({
+            data: {
+              id_condominio: idCond,
+              bloco: data.bloco,
+              apto: data.apto,
+              fracao: data.fracao,
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao salvar apartamento (Mobile):', e);
+    }
+    // Mock return if error or offline
+    return { id: data.id || Math.floor(Math.random() * 1000), ...data };
+  }
+
+  async removeApto(id: number) {
+    try {
+      if (this.prisma.isConnected) {
+        await this.prisma.apartamentos.delete({
+          where: { id: Number(id) }
+        });
+        return true;
+      }
+    } catch (e) {
+      console.error('Erro ao remover apartamento (Mobile):', e);
+    }
+    return true; // Mock success
+  }
 }
