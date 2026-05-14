@@ -64,7 +64,7 @@ export class MobileAuthService {
       const rels = await this.prisma.sindicos_Condominios.findMany({
         where: { id_user: idUser },
         include: {
-          condominios: {
+          condominio: {
             include: {
               financeiro: { where: { pago: 1 } },
               apartamentos: true,
@@ -74,7 +74,7 @@ export class MobileAuthService {
       });
 
       const resultList = rels.map(r => {
-        const c = r.condominios;
+        const c = r.condominio;
         if (!c || c.ativo === 0) return null;
         const saldoNum = c.financeiro.reduce((acc, f) => acc + (Number(f.valor) || 0), 0);
         const saldoStr = saldoNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -161,9 +161,9 @@ export class MobileAuthService {
       const rels = await this.prisma.apartamentos_Users.findMany({
         where: { id_user: idUser },
         include: {
-          apartamentos: {
+          apartamento: {
             include: {
-              condominios: {
+              condominio: {
                 include: { financeiro: { where: { pago: 1 } } },
               },
             },
@@ -172,9 +172,9 @@ export class MobileAuthService {
       });
 
       const resultList = rels.map(r => {
-        const apto = r.apartamentos;
+        const apto = r.apartamento;
         if (!apto) return null;
-        const c = apto.condominios;
+        const c = apto.condominio;
         if (!c || c.ativo === 0) return null;
         const saldoNum = c.financeiro?.reduce((acc, f) => acc + (Number(f.valor) || 0), 0) ?? 0;
         const saldoStr = saldoNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -281,14 +281,14 @@ export class MobileAuthService {
       const funcs = await this.prisma.funcionarios.findMany({
         where: { id_user: idUser },
         include: {
-          condominios: {
+          condominio: {
             include: { financeiro: { where: { pago: 1 } }, apartamentos: true },
           },
         },
       });
 
       const resultList = funcs.map(f => {
-        const c = f.condominios;
+        const c = f.condominio;
         if (!c || c.ativo === 0) return null;
         const saldoNum = c.financeiro?.reduce((acc, fin) => acc + (Number(fin.valor) || 0), 0) ?? 0;
         const saldoStr = saldoNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
