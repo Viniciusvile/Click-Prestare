@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface CreateEncomendaDto {
   descricao: string;
@@ -10,8 +11,6 @@ export interface CreateEncomendaDto {
   id_condominio: number;
 }
 
-import { NotificationsService } from '../notifications/notifications.service';
-
 @Injectable()
 export class EncomendasService {
   constructor(
@@ -19,10 +18,71 @@ export class EncomendasService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  findAll(idCondominio: number, status?: string) {
+  async findAll(idCondominio: number, status?: string) {
+    if (!this.prisma.isConnected) {
+      const mocks = [
+        {
+          id: 401,
+          descricao: 'Pacote Mercado Livre - Caixa Média',
+          destinatario_apto: '102',
+          destinatario_bloco: 'A',
+          recebido_de: 'Correios / Sedex',
+          recebido_em: new Date(),
+          retirado_em: null,
+          retirado_por: null,
+          status: 'Aguardando',
+          id_condominio: Number(idCondominio),
+          foto_volume: null,
+          recebido_por_user: null,
+          entregue_por_user: null,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        {
+          id: 402,
+          descricao: 'Envelope Documentos - Sedex 10',
+          destinatario_apto: '304',
+          destinatario_bloco: 'B',
+          recebido_de: 'Loggi Transportes',
+          recebido_em: new Date(Date.now() - 7200000),
+          retirado_em: null,
+          retirado_por: null,
+          status: 'Aguardando',
+          id_condominio: Number(idCondominio),
+          foto_volume: null,
+          recebido_por_user: null,
+          entregue_por_user: null,
+          created_at: new Date(Date.now() - 7200000),
+          updated_at: new Date(Date.now() - 7200000),
+        },
+        {
+          id: 403,
+          descricao: 'Caixa Amazon Prime - Eletrônicos',
+          destinatario_apto: '501',
+          destinatario_bloco: 'A',
+          recebido_de: 'Amazon Logistics',
+          recebido_em: new Date(Date.now() - 86400000),
+          retirado_em: new Date(Date.now() - 10000000),
+          retirado_por: 'Fernanda Lima (Titular)',
+          status: 'Retirada',
+          id_condominio: Number(idCondominio),
+          foto_volume: null,
+          recebido_por_user: null,
+          entregue_por_user: null,
+          created_at: new Date(Date.now() - 86400000),
+          updated_at: new Date(Date.now() - 10000000),
+        },
+      ];
+
+      if (status) {
+        return mocks.filter((m) => m.status === status);
+      }
+      return mocks;
+    }
+
     return this.prisma.encomendas.findMany({
       where: {
-        id_condominio: idCondominio,
+        id_condominio: Number(idCondominio),
         ...(status ? { status } : {}),
       },
       orderBy: { recebido_em: 'desc' },
@@ -30,12 +90,47 @@ export class EncomendasService {
   }
 
   async findOne(id: number) {
-    const e = await this.prisma.encomendas.findUnique({ where: { id } });
+    if (!this.prisma.isConnected) {
+      return {
+        id,
+        descricao: 'Pacote de Demonstração',
+        destinatario_apto: '100',
+        destinatario_bloco: 'A',
+        recebido_de: 'Correios',
+        recebido_em: new Date(),
+        retirado_em: null,
+        retirado_por: null,
+        status: 'Aguardando',
+        id_condominio: 1,
+      };
+    }
+
+    const e = await this.prisma.encomendas.findUnique({ where: { id: Number(id) } });
     if (!e) throw new NotFoundException(`Encomenda ${id} não encontrada`);
     return e;
   }
 
   async create(dto: CreateEncomendaDto) {
+    if (!this.prisma.isConnected) {
+      return {
+        id: Date.now(),
+        descricao: dto.descricao,
+        destinatario_apto: dto.destinatario_apto,
+        destinatario_bloco: dto.destinatario_bloco ?? null,
+        recebido_de: dto.recebido_de ?? null,
+        foto_volume: dto.foto_volume ?? null,
+        status: 'Aguardando',
+        id_condominio: dto.id_condominio,
+        recebido_em: new Date(),
+        retirado_em: null,
+        retirado_por: null,
+        recebido_por_user: null,
+        entregue_por_user: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+    }
+
     const encomenda = await this.prisma.encomendas.create({
       data: {
         descricao: dto.descricao,
@@ -85,9 +180,13 @@ export class EncomendasService {
   }
 
   async retirar(id: number, retiradoPor: string) {
+    if (!this.prisma.isConnected) {
+      return { success: true, id, retirado_por: retiradoPor, status: 'Retirada' };
+    }
+
     try {
       return await this.prisma.encomendas.update({
-        where: { id },
+        where: { id: Number(id) },
         data: {
           retirado_em: new Date(),
           retirado_por: retiradoPor,
@@ -100,8 +199,9 @@ export class EncomendasService {
   }
 
   async remove(id: number) {
+    if (!this.prisma.isConnected) return { success: true };
     try {
-      await this.prisma.encomendas.delete({ where: { id } });
+      await this.prisma.encomendas.delete({ where: { id: Number(id) } });
     } catch {
       throw new NotFoundException(`Encomenda ${id} não encontrada`);
     }

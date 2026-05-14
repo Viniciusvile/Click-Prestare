@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface CreateVisitanteDto {
   nome: string;
@@ -18,8 +19,6 @@ export interface UpdateVisitanteDto extends Partial<CreateVisitanteDto> {
   id: number;
 }
 
-import { NotificationsService } from '../notifications/notifications.service';
-
 @Injectable()
 export class VisitantesService {
   constructor(
@@ -28,9 +27,63 @@ export class VisitantesService {
   ) {}
 
   async findAll(idCondominio: number, search?: string) {
+    if (!this.prisma.isConnected) {
+      const mocks = [
+        {
+          id: 101,
+          nome: 'Carlos Eduardo Pereira',
+          doc_identificacao: 'RG 45.123.890-X',
+          data_hora_inicio: new Date(),
+          data_hora_termino: null,
+          is_visitante: 1,
+          is_prestador: 0,
+          id_apartamento: 1,
+          id_condominio: Number(idCondominio),
+          created_at: new Date(),
+          apartamento: { bloco: 'A', apto: '101' },
+        },
+        {
+          id: 102,
+          nome: 'Instalação Vivo Fibra (Técnico Marcos)',
+          doc_identificacao: 'CPF 234.567.890-12',
+          data_hora_inicio: new Date(Date.now() - 3600000),
+          data_hora_termino: null,
+          is_visitante: 0,
+          is_prestador: 1,
+          id_apartamento: 4,
+          id_condominio: Number(idCondominio),
+          created_at: new Date(Date.now() - 3600000),
+          apartamento: { bloco: 'B', apto: '202' },
+        },
+        {
+          id: 103,
+          nome: 'Ana Julia Souza',
+          doc_identificacao: 'RG 12.345.678-9',
+          data_hora_inicio: new Date(Date.now() - 86400000),
+          data_hora_termino: new Date(Date.now() - 72000000),
+          is_visitante: 1,
+          is_prestador: 0,
+          id_apartamento: 15,
+          id_condominio: Number(idCondominio),
+          created_at: new Date(Date.now() - 86400000),
+          apartamento: { bloco: 'A', apto: '504' },
+        },
+      ];
+
+      if (search) {
+        const s = search.toLowerCase();
+        return mocks.filter(
+          (m) =>
+            m.nome.toLowerCase().includes(s) ||
+            (m.doc_identificacao && m.doc_identificacao.toLowerCase().includes(s)),
+        );
+      }
+      return mocks;
+    }
+
     return this.prisma.visitantes.findMany({
       where: {
-        id_condominio: idCondominio,
+        id_condominio: Number(idCondominio),
         ...(search
           ? {
               OR: [
@@ -48,8 +101,24 @@ export class VisitantesService {
   }
 
   async findOne(id: number) {
+    if (!this.prisma.isConnected) {
+      return {
+        id,
+        nome: 'Carlos Eduardo Pereira',
+        doc_identificacao: 'RG 45.123.890-X',
+        data_hora_inicio: new Date(),
+        data_hora_termino: null,
+        is_visitante: 1,
+        is_prestador: 0,
+        id_apartamento: 1,
+        id_condominio: 1,
+        created_at: new Date(),
+        apartamento: { bloco: 'A', apto: '101' },
+      };
+    }
+
     const v = await this.prisma.visitantes.findUnique({
-      where: { id },
+      where: { id: Number(id) },
       include: { apartamento: { select: { bloco: true, apto: true } } },
     });
     if (!v) throw new NotFoundException(`Visitante ${id} não encontrado`);
@@ -57,6 +126,24 @@ export class VisitantesService {
   }
 
   async create(dto: CreateVisitanteDto) {
+    if (!this.prisma.isConnected) {
+      return {
+        id: Date.now(),
+        nome: dto.nome,
+        doc_identificacao: dto.doc_identificacao ?? null,
+        data_hora_inicio: dto.data_hora_inicio ? new Date(dto.data_hora_inicio) : new Date(),
+        data_hora_termino: dto.data_hora_termino ? new Date(dto.data_hora_termino) : null,
+        is_visitante: dto.is_visitante ?? 1,
+        is_prestador: dto.is_prestador ?? 0,
+        id_apartamento: dto.id_apartamento,
+        id_condominio: dto.id_condominio,
+        foto_documento: dto.foto_documento ?? null,
+        foto_pessoa: dto.foto_pessoa ?? null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+    }
+
     const visitante = await this.prisma.visitantes.create({
       data: {
         nome: dto.nome,
@@ -105,9 +192,13 @@ export class VisitantesService {
   }
 
   async update(dto: UpdateVisitanteDto) {
+    if (!this.prisma.isConnected) {
+      return { success: true, id: dto.id };
+    }
+
     try {
       return await this.prisma.visitantes.update({
-        where: { id: dto.id },
+        where: { id: Number(dto.id) },
         data: {
           ...(dto.nome !== undefined && { nome: dto.nome }),
           ...(dto.doc_identificacao !== undefined && { doc_identificacao: dto.doc_identificacao }),
@@ -130,8 +221,9 @@ export class VisitantesService {
   }
 
   async remove(id: number) {
+    if (!this.prisma.isConnected) return { success: true };
     try {
-      await this.prisma.visitantes.delete({ where: { id } });
+      await this.prisma.visitantes.delete({ where: { id: Number(id) } });
     } catch {
       throw new NotFoundException(`Visitante ${id} não encontrado`);
     }

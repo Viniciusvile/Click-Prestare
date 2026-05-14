@@ -14,14 +14,24 @@ export class ApartamentosService {
 
   async findAll(idCondominio: number, search?: string) {
     if (!this.prisma.isConnected) {
-      return [
-        { id: 1, bloco: 'Bloco A', apto: '101', fracao: null, id_condominio: 1, qtdMoradores: 2 },
-        { id: 2, bloco: 'Bloco B', apto: '202', fracao: null, id_condominio: 1, qtdMoradores: 1 },
+      const mocks = [
+        { id: 1, bloco: 'A', apto: '101', fracao: '0.0125', id_condominio: Number(idCondominio), qtdMoradores: 3 },
+        { id: 2, bloco: 'A', apto: '102', fracao: '0.0125', id_condominio: Number(idCondominio), qtdMoradores: 2 },
+        { id: 3, bloco: 'A', apto: '201', fracao: '0.0125', id_condominio: Number(idCondominio), qtdMoradores: 4 },
+        { id: 4, bloco: 'B', apto: '101', fracao: '0.0150', id_condominio: Number(idCondominio), qtdMoradores: 1 },
+        { id: 5, bloco: 'B', apto: '102', fracao: '0.0150', id_condominio: Number(idCondominio), qtdMoradores: 5 },
       ];
+
+      if (search) {
+        const s = search.toLowerCase();
+        return mocks.filter((a) => a.apto.includes(s) || a.bloco.toLowerCase().includes(s));
+      }
+      return mocks;
     }
+
     const list = await this.prisma.apartamentos.findMany({
       where: {
-        id_condominio: idCondominio,
+        id_condominio: Number(idCondominio),
         ...(search
           ? {
               OR: [
@@ -47,12 +57,28 @@ export class ApartamentosService {
   }
 
   async findOne(id: number) {
-    const a = await this.prisma.apartamentos.findUnique({ where: { id } });
+    if (!this.prisma.isConnected) {
+      return { id, bloco: 'A', apto: '101', fracao: null, id_condominio: 1, qtdMoradores: 2 };
+    }
+
+    const a = await this.prisma.apartamentos.findUnique({ where: { id: Number(id) } });
     if (!a) throw new NotFoundException(`Apartamento ${id} não encontrado`);
     return a;
   }
 
-  create(dto: CreateApartamentoDto) {
+  async create(dto: CreateApartamentoDto) {
+    if (!this.prisma.isConnected) {
+      return {
+        id: Date.now(),
+        bloco: dto.bloco ?? null,
+        apto: dto.apto,
+        fracao: dto.fracao ?? null,
+        id_condominio: dto.id_condominio,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+    }
+
     return this.prisma.apartamentos.create({
       data: {
         bloco: dto.bloco ?? null,
@@ -64,9 +90,13 @@ export class ApartamentosService {
   }
 
   async update(id: number, dto: Partial<CreateApartamentoDto>) {
+    if (!this.prisma.isConnected) {
+      return { success: true, id };
+    }
+
     try {
       return await this.prisma.apartamentos.update({
-        where: { id },
+        where: { id: Number(id) },
         data: {
           ...(dto.bloco !== undefined && { bloco: dto.bloco }),
           ...(dto.apto !== undefined && { apto: dto.apto }),
@@ -79,8 +109,9 @@ export class ApartamentosService {
   }
 
   async remove(id: number) {
+    if (!this.prisma.isConnected) return { success: true };
     try {
-      await this.prisma.apartamentos.delete({ where: { id } });
+      await this.prisma.apartamentos.delete({ where: { id: Number(id) } });
     } catch {
       throw new NotFoundException(`Apartamento ${id} não encontrado`);
     }
