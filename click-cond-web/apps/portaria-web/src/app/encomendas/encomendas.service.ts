@@ -108,7 +108,7 @@ export class EncomendasApi {
   retirar(id: number, retiradoPor: string): Observable<Encomenda> {
     return this.http.patch<Encomenda>(`${this.base}/${id}/retirar`, { retirado_por: retiradoPor }).pipe(
       catchError(() => {
-        return of({
+        const encRetirada: Encomenda = {
           id,
           descricao: 'Encomenda Retirada',
           destinatario_apto: '100',
@@ -118,7 +118,8 @@ export class EncomendasApi {
           retirado_em: new Date().toISOString(),
           retirado_por: retiradoPor,
           status: 'Retirada'
-        });
+        };
+        return of(encRetirada);
       })
     );
   }
