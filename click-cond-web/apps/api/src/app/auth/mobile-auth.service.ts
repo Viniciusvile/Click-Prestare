@@ -335,7 +335,7 @@ export class MobileAuthService {
           select: { id_condominio: true },
         });
         const ids = rels.map(r => r.id_condominio);
-        if (ids.length === 0) return { debts: { count: 2, total: 450.0 }, occurrences: 9 };
+        if (ids.length === 0) return { debts: { count: 0, total: 0.0 }, occurrences: 0 };
 
         const fins = await this.prisma.financeiro.findMany({
           where: { id_condominio: { in: ids }, pago: 0 },
@@ -351,7 +351,7 @@ export class MobileAuthService {
           occurrences: occurrencesCount,
         };
       } catch (e) {
-        return { debts: { count: 2, total: 450.0 }, occurrences: 9 };
+        return { debts: { count: 0, total: 0.0 }, occurrences: 0 };
       }
     } else {
       // Morador
