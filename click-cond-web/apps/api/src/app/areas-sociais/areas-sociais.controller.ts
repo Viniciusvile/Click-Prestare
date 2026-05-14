@@ -3,7 +3,7 @@ import { AreasSociaisService } from './areas-sociais.service';
 import { ReqUser } from '../auth/req-user.decorator';
 import { JwtPayload } from '../auth/jwt-payload.interface';
 
-@Controller('areasSociais')
+@Controller(['areasSociais', 'areas-sociais'])
 export class AreasSociaisController {
   constructor(private readonly service: AreasSociaisService) {}
 

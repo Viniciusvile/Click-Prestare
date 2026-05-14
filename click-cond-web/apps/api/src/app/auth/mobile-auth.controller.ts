@@ -153,3 +153,21 @@ export class CondominioMobileController {
     return this.service.getCondominioById(Number(idCond));
   }
 }
+
+// ==========================================
+// APARTAMENTOS MOBILE
+// ==========================================
+@Controller('apartamentos')
+export class ApartamentosMobileController {
+  constructor(private readonly service: MobileAuthService) {}
+
+  @Get('get-all')
+  getAllApartamentos(@Query('id_condominio') idCond: string) {
+    return this.service.getAllApartamentos(Number(idCond));
+  }
+
+  @Get('get-moradores')
+  getMoradoresApto(@Query('id_apto') idApto: string, @Query('tipo') tipo?: string) {
+    return this.service.getMoradoresApto(Number(idApto), tipo);
+  }
+}
