@@ -396,4 +396,54 @@ export class MobileAuthService {
       };
     }
   }
+
+  // ==========================================
+  // CONDOMÍNIO DETALHES GERAL
+  // ==========================================
+  async getCondominioById(id: number) {
+    const mockCond = {
+      id: id || 1,
+      nome: 'Condomínio Demo - Click Prestare',
+      saldo: '15.500,00',
+      photo: '',
+      num_aptos: 40,
+      num_blocos: 2,
+      moeda: 'R$',
+      identificacao: '12.345.678/0001-90',
+      subsindico_nome: 'Subsíndico Demo',
+    };
+
+    if (!this.prisma.isConnected) {
+      return mockCond;
+    }
+
+    try {
+      const c = await this.prisma.condominios.findUnique({
+        where: { id: Number(id) },
+        include: {
+          financeiro: { where: { pago: 1 } },
+          apartamentos: true,
+        },
+      });
+
+      if (!c) return mockCond;
+
+      const saldoNum = c.financeiro?.reduce((acc, f) => acc + (Number(f.valor) || 0), 0) ?? 0;
+      const saldoStr = saldoNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      return {
+        id: c.id,
+        nome: c.nome,
+        saldo: saldoStr,
+        photo: c.photo ?? '',
+        num_aptos: c.apartamentos?.length ?? c.num_aptos ?? 40,
+        num_blocos: c.num_blocos ?? 2,
+        moeda: c.moeda ?? 'R$',
+        identificacao: c.identificacao ?? '',
+        subsindico_nome: c.subsindico_nome ?? '',
+      };
+    } catch (e) {
+      return mockCond;
+    }
+  }
 }

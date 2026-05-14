@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { MobileAuthService } from './mobile-auth.service';
 import { Public } from './public.decorator';
 import { ReqUser } from './req-user.decorator';
@@ -82,5 +82,18 @@ export class DashboardMobileController {
     const idUser = payload.user?.id ?? payload.sub;
     const typeAccess = payload.typeAccess ?? payload.user?.typeAccess ?? 'Sindico';
     return this.service.getSummary(Number(idUser), typeAccess);
+  }
+}
+
+// ==========================================
+// CONDOMÍNIO GERAL
+// ==========================================
+@Controller('condominio')
+export class CondominioMobileController {
+  constructor(private readonly service: MobileAuthService) {}
+
+  @Get('get-condominio')
+  getCondominio(@Query('id_condominio') idCond: string) {
+    return this.service.getCondominioById(Number(idCond));
   }
 }
