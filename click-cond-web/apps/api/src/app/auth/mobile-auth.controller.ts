@@ -58,16 +58,19 @@ export class MoradoresMobileController {
   }
 
   @Post('insert')
+  @HttpCode(200)
   insertMorador(@Body() body: any) {
     return this.service.saveMorador(body, false);
   }
 
   @Post('update')
+  @HttpCode(200)
   updateMorador(@Body() body: any) {
     return this.service.saveMorador(body, true);
   }
 
   @Post('remove')
+  @HttpCode(200)
   removeMorador(@Body() body: { id: number }) {
     return this.service.removeMorador(Number(body.id));
   }
@@ -105,16 +108,19 @@ export class FuncionariosMobileController {
   }
 
   @Post('insert')
+  @HttpCode(200)
   insertFuncionario(@Body() body: any) {
     return this.service.saveFuncionario(body, false);
   }
 
   @Post('update')
+  @HttpCode(200)
   updateFuncionario(@Body() body: any) {
     return this.service.saveFuncionario(body, true);
   }
 
   @Post('remove')
+  @HttpCode(200)
   removeFuncionario(@Body() body: { id: number }) {
     return this.service.removeFuncionario(Number(body.id));
   }
