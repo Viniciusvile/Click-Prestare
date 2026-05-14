@@ -4,13 +4,13 @@ import 'package:flutter/foundation.dart';
 class ApiConfig {
   /// Mude para 'true' para usar o servidor do Railway (Nuvem)
   /// Mude para 'false' para usar o servidor local (Seu PC)
-  static const bool isProduction = true;
+  static const bool isProduction = false;
 
   /// Host dinâmico
   static String get host {
     if (isProduction) return "click-prestare-production.up.railway.app";
-    if (kIsWeb) return "localhost:3003";
-    return "192.168.3.74:3003";
+    if (kIsWeb) return "localhost:3000";
+    return "192.168.3.74:3000";
   }
 
   /// HTTPS é obrigatório no Railway (Produção)
