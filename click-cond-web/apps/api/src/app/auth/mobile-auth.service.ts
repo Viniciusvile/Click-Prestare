@@ -359,7 +359,7 @@ export class MobileAuthService {
 
       const visitsCount = await this.prisma.visitantes.count({
         where: {
-          id_apto: { in: aptoIds },
+          id_apartamento: { in: aptoIds },
           data_hora_inicio: { gte: hojeIni, lte: hojeFim },
         },
       });
@@ -821,5 +821,114 @@ export class MobileAuthService {
       console.error('Erro ao remover apartamento (Mobile):', e);
     }
     return true; // Mock success
+  }
+
+  // ==========================================
+  // OCORRÊNCIAS (MOBILE)
+  // ==========================================
+
+  async listOcorrenciasCategorias() {
+    try {
+      if (this.prisma.isConnected) {
+        return await this.prisma.ocorrencias_Categorias.findMany({
+          orderBy: { prioridade: 'asc' },
+        });
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  async saveOcorrencia(body: any, idUser: number) {
+    try {
+      if (this.prisma.isConnected) {
+        return await this.prisma.ocorrencias.create({
+          data: {
+            id_condominio: Number(body.id_condominio),
+            descricao: body.descricao,
+            tipo: Number(body.tipo),
+            user: idUser,
+            status: 'Pendente',
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Erro ao salvar ocorrência (Mobile):', e);
+    }
+    return { id: Date.now(), success: true };
+  }
+
+  async listOcorrencias(idUser: number) {
+    try {
+      if (this.prisma.isConnected) {
+        return await this.prisma.ocorrencias.findMany({
+          where: { user: idUser },
+          include: { categoria: true },
+          orderBy: { created_at: 'desc' },
+        });
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  // ==========================================
+  // FINANCEIRO (MOBILE)
+  // ==========================================
+
+  async listFinanceiroByUser(idUser: number) {
+    try {
+      if (this.prisma.isConnected) {
+        const moras = await this.prisma.moradores.findMany({
+          where: { id_user: idUser },
+          select: { id_condominio: true }
+        });
+        const ids = moras.map(m => m.id_condominio);
+
+        return await this.prisma.financeiro.findMany({
+          where: {
+            id_condominio: { in: ids.filter((v): v is number => v !== null) },
+            pago: 0,
+          },
+          orderBy: { data_vencimento: 'asc' },
+          select: {
+            id: true,
+            nome: true,
+            valor: true,
+            data_vencimento: true,
+            status: true,
+            url_boleto: true,
+          }
+        });
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  // ==========================================
+  // ENCOMENDAS (MOBILE)
+  // ==========================================
+
+  async listEncomendasByUser(idUser: number) {
+    try {
+      if (this.prisma.isConnected) {
+        const moras = await this.prisma.moradores.findMany({
+          where: { id_user: idUser },
+        });
+
+        let total: any[] = [];
+        for (const m of moras) {
+          const list = await this.prisma.encomendas.findMany({
+            where: {
+              id_condominio: m.id_condominio!,
+              destinatario_bloco: m.bloco,
+              destinatario_apto: m.apartamento,
+            },
+            orderBy: { created_at: 'desc' },
+          });
+          total = [...total, ...list];
+        }
+        return total;
+      }
+    } catch (e) {}
+    return [];
   }
 }

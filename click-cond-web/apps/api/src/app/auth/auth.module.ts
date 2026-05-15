@@ -12,6 +12,9 @@ import {
   DashboardMobileController,
   CondominioMobileController,
   ApartamentosMobileController,
+  OcorrenciasMobileController,
+  FinanceiroMobileController,
+  EncomendasMobileController,
 } from './mobile-auth.controller';
 
 @Module({
@@ -30,6 +33,9 @@ import {
     DashboardMobileController,
     CondominioMobileController,
     ApartamentosMobileController,
+    OcorrenciasMobileController,
+    FinanceiroMobileController,
+    EncomendasMobileController,
   ],
   providers: [AuthService, MobileAuthService, JwtStrategy],
 })

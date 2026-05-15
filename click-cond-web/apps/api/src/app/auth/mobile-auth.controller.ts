@@ -193,3 +193,57 @@ export class ApartamentosMobileController {
     return this.service.removeApto(Number(body.id));
   }
 }
+
+// ==========================================
+// OCORRÊNCIAS MOBILE
+// ==========================================
+@Controller('ocorrencias')
+export class OcorrenciasMobileController {
+  constructor(private readonly service: MobileAuthService) {}
+
+  @Get('categorias/get-all')
+  categorias() {
+    return this.service.listOcorrenciasCategorias();
+  }
+
+  @Post('insert')
+  @HttpCode(200)
+  insert(@Body() body: any, @ReqUser() payload: JwtPayload) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.saveOcorrencia(body, Number(idUser));
+  }
+
+  @Get('get-all')
+  list(@ReqUser() payload: JwtPayload) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.listOcorrencias(Number(idUser));
+  }
+}
+
+// ==========================================
+// FINANCEIRO MOBILE
+// ==========================================
+@Controller('financeiro')
+export class FinanceiroMobileController {
+  constructor(private readonly service: MobileAuthService) {}
+
+  @Get('get-by-user')
+  listByUser(@ReqUser() payload: JwtPayload) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.listFinanceiroByUser(Number(idUser));
+  }
+}
+
+// ==========================================
+// ENCOMENDAS MOBILE
+// ==========================================
+@Controller('encomendas')
+export class EncomendasMobileController {
+  constructor(private readonly service: MobileAuthService) {}
+
+  @Get('get-all')
+  listByUser(@ReqUser() payload: JwtPayload) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.listEncomendasByUser(Number(idUser));
+  }
+}
