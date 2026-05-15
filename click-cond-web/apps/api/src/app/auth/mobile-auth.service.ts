@@ -66,7 +66,7 @@ export class MobileAuthService {
         include: {
           condominio: {
             include: {
-              financeiro: { where: { pago: 1 } },
+              financeiro: { where: { pago: 1 }, select: { valor: true, created_at: true } },
               apartamentos: true,
             },
           },
@@ -165,7 +165,7 @@ export class MobileAuthService {
           apartamento: {
             include: {
               condominio: {
-                include: { financeiro: { where: { pago: 1 } } },
+                include: { financeiro: { where: { pago: 1 }, select: { valor: true, created_at: true } } },
               },
             },
           },
@@ -277,7 +277,7 @@ export class MobileAuthService {
         where: { id_user: idUser },
         include: {
           condominio: {
-            include: { financeiro: { where: { pago: 1 } }, apartamentos: true },
+            include: { financeiro: { where: { pago: 1 }, select: { valor: true, created_at: true } }, apartamentos: true },
           },
         },
       });
