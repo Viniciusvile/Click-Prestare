@@ -20,6 +20,13 @@ export class OcorrenciasPageComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly filtroStatus = signal<string>('');
 
+  readonly ocorrenciasFiltradas = computed(() => {
+    const list = this.ocorrencias();
+    const f = this.filtroStatus();
+    if (!f) return list;
+    return list.filter(o => o.status === f);
+  });
+
   readonly stats = computed(() => {
     const list = this.ocorrencias();
     return {
@@ -45,7 +52,7 @@ export class OcorrenciasPageComponent implements OnInit {
 
   carregar() {
     this.loading.set(true);
-    this.api.list(this.filtroStatus() || undefined).subscribe({
+    this.api.list().subscribe({
       next: (data) => { this.ocorrencias.set(data); this.loading.set(false); },
       error: (e) => { this.error.set(e?.message ?? 'Erro'); this.loading.set(false); },
     });

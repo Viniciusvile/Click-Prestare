@@ -54,7 +54,7 @@
   <!-- Filtros -->
   <div class="flex items-center gap-1 p-1 rounded-xl bg-graphite-200 border border-white/10 w-fit">
     @for (s of [{key:'',label:'Todas'},{key:'Pendente',label:'Pendentes'},{key:'Ciente',label:'Em andamento'},{key:'Solucionado',label:'Solucionadas'}]; track s.key) {
-      <button (click)="filtroStatus.set(s.key); carregar()"
+      <button (click)="filtroStatus.set(s.key)"
               class="px-3 py-1.5 text-xs rounded-lg transition"
               [class.bg-amber-500]="filtroStatus() === s.key"
               [class.text-white]="filtroStatus() === s.key"
@@ -118,7 +118,7 @@
     </div>
   } @else {
     <div class="space-y-3">
-      @for (o of ocorrencias(); track o.id) {
+      @for (o of ocorrenciasFiltradas(); track o.id) {
         <div class="p-5 rounded-2xl bg-graphite-200 border transition"
              [class.border-amber-400/30]="o.status === 'Pendente'"
              [class.border-white/10]="o.status !== 'Pendente'">

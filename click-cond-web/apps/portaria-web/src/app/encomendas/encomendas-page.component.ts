@@ -19,6 +19,13 @@ export class EncomendasPageComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly filtro = signal<string>('');
 
+  readonly encomendasFiltradas = computed(() => {
+    const list = this.encomendas();
+    const f = this.filtro();
+    if (!f) return list;
+    return list.filter(e => e.status === f);
+  });
+
   readonly aguardando = computed(() => this.encomendas().filter((e) => e.status === 'Aguardando').length);
   readonly retiradas = computed(() => this.encomendas().filter((e) => e.status === 'Retirada').length);
 
@@ -29,7 +36,7 @@ export class EncomendasPageComponent implements OnInit {
 
   carregar() {
     this.loading.set(true);
-    this.api.list(this.filtro() || undefined).subscribe({
+    this.api.list().subscribe({
       next: (data) => { this.encomendas.set(data); this.loading.set(false); },
       error: (e) => { this.error.set(e?.message ?? 'Erro'); this.loading.set(false); },
     });

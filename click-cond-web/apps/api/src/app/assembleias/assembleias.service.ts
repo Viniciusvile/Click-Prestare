@@ -39,6 +39,15 @@ export class AssembleiasService {
       horaObj = new Date(1970, 0, 1, h, m, 0);
     }
 
+    // Verificar se o usuário existe para evitar erro de FK (especialmente em ambiente local onde o ID 1 pode não existir)
+    let finalUserId: number | undefined = undefined;
+    if (userId) {
+      const userExists = await this.prisma.users.findUnique({ where: { id: Number(userId) } });
+      if (userExists) {
+        finalUserId = userExists.id;
+      }
+    }
+
     await this.prisma.assembleias.create({
       data: {
         titulo: assembleia.titulo,
@@ -48,7 +57,7 @@ export class AssembleiasService {
         local: assembleia.local,
         link: assembleia.link ?? '',
         id_condominio: Number(idCondominio),
-        user: Number(userId),
+        user: finalUserId,
         anexos: listDocs.join(';'),
       },
     });
@@ -83,6 +92,15 @@ export class AssembleiasService {
       horaObj = new Date(1970, 0, 1, h, m, 0);
     }
 
+    // Verificar se o usuário existe para evitar erro de FK
+    let finalUserId: number | undefined = undefined;
+    if (userId) {
+      const userExists = await this.prisma.users.findUnique({ where: { id: Number(userId) } });
+      if (userExists) {
+        finalUserId = userExists.id;
+      }
+    }
+
     await this.prisma.assembleias.updateMany({
       where: {
         id: Number(assembleia.id),
@@ -95,7 +113,7 @@ export class AssembleiasService {
         ...(horaObj ? { hora: horaObj } : {}),
         local: assembleia.local,
         link: assembleia.link ?? '',
-        user: Number(userId),
+        user: finalUserId,
         ...(listDocs.length > 0 ? { anexos: listDocs.join(';') } : {}),
       },
     });

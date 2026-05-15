@@ -1,6 +1,33 @@
-# 🚀 Guia de Deploy e Sincronização - Click Prestare
+# 🚀 Guia de Desenvolvimento e Deploy - Click Prestare
 
-Este guia contém as soluções para os problemas de sincronização entre Localhost e Produção (Vercel/Railway) encontrados durante o desenvolvimento.
+Este guia contém as soluções para os problemas de sincronização entre Localhost e Produção (Vercel/Railway) e as instruções para rodar o ambiente local.
+
+## 🛠 Ambiente Local (Localhost)
+
+Para rodar o ecossistema completo localmente, siga os comandos abaixo:
+
+1.  **API Principal (NestJS)**:
+    *   Pasta: `click-cond-web`
+    *   Comando: `npx nx serve api`
+    *   URL: `http://localhost:3000/api`
+
+2.  **Sistema Web Portaria (Angular)**:
+    *   Pasta: `click-cond-web`
+    *   Comando: `npx nx serve portaria-web`
+    *   URL: `http://localhost:4200/`
+
+3.  **App Click (Flutter)**:
+    *   Pasta: `click-cond-app/click-cond-app`
+    *   Caminho do SDK: `C:\Users\vinic\Desktop\flutter\bin\flutter.bat`
+    *   Comando: `C:\Users\vinic\Desktop\flutter\bin\flutter.bat run -d chrome`
+    *   *Nota: O caminho do SDK foi salvo em `.antigravity_config.json`.*
+
+4.  **API Legada/Utilitários (Porta 3003)**:
+    *   Pasta: `click-cond-api/click-cond-api`
+    *   Comando: `npm run dev`
+    *   URL: `http://localhost:3003`
+
+---
 
 ## 1. Vercel não atualiza com as novidades
 **Problema:** Você faz alterações no código, mas o site no Vercel continua mostrando a versão antiga.
