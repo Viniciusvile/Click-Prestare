@@ -152,6 +152,13 @@ export class CondominioMobileController {
   getCondominio(@Query('id_condominio') idCond: string) {
     return this.service.getCondominioById(Number(idCond));
   }
+
+  @Post('register')
+  @HttpCode(200)
+  register(@Body() body: any, @ReqUser() payload: JwtPayload) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.registerCondominio(body, Number(idUser));
+  }
 }
 
 // ==========================================

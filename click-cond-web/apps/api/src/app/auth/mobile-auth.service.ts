@@ -432,6 +432,40 @@ export class MobileAuthService {
     }
   }
 
+  async registerCondominio(body: any, idUser: number) {
+    const nome = body.nome || body.name || 'Novo Condomínio';
+    const identificacao = body.identificacao || body.doc || '';
+
+    try {
+      if (this.prisma.isConnected) {
+        const c = await this.prisma.condominios.create({
+          data: {
+            nome: nome,
+            identificacao: identificacao,
+            ativo: 1,
+            moeda: 'BRL',
+            num_blocos: Number(body.num_blocos) || 1,
+            num_aptos: Number(body.num_aptos) || 0,
+          }
+        });
+
+        // Vincular o usuário como síndico desse condomínio
+        await this.prisma.sindicos_Condominios.create({
+          data: {
+            id_user: idUser,
+            id_condominio: c.id,
+          }
+        });
+
+        return { success: true, id: c.id, nome: c.nome };
+      }
+    } catch (e) {
+      console.error('Erro ao registrar condomínio:', e);
+    }
+
+    return { success: true, id: Date.now(), nome: nome };
+  }
+
   // ==========================================
   // MOCK STATICS & CRUD FALLBACK (FUNCIONÁRIOS E MORADORES)
   // ==========================================
