@@ -76,18 +76,24 @@ export class MobileAuthService {
       const resultList = rels.map(r => {
         const c = r.condominio;
         if (!c || c.ativo === 0) return null;
-        const saldoNum = c.financeiro.reduce((acc, f) => acc + (Number(f.valor) || 0), 0);
+        
+        // Garante que financeiro seja tratado como array mesmo se vier nulo/indefinido
+        const financeiro = c.financeiro ?? [];
+        const apartamentos = c.apartamentos ?? [];
+
+        const saldoNum = financeiro.reduce((acc, f) => acc + (Number(f.valor) || 0), 0);
         const saldoStr = saldoNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
         return {
           id: c.id,
           nome: c.nome,
-          num_blocos: c.num_blocos,
-          num_aptos: c.apartamentos?.length ?? c.num_aptos,
+          num_blocos: c.num_blocos ?? 1,
+          num_aptos: apartamentos.length > 0 ? apartamentos.length : (c.num_aptos ?? 0),
           moeda: c.moeda ?? 'R$',
           updatedAt: c.updated_at ? c.updated_at.toLocaleDateString('pt-BR') : '',
           photo: c.photo ?? '',
           saldo: saldoStr,
-          data_financeiro: c.financeiro.length > 0 ? c.financeiro[c.financeiro.length - 1].created_at.toLocaleDateString('pt-BR') : '-',
+          data_financeiro: financeiro.length > 0 ? financeiro[financeiro.length - 1].created_at.toLocaleDateString('pt-BR') : '-',
           vencimento_condominio: c.vencimento ? c.vencimento.toLocaleDateString('pt-BR') : '',
           dias_restantes_condominio: c.vencimento ? Math.ceil((c.vencimento.getTime() - Date.now()) / 86400000) : 100,
         };
