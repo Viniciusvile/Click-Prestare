@@ -98,12 +98,7 @@ export class MobileAuthService {
       // Ignora falha interna do PrismaClient e segue para o mock
     }
 
-    return [{
-      id: 1, nome: 'Condomínio Demo - Click Prestare', num_blocos: 2, num_aptos: 40, moeda: 'R$',
-      updatedAt: '14/05/2026 às 12:00', photo: '', saldo: '15.500,00',
-      data_financeiro: '14/05/2026', vencimento_condominio: '30/12/2026',
-      dias_restantes_condominio: 200
-    }];
+    return [];
   }
 
   // ==========================================
@@ -203,13 +198,7 @@ export class MobileAuthService {
       // Ignora falhas e retorna mock
     }
 
-    return [{
-      id: 1, nome: 'Condomínio Demo - Click Prestare', num_blocos: 2, num_aptos: 40, moeda: 'R$',
-      updatedAt: '14/05/2026 às 12:00', photo: '', saldo: '15.500,00',
-      data_financeiro: '14/05/2026', vencimento_condominio: '30/12/2026',
-      dias_restantes_condominio: 200, apto_id: 1, apto: '101', apto_bloco: 'A',
-      vencimento_morador: '30/12/2026', dias_restantes_morador: 200
-    }];
+    return [];
   }
 
   // ==========================================
@@ -311,11 +300,7 @@ export class MobileAuthService {
       // Ignora erro interno do cliente do Prisma e retorna mock
     }
 
-    return [{
-      id: 1, nome: 'Condomínio Demo - Click Prestare', num_blocos: 2, num_aptos: 40, moeda: 'R$',
-      updatedAt: '14/05/2026 às 12:00', photo: '', saldo: '15.500,00',
-      vencimento_condominio: '30/12/2026', dias_restantes_condominio: 200
-    }];
+    return [];
   }
 
   // ==========================================
