@@ -433,23 +433,47 @@ export class MobileAuthService {
   }
 
   async registerCondominio(body: any, idUser: number) {
-    const nome = body.nome || body.name || 'Novo Condomínio';
-    const identificacao = body.identificacao || body.doc || '';
+    const data = body.condominio || {};
+    const addr = body.address || {};
+
+    const nome = data.nome || 'Novo Condomínio';
+    const identificacao = data.identificacao || '';
 
     try {
       if (this.prisma.isConnected) {
+        // 1. Criar Endereço se houver dados
+        let idEndereco = null;
+        if (addr.cep || addr.rua) {
+          const e = await this.prisma.endereco.create({
+            data: {
+              cep: addr.cep,
+              rua: addr.rua,
+              numero: String(addr.numero || ''),
+              complemento: addr.complemento,
+              bairro: addr.bairro,
+              cidade: addr.cidade,
+              uf: addr.uf,
+              pais: addr.pais,
+            }
+          });
+          idEndereco = e.id;
+        }
+
+        // 2. Criar Condomínio
         const c = await this.prisma.condominios.create({
           data: {
             nome: nome,
             identificacao: identificacao,
-            ativo: 1,
+            subsindico_nome: data.subsindico_nome,
+            num_blocos: Number(data.num_blocos) || 1,
+            num_aptos: Number(data.num_aptos) || 0,
             moeda: 'BRL',
-            num_blocos: Number(body.num_blocos) || 1,
-            num_aptos: Number(body.num_aptos) || 0,
+            ativo: 1,
+            endereco: idEndereco,
           }
         });
 
-        // Vincular o usuário como síndico desse condomínio
+        // 3. Vincular o usuário como síndico desse condomínio
         await this.prisma.sindicos_Condominios.create({
           data: {
             id_user: idUser,
