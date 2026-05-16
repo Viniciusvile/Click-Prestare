@@ -35,3 +35,11 @@ ios/Flutter/Flutter.podspec
 
 # Logs
 *.log
+
+# Flutter / Android build artifacts (gerados localmente)
+**/.gradle/
+**/.dart_tool/
+**/build/
+click-cond-app/click-cond-app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+click-cond-app/click-cond-app/.flutter-plugins
+click-cond-app/click-cond-app/.flutter-plugins-dependencies

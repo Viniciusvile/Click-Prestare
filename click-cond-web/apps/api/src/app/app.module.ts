@@ -18,6 +18,7 @@ import { AreasSociaisModule } from './areas-sociais/areas-sociais.module';
 import { AssembleiasModule } from './assembleias/assembleias.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
 import { DocumentosModule } from './documentos/documentos.module';
+import { MailModule } from './common/mail/mail.module';
 
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -27,6 +28,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
       ttl: 60000,
       limit: 100, // 100 requests per minute
     }]),
+    MailModule,
     PrismaModule,
     AuthModule,
     DashboardModule,

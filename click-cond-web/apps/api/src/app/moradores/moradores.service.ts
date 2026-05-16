@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../common/mail/mail.service';
 import * as crypto from 'crypto';
-import axios from 'axios';
 
 export interface CreateMoradorDto {
   nome: string;
@@ -22,7 +22,18 @@ export class MoradoresService {
     { id: 2, nome: 'Maria Oliveira', documento: '55566677788', email: 'maria@example.com', telefone: '11988887777', data_nascimento: null, tipo: 'inquilino', bloco: 'B', apartamento: '202', id_apartamento: 0, id_condominio: 1, photo: null },
   ];
 
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MoradoresService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
+
+  private fireWelcomeEmail(email: string, nome: string, senha: string) {
+    this.mail
+      .sendWelcomeMorador(email, nome, senha)
+      .catch((err) => this.logger.warn(`Falha ao enviar credenciais para ${email}: ${err?.message ?? err}`));
+  }
 
   /**
    * Moradores no schema legado têm FK para Users e podem ter id_condominio.
@@ -109,11 +120,7 @@ export class MoradoresService {
       };
       MoradoresService.mockMoradores.push(newM as any);
       if (dto.sendCredentials && dto.email) {
-        axios.post('http://localhost:3003/moradores/send-credentials', {
-          email: dto.email,
-          nome: dto.nome,
-          documento: dto.documento || '123456',
-        }).catch(() => {});
+        this.fireWelcomeEmail(dto.email, dto.nome, dto.documento || '123456');
       }
       return newM;
     }
@@ -206,11 +213,7 @@ export class MoradoresService {
     });
 
     if (dto.sendCredentials && dto.email) {
-      axios.post('http://localhost:3003/moradores/send-credentials', {
-        email: dto.email,
-        nome: dto.nome,
-        documento: dto.documento || '123456',
-      }).catch((err) => console.log('Erro ao disparar envio de credenciais via NestJS:', err.message));
+      this.fireWelcomeEmail(dto.email, dto.nome, dto.documento || '123456');
     }
 
     return createdMorador;
@@ -261,11 +264,7 @@ export class MoradoresService {
     if (!m.email) {
       throw new NotFoundException('Morador não possui e-mail cadastrado');
     }
-    axios.post('http://localhost:3003/moradores/send-credentials', {
-      email: m.email,
-      nome: m.nome,
-      documento: m.documento || '123456',
-    }).catch(() => {});
+    this.fireWelcomeEmail(m.email, m.nome, m.documento || '123456');
     return { ok: true };
   }
 
