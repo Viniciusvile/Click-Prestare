@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
+
+// Railway egress nao tem rota IPv6 — for ce o Node a usar IPv4 primeiro
+// em TODAS as resolucoes DNS deste processo, evitando ENETUNREACH em
+// smtp.gmail.com e outros servicos que tem AAAA records.
+dns.setDefaultResultOrder('ipv4first');
 
 @Injectable()
 export class MailService {
@@ -22,19 +28,25 @@ export class MailService {
     }
 
     const normalizedPass = pass.replace(/\s+/g, '');
-    const service = process.env.SMTP_SERVICE || 'gmail';
-    const useService = !process.env.SMTP_HOST;
+
+    // Resolve hostname manualmente forcando IPv4, evita IPv6 do Gmail
+    // que falha com ENETUNREACH na rede do Railway.
+    const lookupIPv4 = (
+      hostname: string,
+      options: any,
+      callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void,
+    ) => {
+      dns.lookup(hostname, { family: 4 }, callback as any);
+    };
 
     this.transporter = nodemailer.createTransport({
-      ...(useService ? { service } : {}),
-      host: process.env.SMTP_HOST || (service === 'gmail' ? 'smtp.gmail.com' : undefined),
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
       secure: process.env.SMTP_SECURE !== 'false',
       auth: { user, pass: normalizedPass },
-      // Railway egress nao suporta IPv6 — forca IPv4 para evitar ENETUNREACH
-      tls: { family: 4 },
-      family: 4,
-    } as nodemailer.TransportOptions);
+      // @ts-ignore — lookup nao esta na tipagem oficial mas e suportado
+      lookup: lookupIPv4,
+    });
 
     this.transporter.verify().then(
       () => this.logger.log('SMTP transporter verificado com sucesso.'),
