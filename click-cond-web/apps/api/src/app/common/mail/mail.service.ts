@@ -1,44 +1,64 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Resend } from 'resend';
 import * as nodemailer from 'nodemailer';
 import * as dns from 'dns';
 import { promisify } from 'util';
 
-// Railway egress nao tem rota IPv6 — forca IPv4 primeiro globalmente.
 dns.setDefaultResultOrder('ipv4first');
 const dnsLookup = promisify(dns.lookup);
 
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
+  private resend: Resend | null = null;
   private transporter: nodemailer.Transporter | null = null;
   private readonly fromAddress: string;
-  private readonly user?: string;
-  private readonly pass?: string;
+  private readonly resendKey?: string;
+  private readonly smtpUser?: string;
+  private readonly smtpPass?: string;
 
   constructor() {
-    this.user = process.env.SMTP_USER;
-    this.pass = process.env.SMTP_PASS;
-    const fromEmail = process.env.SMTP_FROM || this.user || 'nao.responder.click@gmail.com';
-    const fromName = process.env.SMTP_FROM_NAME || 'Click Condomínios';
-    this.fromAddress = `"${fromName}" <${fromEmail}>`;
+    this.resendKey = process.env.RESEND_API_KEY;
+    this.smtpUser = process.env.SMTP_USER;
+    this.smtpPass = process.env.SMTP_PASS;
 
-    this.logger.log(`MailService construido: SMTP_USER=${this.user ?? 'UNDEFINED'} SMTP_PASS_LEN=${this.pass ? this.pass.length : 0}`);
+    const fromEmail = process.env.MAIL_FROM
+      || process.env.SMTP_FROM
+      || this.smtpUser
+      || 'onboarding@resend.dev';
+    const fromName = process.env.MAIL_FROM_NAME
+      || process.env.SMTP_FROM_NAME
+      || 'Click Condomínios';
+    this.fromAddress = `${fromName} <${fromEmail}>`;
+
+    this.logger.log(`MailService construido. Resend=${!!this.resendKey} SMTP=${!!(this.smtpUser && this.smtpPass)} from=${this.fromAddress}`);
   }
 
   async onModuleInit() {
-    if (!this.user || !this.pass) {
-      this.logger.warn('SMTP_USER/SMTP_PASS não definidos — envio de e-mails desabilitado.');
+    // Prioriza Resend (HTTP API, sem problema de portas/IPv6).
+    if (this.resendKey) {
+      this.resend = new Resend(this.resendKey);
+      this.logger.log('Resend cliente inicializado.');
       return;
     }
 
+    // Fallback: SMTP via nodemailer.
+    if (this.smtpUser && this.smtpPass) {
+      await this.initSmtp();
+      return;
+    }
+
+    this.logger.warn('Nenhum provider de e-mail configurado (RESEND_API_KEY nem SMTP_USER/SMTP_PASS). Envios serão ignorados.');
+  }
+
+  private async initSmtp() {
     const hostFromEnv = process.env.SMTP_HOST || 'smtp.gmail.com';
     let resolvedHost = hostFromEnv;
     try {
       const { address } = await dnsLookup(hostFromEnv, { family: 4 });
       resolvedHost = address;
-      this.logger.log(`SMTP host ${hostFromEnv} resolvido para ${address} (IPv4).`);
-    } catch (err: any) {
-      this.logger.warn(`Falha ao resolver ${hostFromEnv} via IPv4: ${err?.message ?? err}. Usando hostname original.`);
+    } catch {
+      // segue com hostname original
     }
 
     const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
@@ -49,15 +69,14 @@ export class MailService implements OnModuleInit {
       port,
       secure,
       requireTLS: !secure,
-      auth: { user: this.user, pass: this.pass.replace(/\s+/g, '') },
+      auth: { user: this.smtpUser!, pass: this.smtpPass!.replace(/\s+/g, '') },
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 30000,
       tls: { servername: hostFromEnv },
     });
 
-    this.logger.log(`SMTP transporter pronto: host=${resolvedHost} port=${port} secure=${secure}`);
-
+    this.logger.log(`SMTP transporter pronto: host=${resolvedHost} port=${port}`);
     try {
       await this.transporter.verify();
       this.logger.log('SMTP transporter verificado com sucesso.');
@@ -67,11 +86,7 @@ export class MailService implements OnModuleInit {
   }
 
   async sendWelcomeMorador(email: string, nome: string, senhaInicial: string): Promise<void> {
-    if (!this.transporter) {
-      this.logger.warn(`E-mail de boas-vindas para ${email} ignorado (SMTP não configurado).`);
-      return;
-    }
-
+    const subject = 'CLICK - Bem-vindo(a)! Suas credenciais de acesso';
     const html = `
       Olá, <b>${this.escape(nome)}</b>!<br><br>
       O seu acesso ao aplicativo <b>CLICK Condomínios</b> foi criado com sucesso.<br><br>
@@ -82,27 +97,11 @@ export class MailService implements OnModuleInit {
       Seja muito bem-vindo(a)!<br>
       Equipe CLICK
     `;
-
-    try {
-      const info = await this.transporter.sendMail({
-        from: this.fromAddress,
-        to: email,
-        subject: 'CLICK - Bem-vindo(a)! Suas credenciais de acesso',
-        html,
-      });
-      this.logger.log(`E-mail de boas-vindas enviado para ${email}. messageId=${info.messageId}`);
-    } catch (err: any) {
-      this.logger.error(`Falha ao enviar e-mail de boas-vindas para ${email}: ${err?.message ?? err}`);
-      throw err;
-    }
+    await this.send(email, subject, html);
   }
 
   async sendForgotPassword(email: string, novaSenha: string, tipoUsuario: string): Promise<void> {
-    if (!this.transporter) {
-      this.logger.warn(`E-mail de recuperação para ${email} ignorado (SMTP não configurado).`);
-      return;
-    }
-
+    const subject = 'CLICK - Recuperação de Senha';
     const html = `
       Olá,<br><br>
       Você ou alguém solicitou a recuperação de senha do App CLICK.<br><br>
@@ -111,13 +110,42 @@ export class MailService implements OnModuleInit {
       Atenciosamente,<br>
       Equipe CLICK
     `;
+    await this.send(email, subject, html);
+  }
 
-    await this.transporter.sendMail({
-      from: this.fromAddress,
-      to: email,
-      subject: 'CLICK - Recuperação de Senha',
-      html,
-    });
+  private async send(to: string, subject: string, html: string): Promise<void> {
+    if (this.resend) {
+      try {
+        const { data, error } = await this.resend.emails.send({
+          from: this.fromAddress,
+          to: [to],
+          subject,
+          html,
+        });
+        if (error) {
+          this.logger.error(`Falha Resend para ${to}: ${error.name ?? ''} ${error.message ?? error}`);
+          throw new Error(error.message ?? 'Resend error');
+        }
+        this.logger.log(`E-mail enviado via Resend para ${to}. id=${data?.id}`);
+      } catch (err: any) {
+        this.logger.error(`Erro no envio Resend para ${to}: ${err?.message ?? err}`);
+        throw err;
+      }
+      return;
+    }
+
+    if (this.transporter) {
+      try {
+        const info = await this.transporter.sendMail({ from: this.fromAddress, to, subject, html });
+        this.logger.log(`E-mail enviado via SMTP para ${to}. messageId=${info.messageId}`);
+      } catch (err: any) {
+        this.logger.error(`Erro no envio SMTP para ${to}: ${err?.message ?? err}`);
+        throw err;
+      }
+      return;
+    }
+
+    this.logger.warn(`E-mail para ${to} ignorado (nenhum provider configurado).`);
   }
 
   private escape(value: string): string {
