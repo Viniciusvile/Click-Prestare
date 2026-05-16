@@ -1,7 +1,8 @@
-import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { createHash } from 'crypto';
+import { MailService } from '../common/mail/mail.service';
+import { createHash, randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class MobileAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly mail: MailService,
   ) {}
 
   private async verifyPassword(senhaRaw: string, stored: string | null | undefined, userId: number): Promise<boolean> {
@@ -486,6 +488,50 @@ export class MobileAuthService {
     }
 
     return { success: true, id: Date.now(), nome: nome };
+  }
+
+  // ==========================================
+  // RECUPERAÇÃO DE SENHA
+  // ==========================================
+  private gerarNovaSenha(): string {
+    return randomBytes(4).toString('hex'); // 8 chars alfanumérico
+  }
+
+  async recoveryPasswordSindico(email: string) {
+    const user = await this.prisma.users.findFirst({
+      where: { login: email },
+      include: { sindicos: true },
+    });
+    if (!user || !user.sindicos || user.sindicos.length === 0) {
+      throw new NotFoundException('E-mail não encontrado');
+    }
+    const novaSenha = this.gerarNovaSenha();
+    const hash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.users.update({ where: { id: user.id }, data: { password: hash } });
+    await this.mail.sendForgotPassword(email, novaSenha, 'Síndico');
+    return { success: true };
+  }
+
+  async recoveryPasswordMorador(email: string) {
+    const morador = await this.prisma.moradores.findFirst({ where: { email } });
+    if (!morador) throw new NotFoundException('E-mail não encontrado');
+    const user = await this.prisma.users.findFirst({ where: { login: email } });
+    if (!user) throw new NotFoundException('E-mail não encontrado');
+    const novaSenha = this.gerarNovaSenha();
+    const hash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.users.update({ where: { id: user.id }, data: { password: hash } });
+    await this.mail.sendForgotPassword(email, novaSenha, 'Morador');
+    return { success: true };
+  }
+
+  async recoveryPasswordFuncionario(email: string) {
+    const func = await this.prisma.funcionarios_Portaria.findFirst({ where: { login: email } });
+    if (!func) throw new NotFoundException('E-mail não encontrado');
+    const novaSenha = this.gerarNovaSenha();
+    const md5Hash = createHash('md5').update(novaSenha).digest('hex');
+    await this.prisma.funcionarios_Portaria.update({ where: { id: func.id }, data: { senha: md5Hash } });
+    await this.mail.sendForgotPassword(email, novaSenha, 'Funcionário');
+    return { success: true };
   }
 
   // ==========================================

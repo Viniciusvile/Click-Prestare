@@ -19,6 +19,13 @@ export class SindicoMobileController {
     return this.service.loginSindico(body.login, pwd);
   }
 
+  @Public()
+  @Post('recovery-password')
+  @HttpCode(200)
+  recoveryPassword(@Body() body: { email: string }) {
+    return this.service.recoveryPasswordSindico(body.email);
+  }
+
   @Get('list-condominios')
   listCondominios(@ReqUser() payload: JwtPayload) {
     const idUser = payload.user?.id ?? payload.sub;
@@ -39,6 +46,13 @@ export class MoradoresMobileController {
   login(@Body() body: { login: string; password?: string; senha?: string }) {
     const pwd = body.password ?? body.senha ?? '';
     return this.service.loginMorador(body.login, pwd);
+  }
+
+  @Public()
+  @Post('recovery-password')
+  @HttpCode(200)
+  recoveryPassword(@Body() body: { email: string }) {
+    return this.service.recoveryPasswordMorador(body.email);
   }
 
   @Get('list-condominios')
@@ -89,6 +103,13 @@ export class FuncionariosMobileController {
   login(@Body() body: { login: string; password?: string; senha?: string }) {
     const pwd = body.password ?? body.senha ?? '';
     return this.service.loginFuncionario(body.login, pwd);
+  }
+
+  @Public()
+  @Post('recovery-password')
+  @HttpCode(200)
+  recoveryPassword(@Body() body: { email: string }) {
+    return this.service.recoveryPasswordFuncionario(body.email);
   }
 
   @Get('list-condominios')
