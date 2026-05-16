@@ -63,19 +63,37 @@ class _NewReservaPageState extends State<NewReserva> {
   }
 
   Future<void> save() async {
+    if (txtData.text.isEmpty) {
+      displayMessage(context, getText('alert'), 'Selecione uma data.');
+      return;
+    }
+    if (selectedHour == null || selectedHour.toString().trim() == '-' || !selectedHour.toString().contains(' - ')) {
+      displayMessage(context, getText('alert'), 'Selecione um horário.');
+      return;
+    }
+    if (txtBloco.text.isEmpty || txtApto.text.isEmpty) {
+      displayMessage(context, getText('alert'), 'Bloco e apartamento são obrigatórios.');
+      return;
+    }
+    final aptoId = getAptoId();
+    if (aptoId.isEmpty) {
+      displayMessage(context, getText('alert'), 'Apartamento inválido.');
+      return;
+    }
     if (!acceptTerms) {
       displayMessage(context, getText('alert'), getText('area_social_erro_normas'));
       return;
     }
     try {
       setState(() => _isSaving = true);
+      final partes = selectedHour.toString().split(' - ');
       var obj = AreaSocialReservaModel(
         id: -1,
         id_area_social: widget.obj['id'],
         data: txtData.text,
-        horaDe: selectedHour.toString().split(' - ')[0],
-        horaAte: selectedHour.toString().split(' - ')[1],
-        id_apartamento: getAptoId(),
+        horaDe: partes[0].trim(),
+        horaAte: partes[1].trim(),
+        id_apartamento: aptoId,
       );
       var res = await apiSaveObject('areas-sociais/agendamento', 'agendamento', obj, widget.objEditReserva != null);
       if (res.toString().isEmpty) {

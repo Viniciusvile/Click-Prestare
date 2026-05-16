@@ -16,21 +16,25 @@ Map<String, String> _authHeaders({bool withContentType = false}) {
 }
 
 apiSaveObject(String route, String nameObj, dynamic obj, bool isEdit) async {
-  final endUri = isEdit ? 'update' : 'insert';
-  final url = _buildUri('/$route/$endUri');
-  final body = json.encode({
-    "id_condominio": Singleton.instance.id_condominio.toString(),
-    nameObj: obj,
-  });
   try {
+    final endUri = isEdit ? 'update' : 'insert';
+    final url = _buildUri('/$route/$endUri');
+    final body = json.encode({
+      "id_condominio": Singleton.instance.id_condominio.toString(),
+      nameObj: obj,
+    });
     final response = await http
         .post(url, headers: _authHeaders(withContentType: true), body: body)
         .timeout(_kTimeout);
     if (response.statusCode == 200) return "";
-    final parsed = jsonDecode(response.body) as Map<String, dynamic>;
-    throw parsed["message"] ?? "Erro desconhecido";
+    try {
+      final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+      return (parsed["message"] ?? "Erro desconhecido").toString();
+    } catch (_) {
+      return "Erro ${response.statusCode}";
+    }
   } catch (e) {
-    throw e;
+    return e.toString();
   }
 }
 
