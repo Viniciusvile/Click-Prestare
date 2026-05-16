@@ -41,6 +41,10 @@ async function bootstrap() {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Permite qualquer localhost (Flutter web usa porta dinâmica)
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
       return callback(new Error(`Origem não permitida por CORS: ${origin}`));
     },
     credentials: true,
