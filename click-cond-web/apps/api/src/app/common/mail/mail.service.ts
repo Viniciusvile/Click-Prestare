@@ -22,14 +22,19 @@ export class MailService {
     }
 
     const normalizedPass = pass.replace(/\s+/g, '');
+    const service = process.env.SMTP_SERVICE || 'gmail';
+    const useService = !process.env.SMTP_HOST;
 
     this.transporter = nodemailer.createTransport({
-      service: process.env.SMTP_SERVICE || 'gmail',
-      host: process.env.SMTP_HOST,
+      ...(useService ? { service } : {}),
+      host: process.env.SMTP_HOST || (service === 'gmail' ? 'smtp.gmail.com' : undefined),
       port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
       secure: process.env.SMTP_SECURE !== 'false',
       auth: { user, pass: normalizedPass },
-    });
+      // Railway egress nao suporta IPv6 — forca IPv4 para evitar ENETUNREACH
+      tls: { family: 4 },
+      family: 4,
+    } as nodemailer.TransportOptions);
 
     this.transporter.verify().then(
       () => this.logger.log('SMTP transporter verificado com sucesso.'),
