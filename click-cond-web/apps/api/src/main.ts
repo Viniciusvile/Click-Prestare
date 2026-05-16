@@ -1,3 +1,9 @@
+import * as dns from 'dns';
+// Railway egress nao tem rota IPv6 — forca IPv4 primeiro em todas as
+// resolucoes DNS do processo. Tem que rodar ANTES de qualquer modulo
+// que faca lookup (smtp, prisma, axios, etc).
+dns.setDefaultResultOrder('ipv4first');
+
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import helmet from 'helmet';

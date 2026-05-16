@@ -1,68 +1,69 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import * as dns from 'dns';
+import { promisify } from 'util';
 
-// Railway egress nao tem rota IPv6 — for ce o Node a usar IPv4 primeiro
-// em TODAS as resolucoes DNS deste processo, evitando ENETUNREACH em
-// smtp.gmail.com e outros servicos que tem AAAA records.
+// Railway egress nao tem rota IPv6 — forca IPv4 primeiro globalmente.
 dns.setDefaultResultOrder('ipv4first');
+const dnsLookup = promisify(dns.lookup);
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter | null = null;
   private readonly fromAddress: string;
+  private readonly user?: string;
+  private readonly pass?: string;
 
   constructor() {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const fromEmail = process.env.SMTP_FROM || user || 'nao.responder.click@gmail.com';
+    this.user = process.env.SMTP_USER;
+    this.pass = process.env.SMTP_PASS;
+    const fromEmail = process.env.SMTP_FROM || this.user || 'nao.responder.click@gmail.com';
     const fromName = process.env.SMTP_FROM_NAME || 'Click Condomínios';
     this.fromAddress = `"${fromName}" <${fromEmail}>`;
 
-    this.logger.log(`MailService init: SMTP_USER=${user ? user : 'UNDEFINED'} SMTP_PASS_LEN=${pass ? pass.length : 0} SERVICE=${process.env.SMTP_SERVICE || 'gmail'}`);
+    this.logger.log(`MailService construido: SMTP_USER=${this.user ?? 'UNDEFINED'} SMTP_PASS_LEN=${this.pass ? this.pass.length : 0}`);
+  }
 
-    if (!user || !pass) {
+  async onModuleInit() {
+    if (!this.user || !this.pass) {
       this.logger.warn('SMTP_USER/SMTP_PASS não definidos — envio de e-mails desabilitado.');
       return;
     }
 
-    const normalizedPass = pass.replace(/\s+/g, '');
+    const hostFromEnv = process.env.SMTP_HOST || 'smtp.gmail.com';
+    let resolvedHost = hostFromEnv;
+    try {
+      const { address } = await dnsLookup(hostFromEnv, { family: 4 });
+      resolvedHost = address;
+      this.logger.log(`SMTP host ${hostFromEnv} resolvido para ${address} (IPv4).`);
+    } catch (err: any) {
+      this.logger.warn(`Falha ao resolver ${hostFromEnv} via IPv4: ${err?.message ?? err}. Usando hostname original.`);
+    }
 
-    // Resolve hostname manualmente forcando IPv4, evita IPv6 do Gmail
-    // que falha com ENETUNREACH na rede do Railway.
-    const lookupIPv4 = (
-      hostname: string,
-      options: any,
-      callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void,
-    ) => {
-      dns.lookup(hostname, { family: 4 }, callback as any);
-    };
-
-    // Railway hobby tier bloqueia porta 465 (SMTPS implicit TLS).
-    // Default para 587 (STARTTLS), que e permitida.
     const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
     const secure = process.env.SMTP_SECURE === 'true' ? true : port === 465;
 
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      host: resolvedHost,
       port,
       secure,
       requireTLS: !secure,
-      auth: { user, pass: normalizedPass },
+      auth: { user: this.user, pass: this.pass.replace(/\s+/g, '') },
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 30000,
-      // @ts-ignore — lookup nao esta na tipagem oficial mas e suportado
-      lookup: lookupIPv4,
+      tls: { servername: hostFromEnv },
     });
 
-    this.logger.log(`SMTP transporter configurado: port=${port} secure=${secure}`);
+    this.logger.log(`SMTP transporter pronto: host=${resolvedHost} port=${port} secure=${secure}`);
 
-    this.transporter.verify().then(
-      () => this.logger.log('SMTP transporter verificado com sucesso.'),
-      (err) => this.logger.error(`Falha ao verificar SMTP: ${err?.message ?? err}`),
-    );
+    try {
+      await this.transporter.verify();
+      this.logger.log('SMTP transporter verificado com sucesso.');
+    } catch (err: any) {
+      this.logger.error(`Falha ao verificar SMTP: ${err?.message ?? err}`);
+    }
   }
 
   async sendWelcomeMorador(email: string, nome: string, senhaInicial: string): Promise<void> {
@@ -90,7 +91,7 @@ export class MailService {
         html,
       });
       this.logger.log(`E-mail de boas-vindas enviado para ${email}. messageId=${info.messageId}`);
-    } catch (err) {
+    } catch (err: any) {
       this.logger.error(`Falha ao enviar e-mail de boas-vindas para ${email}: ${err?.message ?? err}`);
       throw err;
     }
