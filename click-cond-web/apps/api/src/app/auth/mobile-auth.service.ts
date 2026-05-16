@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../common/mail/mail.service';
@@ -7,6 +7,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class MobileAuthService {
+  private readonly logger = new Logger(MobileAuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -133,16 +135,27 @@ export class MobileAuthService {
       throw new ServiceUnavailableException('Banco de dados indisponível. Tente novamente em instantes.');
     }
 
+    this.logger.log(`[loginMorador] tentativa login="${login}" senhaLen=${senhaRaw?.length ?? 0}`);
+
+    // Busca por login OU email (compatibilidade com cadastros antigos)
     const user = await this.prisma.users.findFirst({
-      where: { login },
+      where: { OR: [{ login }, { email: login }] },
       include: { moradores: true },
     });
 
-    if (!user || !user.moradores || user.moradores.length === 0) {
+    if (!user) {
+      this.logger.warn(`[loginMorador] usuário não encontrado para login="${login}"`);
+      throw new UnauthorizedException('Login ou Senha incorretos');
+    }
+
+    this.logger.log(`[loginMorador] user encontrado id=${user.id} login="${user.login}" email="${user.email}" hasPwd=${!!user.password} pwdPrefix="${user.password?.substring(0, 4)}" moradoresCount=${user.moradores?.length ?? 0}`);
+
+    if (!user.moradores || user.moradores.length === 0) {
       throw new UnauthorizedException('Login ou Senha incorretos');
     }
 
     const isMatch = await this.verifyPassword(senhaRaw, user.password, user.id);
+    this.logger.log(`[loginMorador] isMatch=${isMatch}`);
 
     if (!isMatch) {
       throw new UnauthorizedException('Login ou Senha incorretos');
