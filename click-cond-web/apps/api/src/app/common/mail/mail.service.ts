@@ -44,6 +44,10 @@ export class MailService {
       port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
       secure: process.env.SMTP_SECURE !== 'false',
       auth: { user, pass: normalizedPass },
+      // Timeouts curtos para falhar rapido em vez de travar silenciosamente
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
       // @ts-ignore — lookup nao esta na tipagem oficial mas e suportado
       lookup: lookupIPv4,
     });
