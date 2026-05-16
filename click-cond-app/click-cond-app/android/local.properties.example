@@ -1,0 +1,9 @@
+sdk.dir=C:\\caminho\\para\\Android\\Sdk
+flutter.sdk=C:\\caminho\\para\\flutter
+flutter.buildMode=release
+flutter.versionName=1.0.0
+flutter.versionCode=11
+storeFile=upload-keystore.jks
+storePassword=SUA_SENHA_AQUI
+keyAlias=upload
+keyPassword=SUA_SENHA_AQUI

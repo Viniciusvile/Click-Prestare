@@ -1,44 +1,44 @@
 name: click
 description: A new Flutter project.
 
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+11
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
 
-dependencies:  
+dependencies:
   cupertino_icons: ^1.0.8
 
   easy_mask: ^2.0.1
-  rflutter_alert: any
+  rflutter_alert: ^2.0.7
   dotted_border: ^2.1.0
-  auto_size_text: any
-  mask_text_input_formatter: any
-  roundcheckbox: any
-  multiselect_formfield: any
-  intl: any
-  badges: any
-  syncfusion_flutter_charts: any
-  currency_text_input_formatter: any
-  in_app_purchase: any
+  auto_size_text: ^3.0.0
+  mask_text_input_formatter: ^2.9.0
+  roundcheckbox: ^2.0.5
+  multiselect_formfield: ^0.1.7
+  intl: ^0.20.2
+  badges: ^3.2.0
+  syncfusion_flutter_charts: ^33.2.5
+  currency_text_input_formatter: ^2.3.0
+  in_app_purchase: ^3.2.3
 
   flutter:
     sdk: flutter
-  contained_tab_bar_view: any
-  image_picker: any
-  url_launcher: any
-  material_design_icons_flutter: any
+  contained_tab_bar_view: ^0.8.0
+  image_picker: ^1.2.2
+  url_launcher: ^6.3.2
+  material_design_icons_flutter: ^7.0.7296
   localstorage: ^4.0.0
   file_picker: ^8.1.4
-  open_filex: any
-  flutter_speed_dial: any
-  table_calendar: any
-  permission_handler: any
-  package_info_plus: any
-  easy_localization: any
-  google_fonts: any
+  open_filex: ^4.7.0
+  flutter_speed_dial: ^7.0.0
+  table_calendar: ^3.2.0
+  permission_handler: ^12.0.1
+  package_info_plus: ^9.0.1
+  easy_localization: ^3.0.8
+  google_fonts: ^8.1.0
   phosphor_flutter: ^1.4.0
 
   flutter_localizations:
@@ -48,11 +48,11 @@ dependencies:
   shimmer: ^3.0.0
 
 dev_dependencies:
-  flutter_lints: any
+  flutter_lints: ^6.0.0
   flutter_native_splash: ^2.4.0
 
   flutter_test:
-    sdk: flutter 
+    sdk: flutter
 
 flutter_native_splash:
   color: "#18181b"
@@ -62,10 +62,9 @@ flutter_native_splash:
     icon_background_color: "#18181b"
     color: "#18181b"
 
-# The following section is specific to Flutter.
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/
     - assets/images/

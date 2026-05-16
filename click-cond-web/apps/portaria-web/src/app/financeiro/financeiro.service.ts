@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { API_BASE } from '../shared/api.config';
 import { AuthService } from '../auth/auth.service';
 
@@ -39,34 +38,17 @@ export class FinanceiroApi {
 
   listLancamentos(mes: string, ano: string): Observable<any> {
     const url = `${API_BASE}/financeiro/get-all?id_condominio=${this.cid}&mes=${mes}&ano=${ano}`;
-    return this.http.get<any>(url).pipe(
-      catchError(() => of({
-        lancamentos: {
-          '10 de Maio de 2026': [
-            { id: 1, nome: 'Taxa Condominial Apto 101', tipo: 'C', valorString: 'R$ 650,00', valor: 650, pago: 1, categoria: 'Receitas', status: '1' }
-          ]
-        },
-        saldo: 'R$ 650,00', totalReceita: 'R$ 650,00', totalDespesa: 'R$ 0,00', dia: '10/05/2026',
-        meses: [{ mes: '05', ano: '2026', periodo: 'Maio/2026' }]
-      }))
-    );
+    return this.http.get<any>(url);
   }
 
   listInadimplentes(): Observable<any> {
     const url = `${API_BASE}/financeiro/inadimplentes/get-all?id_condominio=${this.cid}`;
-    return this.http.get<any>(url).pipe(
-      catchError(() => of({ blocos: [] }))
-    );
+    return this.http.get<any>(url);
   }
 
   getGrafico(mes: string, ano: string): Observable<any> {
     const url = `${API_BASE}/financeiro/grafico/get-all?id_condominio=${this.cid}&mes=${mes}&ano=${ano}`;
-    return this.http.get<any>(url).pipe(
-      catchError(() => of({
-        categorias: [], totalReceitaReal: 'R$ 0,00', totalDespesaReal: 'R$ 0,00', saldoReal: 'R$ 0,00',
-        percentualReceita: '0%', percentualDespesa: '0%'
-      }))
-    );
+    return this.http.get<any>(url);
   }
 
   insertLancamento(payload: any): Observable<any> {

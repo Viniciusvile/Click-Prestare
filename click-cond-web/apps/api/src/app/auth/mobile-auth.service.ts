@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { createHash } from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class MobileAuthService {
@@ -10,14 +11,37 @@ export class MobileAuthService {
     private readonly jwt: JwtService,
   ) {}
 
+  private async verifyPassword(senhaRaw: string, stored: string | null | undefined, userId: number): Promise<boolean> {
+    if (!stored) return false;
+
+    if (stored.startsWith('$2')) {
+      return bcrypt.compare(senhaRaw, stored);
+    }
+
+    const md5Password = createHash('md5').update(senhaRaw).digest('hex');
+    const isMatch = stored === md5Password;
+
+    if (isMatch) {
+      try {
+        const newHash = await bcrypt.hash(senhaRaw, 10);
+        await this.prisma.users.update({
+          where: { id: userId },
+          data: { password: newHash },
+        });
+      } catch (e) {
+        // Falha na migração não deve bloquear o login
+      }
+    }
+
+    return isMatch;
+  }
+
   // ==========================================
   // SÍNDICO
   // ==========================================
   async loginSindico(login: string, senhaRaw: string) {
     if (!this.prisma.isConnected) {
-      const mockUser = { id: 1, name: 'Síndico Mock (Offline)', photo: '' };
-      const payload = { sub: 1, nome: mockUser.name, typeAccess: 'Sindico', user: mockUser };
-      return { token: this.jwt.sign(payload), user: mockUser };
+      throw new ServiceUnavailableException('Banco de dados indisponível. Tente novamente em instantes.');
     }
 
     const user = await this.prisma.users.findFirst({
@@ -29,15 +53,7 @@ export class MobileAuthService {
       throw new UnauthorizedException('Login ou Senha incorretos');
     }
 
-    const md5Password = createHash('md5').update(senhaRaw).digest('hex');
-    let isMatch = false;
-
-    if (user.password?.startsWith('$2')) {
-      const bcrypt = require('bcrypt');
-      isMatch = await bcrypt.compare(senhaRaw, user.password);
-    } else {
-      isMatch = user.password === md5Password;
-    }
+    const isMatch = await this.verifyPassword(senhaRaw, user.password, user.id);
 
     if (!isMatch) {
       throw new UnauthorizedException('Login ou Senha incorretos');
@@ -112,9 +128,7 @@ export class MobileAuthService {
   // ==========================================
   async loginMorador(login: string, senhaRaw: string) {
     if (!this.prisma.isConnected) {
-      const mockUser = { id: 2, nome: 'Morador Mock (Offline)', photo: '' };
-      const payload = { sub: 2, nome: mockUser.nome, typeAccess: 'Morador', user: mockUser };
-      return { token: this.jwt.sign(payload), user: mockUser };
+      throw new ServiceUnavailableException('Banco de dados indisponível. Tente novamente em instantes.');
     }
 
     const user = await this.prisma.users.findFirst({
@@ -126,15 +140,7 @@ export class MobileAuthService {
       throw new UnauthorizedException('Login ou Senha incorretos');
     }
 
-    const md5Password = createHash('md5').update(senhaRaw).digest('hex');
-    let isMatch = false;
-
-    if (user.password?.startsWith('$2')) {
-      const bcrypt = require('bcrypt');
-      isMatch = await bcrypt.compare(senhaRaw, user.password);
-    } else {
-      isMatch = user.password === md5Password;
-    }
+    const isMatch = await this.verifyPassword(senhaRaw, user.password, user.id);
 
     if (!isMatch) {
       throw new UnauthorizedException('Login ou Senha incorretos');
@@ -212,13 +218,7 @@ export class MobileAuthService {
   // ==========================================
   async loginFuncionario(login: string, senhaRaw: string) {
     if (!this.prisma.isConnected) {
-      const mockUser = {
-        id: 3, nome: 'Funcionário Mock (Offline)', photo: '',
-        areas_sociais: 1, comunicados: 1, ocorrencias: 1, manutencoes_programadas: 1,
-        prestadores_servico: 1, agendar_mudanca: 1, cadastrar_visitante: 1, apartamentos: 1
-      };
-      const payload = { sub: 3, nome: mockUser.nome, typeAccess: 'Funcionario', user: mockUser };
-      return { token: this.jwt.sign(payload), user: mockUser };
+      throw new ServiceUnavailableException('Banco de dados indisponível. Tente novamente em instantes.');
     }
 
     const user = await this.prisma.users.findFirst({
@@ -230,15 +230,7 @@ export class MobileAuthService {
       throw new UnauthorizedException('Login ou Senha incorretos');
     }
 
-    const md5Password = createHash('md5').update(senhaRaw).digest('hex');
-    let isMatch = false;
-
-    if (user.password?.startsWith('$2')) {
-      const bcrypt = require('bcrypt');
-      isMatch = await bcrypt.compare(senhaRaw, user.password);
-    } else {
-      isMatch = user.password === md5Password;
-    }
+    const isMatch = await this.verifyPassword(senhaRaw, user.password, user.id);
 
     if (!isMatch) {
       throw new UnauthorizedException('Login ou Senha incorretos');

@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { API_BASE } from '../shared/api.config';
 import { AuthService } from '../auth/auth.service';
 
@@ -40,11 +39,7 @@ export class AssembleiasApi {
   // ==========================================
   listAssembleias(): Observable<Assembleia[]> {
     const url = `${API_BASE}/assembleias/get-all?id_condominio=${this.cid}`;
-    return this.http.get<Assembleia[]>(url).pipe(
-      catchError(() => of([
-        { id: 1, titulo: 'Assembleia Geral Ordinária', descricao: 'Aprovação de orçamentos e eleição', data: '20/05/2026', hora: '19:30', local: 'Salão Principal' }
-      ]))
-    );
+    return this.http.get<Assembleia[]>(url);
   }
 
   getAssembleia(id: number): Observable<{ assembleia: Assembleia; votacoes: Votacao[]; meusVotos: string[] }> {
@@ -92,14 +87,6 @@ export class AssembleiasApi {
 
   listEnquetes(): Observable<Votacao[]> {
     const url = `${API_BASE}/assembleias/votacoes/enquetes/get-all?id_condominio=${this.cid}`;
-    return this.http.get<Votacao[]>(url).pipe(
-      catchError(() => of([
-        {
-          id: 101, titulo: 'Melhoria na Portaria', descricao: 'Instalação de biometria facial',
-          data_inicio: '10/05/2026', data_termino: '25/05/2026', status: 1,
-          opcoes: ['1;Sim, concordo;12', '2;Não é prioridade;4']
-        }
-      ]))
-    );
+    return this.http.get<Votacao[]>(url);
   }
 }

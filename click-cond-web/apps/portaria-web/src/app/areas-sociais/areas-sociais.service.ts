@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { API_BASE } from '../shared/api.config';
 import { AuthService } from '../auth/auth.service';
 
@@ -40,12 +39,7 @@ export class AreasSociaisApi {
   // Listar áreas sociais
   listAreas(): Observable<AreaSocial[]> {
     const url = `${API_BASE}/areasSociais/get-all?id_condominio=${this.cid}`;
-    return this.http.get<AreaSocial[]>(url).pipe(
-      catchError(() => of([
-        { id: 1, nome: 'Churrasqueira Gourmet', imagem: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600', capacidade: 25 },
-        { id: 2, nome: 'Salão de Festas', imagem: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=600', capacidade: 80 }
-      ]))
-    );
+    return this.http.get<AreaSocial[]>(url);
   }
 
   // Detalhes da área
@@ -75,14 +69,7 @@ export class AreasSociaisApi {
   // Listar todos os agendamentos do condomínio
   listAgendamentos(): Observable<AgendamentoArea[]> {
     const url = `${API_BASE}/areasSociais/agendamentos/get-all?id_condominio=${this.cid}`;
-    return this.http.get<AgendamentoArea[]>(url).pipe(
-      catchError(() => of([
-        {
-          id: 1, nomeArea: 'Churrasqueira Gourmet', status: 'pendente', bloco: 'A', apto: '101',
-          data_criacao: '14/05/2026 às 10:00', data: '20/05/2026', horaDe: '12:00', horaAte: '16:00'
-        }
-      ]))
-    );
+    return this.http.get<AgendamentoArea[]>(url);
   }
 
   // Atualizar status de um agendamento (Aprovar/Recusar)

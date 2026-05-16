@@ -3,6 +3,8 @@ node_modules/
 dist/
 build/
 .env
+.env.local
+.env.*.local
 .idea/
 .vscode/
 npm-debug.log
@@ -11,3 +13,25 @@ yarn-error.log
 .antigravity_config.json
 firebase-service-account.json
 scratch/
+
+# Android signing artifacts — NEVER commit these
+*.jks
+*.keystore
+**/key.properties
+**/local.properties
+click-cond-app/click-cond-app/android/app/upload-keystore.jks
+click-cond-app/click-cond-app/keys/
+
+# Apple signing
+*.mobileprovision
+*.p12
+*.p8
+
+# iOS build
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# Logs
+*.log
