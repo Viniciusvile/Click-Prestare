@@ -10,7 +10,9 @@ export class MailService {
   constructor() {
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
-    this.fromAddress = process.env.SMTP_FROM || user || 'nao.responder.click@gmail.com';
+    const fromEmail = process.env.SMTP_FROM || user || 'nao.responder.click@gmail.com';
+    const fromName = process.env.SMTP_FROM_NAME || 'Click Condomínios';
+    this.fromAddress = `"${fromName}" <${fromEmail}>`;
 
     if (!user || !pass) {
       this.logger.warn('SMTP_USER/SMTP_PASS não definidos — envio de e-mails desabilitado.');
