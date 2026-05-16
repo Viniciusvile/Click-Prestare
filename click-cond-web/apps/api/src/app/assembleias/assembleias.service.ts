@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -288,29 +288,34 @@ export class AssembleiasService {
   async registerVoto(votacaoId: number, opcaoId: number, userId: number) {
     if (!this.prisma.isConnected) return { success: true };
 
-    // Remover voto anterior do usuário nessa votação
-    const opcoesDb = await this.prisma.votacoes_Opcoes.findMany({
-      where: { id_votacao: Number(votacaoId) },
-      select: { id: true },
+    const votacao = await this.prisma.votacoes.findUnique({
+      where: { id: Number(votacaoId) },
+      include: { opcoes: { select: { id: true } } },
     });
+    if (!votacao) throw new NotFoundException('Votação não encontrada');
 
-    const idsOpcoes = opcoesDb.map(o => o.id);
+    const status = this.calcStatusInt(votacao.data_inicio, votacao.data_termino);
+    if (status === 0) throw new BadRequestException('Votação ainda não foi iniciada');
+    if (status === 2) throw new BadRequestException('Votação já foi finalizada');
 
-    if (idsOpcoes.length > 0) {
-      await this.prisma.votacoes_Usuarios.deleteMany({
+    const idsOpcoes = votacao.opcoes.map(o => o.id);
+    if (!idsOpcoes.includes(Number(opcaoId))) {
+      throw new BadRequestException('Opção inválida para esta votação');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.votacoes_Usuarios.deleteMany({
         where: {
           id_user: Number(userId),
           id_opcao: { in: idsOpcoes },
         },
       });
-    }
-
-    // Inserir novo voto
-    await this.prisma.votacoes_Usuarios.create({
-      data: {
-        id_opcao: Number(opcaoId),
-        id_user: Number(userId),
-      },
+      await tx.votacoes_Usuarios.create({
+        data: {
+          id_opcao: Number(opcaoId),
+          id_user: Number(userId),
+        },
+      });
     });
 
     return { success: true };
