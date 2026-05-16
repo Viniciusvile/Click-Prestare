@@ -1,10 +1,18 @@
+import 'package:click/theme/app_colors.dart';
+import 'package:click/theme/app_spacing.dart';
+import 'package:click/theme/app_typography.dart';
 import 'package:flutter/material.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class ModalAgendaReserva extends StatefulWidget {
+  const ModalAgendaReserva({
+    Key? key,
+    required this.onPressed,
+    this.selected,
+    required this.allowedDays,
+  }) : super(key: key);
 
-  const ModalAgendaReserva({Key? key, required this.onPressed, this.selected, required this.allowedDays, }) : super(key: key);
   final Function(DateTime) onPressed;
   final DateTime? selected;
   final Map allowedDays;
@@ -14,142 +22,173 @@ class ModalAgendaReserva extends StatefulWidget {
 }
 
 class _ModalAgendaReservaState extends State<ModalAgendaReserva> {
-  
+  late DateTime _focusedDay;
+  DateTime? _selectedDay;
+
   @override
-  void initState(){
+  void initState() {
     super.initState();
     initializeDateFormatting();
+    _focusedDay = widget.selected ?? DateTime.now();
+    _selectedDay = widget.selected;
   }
 
-  checkDate(item){
-    try{
-      var date = new DateTime(item.year, item.month, item.day, 0, 0);      
-      return widget.allowedDays.containsKey(date);
-    }catch(e){
-      return false;
-    }
+  bool _isAllowed(DateTime item) {
+    final date = DateTime(item.year, item.month, item.day);
+    return widget.allowedDays.containsKey(date);
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(5),
-      ),
-      elevation: 0,
       backgroundColor: Colors.transparent,
-      child: contentBox(context),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceElevated(context),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border(context)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Selecione uma data',
+                style: AppTypography.headline(context),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TableCalendar(
+                firstDay: DateTime.now().subtract(const Duration(days: 1)),
+                lastDay: DateTime.utc(2100, 12, 31),
+                focusedDay: _focusedDay,
+                locale: 'pt_BR',
+                availableCalendarFormats: const {CalendarFormat.month: ''},
+                startingDayOfWeek: StartingDayOfWeek.sunday,
+                selectedDayPredicate: (day) =>
+                    _selectedDay != null && isSameDay(day, _selectedDay!),
+                onDaySelected: (selectedDay, focusedDay) {
+                  if (!_isAllowed(selectedDay)) return;
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                  widget.onPressed(selectedDay);
+                },
+                onPageChanged: (focusedDay) {
+                  setState(() => _focusedDay = focusedDay);
+                },
+                headerStyle: HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
+                  titleTextStyle: AppTypography.bodyMedium(context).copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  leftChevronIcon: Icon(
+                    Icons.chevron_left,
+                    color: AppColors.textPrimary(context),
+                  ),
+                  rightChevronIcon: Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: AppTypography.caption(context).copyWith(
+                    color: AppColors.textSecondary(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  weekendStyle: AppTypography.caption(context).copyWith(
+                    color: AppColors.textSecondary(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                calendarStyle: const CalendarStyle(
+                  outsideDaysVisible: false,
+                ),
+                calendarBuilders: CalendarBuilders(
+                  defaultBuilder: (context, day, _) =>
+                      _buildDay(context, day, isToday: false),
+                  todayBuilder: (context, day, _) =>
+                      _buildDay(context, day, isToday: true),
+                  selectedBuilder: (context, day, _) =>
+                      _buildDay(context, day, isSelected: true),
+                  disabledBuilder: (context, day, _) => _buildDay(
+                    context,
+                    day,
+                    disabled: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: AppTypography.body(context).copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
-  contentBox(context){
+
+  Widget _buildDay(
+    BuildContext context,
+    DateTime day, {
+    bool isToday = false,
+    bool isSelected = false,
+    bool disabled = false,
+  }) {
+    final allowed = _isAllowed(day);
+    final Color bg;
+    final Color fg;
+    Border? border;
+
+    if (isSelected) {
+      bg = AppColors.primary;
+      fg = Colors.white;
+    } else if (allowed) {
+      bg = AppColors.primary.withOpacity(0.15);
+      fg = AppColors.primary;
+      border = Border.all(color: AppColors.primary.withOpacity(0.35));
+    } else {
+      bg = Colors.transparent;
+      fg = AppColors.textTertiary(context);
+    }
+
     return Container(
-      padding: EdgeInsets.all(30),
-      height: 455,
-        margin: EdgeInsets.only(top: 25),
-        decoration: BoxDecoration(
-          shape: BoxShape.rectangle,
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(color: Colors.black,offset: Offset(0,5),
-            blurRadius: 15
-            ),
-          ]
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: isToday && !isSelected
+            ? Border.all(color: AppColors.primary, width: 1.5)
+            : border,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '${day.day}',
+        style: AppTypography.body(context).copyWith(
+          color: fg,
+          fontWeight: isSelected || allowed ? FontWeight.w600 : FontWeight.w400,
         ),
-      child: TableCalendar(
-        firstDay: DateTime.now(),
-        lastDay: DateTime.utc(2100, 3, 14),
-        focusedDay: DateTime.now(),
-        locale: 'pt_BR',                            
-        // selectedDayPredicate: widget.selected != null ? (day) => isSameDay(day, widget.selected!) : null,
-        availableCalendarFormats: const {CalendarFormat.month: ''},
-        onDaySelected: (selectedDay, focusedDay) {
-          var date = new DateTime(selectedDay.year, selectedDay.month, selectedDay.day, 0, 0);
-          if(widget.allowedDays.containsKey(date)){ //se for sabado ou domindo, depois alterar para os dias não permitidos
-            setState(() {                              
-              widget.onPressed(selectedDay);
-            });
-          }            
-        },
-        calendarBuilders: CalendarBuilders(
-          todayBuilder: (context, day, focusedDay) {
-            return Container(
-              child: Center(
-                child: 
-                  widget.selected != null && isSameDay(day, widget.selected!) 
-                  ? Text(
-                      day.day.toString(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        background: Paint()..color = Colors.yellow
-                        ..strokeWidth = 17
-                        ..style = PaintingStyle.stroke,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                  : Text(
-                      day.day.toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        background: Paint()..color = checkDate(day) ? Theme.of(context).primaryColor : Colors.grey.shade300
-                        ..strokeWidth = 17
-                        ..style = PaintingStyle.stroke,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                // LabelDefault(title: day.day.toString(), color: Style.primaryColor, size: 14, weight: FontWeight.bold,)
-              ));
-          },
-          defaultBuilder: (context, day, focusedDay)  {
-             return Container(
-              child: Center(
-                child: 
-                  widget.selected != null && isSameDay(day, widget.selected!) 
-                  ? Text(
-                      day.day.toString(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        background: Paint()..color = Colors.yellow
-                        ..strokeWidth = 17
-                        ..style = PaintingStyle.stroke,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                  : Text(
-                      day.day.toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        background: Paint()..color = checkDate(day) ? Theme.of(context).primaryColor : Colors.grey.shade300
-                        ..strokeWidth = 17
-                        ..style = PaintingStyle.stroke,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                // LabelDefault(title: day.day.toString(), color: Style.primaryColor, size: 14, weight: FontWeight.bold,)
-              ));              
-          },          
-        ),
-        // calendarStyle: CalendarStyle(
-          // defaultDecoration: BoxDecoration(
-          //   color: Style.primaryColor,
-          //   shape: BoxShape.circle,
-          // ),
-        //   weekendDecoration: BoxDecoration(
-        //     color: Style.primaryColor,
-        //     shape: BoxShape.circle,
-        //   ),
-        //   defaultTextStyle: TextStyle(color: Colors.white),
-          // selectedDecoration: BoxDecoration(
-          //   color: Style.dateSelected,
-          //   shape: BoxShape.circle,
-          // ),
-          // todayDecoration: BoxDecoration(
-          //   color: Colors.grey.shade300,
-          //   shape: BoxShape.rectangle,
-          // ),
-        // ),
       ),
     );
   }
