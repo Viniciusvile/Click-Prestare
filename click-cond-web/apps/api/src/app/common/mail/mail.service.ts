@@ -39,18 +39,25 @@ export class MailService {
       dns.lookup(hostname, { family: 4 }, callback as any);
     };
 
+    // Railway hobby tier bloqueia porta 465 (SMTPS implicit TLS).
+    // Default para 587 (STARTTLS), que e permitida.
+    const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
+    const secure = process.env.SMTP_SECURE === 'true' ? true : port === 465;
+
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
-      secure: process.env.SMTP_SECURE !== 'false',
+      port,
+      secure,
+      requireTLS: !secure,
       auth: { user, pass: normalizedPass },
-      // Timeouts curtos para falhar rapido em vez de travar silenciosamente
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 30000,
       // @ts-ignore — lookup nao esta na tipagem oficial mas e suportado
       lookup: lookupIPv4,
     });
+
+    this.logger.log(`SMTP transporter configurado: port=${port} secure=${secure}`);
 
     this.transporter.verify().then(
       () => this.logger.log('SMTP transporter verificado com sucesso.'),
