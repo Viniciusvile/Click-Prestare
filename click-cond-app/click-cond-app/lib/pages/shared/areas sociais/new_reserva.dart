@@ -72,7 +72,7 @@ class _NewReservaPageState extends State<NewReserva> {
       var obj = AreaSocialReservaModel(
         id: -1,
         id_area_social: widget.obj['id'],
-        data: convertStringToDate(txtData.text),
+        data: txtData.text,
         horaDe: selectedHour.toString().split(' - ')[0],
         horaAte: selectedHour.toString().split(' - ')[1],
         id_apartamento: getAptoId(),
