@@ -14,18 +14,27 @@ export class MailService {
     const fromName = process.env.SMTP_FROM_NAME || 'Click Condomínios';
     this.fromAddress = `"${fromName}" <${fromEmail}>`;
 
+    this.logger.log(`MailService init: SMTP_USER=${user ? user : 'UNDEFINED'} SMTP_PASS_LEN=${pass ? pass.length : 0} SERVICE=${process.env.SMTP_SERVICE || 'gmail'}`);
+
     if (!user || !pass) {
       this.logger.warn('SMTP_USER/SMTP_PASS não definidos — envio de e-mails desabilitado.');
       return;
     }
+
+    const normalizedPass = pass.replace(/\s+/g, '');
 
     this.transporter = nodemailer.createTransport({
       service: process.env.SMTP_SERVICE || 'gmail',
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465,
       secure: process.env.SMTP_SECURE !== 'false',
-      auth: { user, pass },
+      auth: { user, pass: normalizedPass },
     });
+
+    this.transporter.verify().then(
+      () => this.logger.log('SMTP transporter verificado com sucesso.'),
+      (err) => this.logger.error(`Falha ao verificar SMTP: ${err?.message ?? err}`),
+    );
   }
 
   async sendWelcomeMorador(email: string, nome: string, senhaInicial: string): Promise<void> {
@@ -45,12 +54,18 @@ export class MailService {
       Equipe CLICK
     `;
 
-    await this.transporter.sendMail({
-      from: this.fromAddress,
-      to: email,
-      subject: 'CLICK - Bem-vindo(a)! Suas credenciais de acesso',
-      html,
-    });
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.fromAddress,
+        to: email,
+        subject: 'CLICK - Bem-vindo(a)! Suas credenciais de acesso',
+        html,
+      });
+      this.logger.log(`E-mail de boas-vindas enviado para ${email}. messageId=${info.messageId}`);
+    } catch (err) {
+      this.logger.error(`Falha ao enviar e-mail de boas-vindas para ${email}: ${err?.message ?? err}`);
+      throw err;
+    }
   }
 
   async sendForgotPassword(email: string, novaSenha: string, tipoUsuario: string): Promise<void> {
