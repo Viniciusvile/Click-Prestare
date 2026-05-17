@@ -535,156 +535,164 @@ export class MobileAuthService {
   }
 
   // ==========================================
-  // MOCK STATICS & CRUD FALLBACK (FUNCIONÁRIOS E MORADORES)
+  // FUNCIONÁRIOS DE PORTARIA (MOBILE) — persistência real
   // ==========================================
-  private mockFuncionarios: any[] = [
-    {
-      id: 1,
-      nome: 'João Silva (Porteiro)',
-      documento: '111.222.333-44',
-      email: 'joao.silva@click.com',
-      telefone: '(11) 98888-7777',
-      funcao: 'Porteiro Diurno',
-      ch: '08:00 às 18:00',
-      photo: '',
-      hasPortariaAccess: true,
-      areas_sociais: 1,
-      comunicados: 1,
-    }
-  ];
-
-  private mockMoradores: any[] = [
-    {
-      id: 1,
-      nome: 'Carlos Eduardo',
-      documento: '555.666.777-88',
-      email: 'carlos@click.com',
-      telefone: '(11) 95555-4444',
-      bloco: 'A',
-      apartamento: '101',
-      photo: '',
-    }
-  ];
 
   async getAllFuncionarios(idCond: number) {
-    try {
-      if (this.prisma.isConnected) {
-        const reais = await this.prisma.funcionarios_Portaria.findMany({
-          where: { id_condominio: Number(idCond) || 1, ativo: 1 },
-        });
-
-        if (reais && reais.length > 0) {
-          const mapReais = reais.map(f => ({
-            id: f.id,
-            nome: f.nome || '',
-            documento: '',
-            email: f.login || '',
-            telefone: '',
-            funcao: f.turno ? `Porteiro ${f.turno}` : 'Porteiro',
-            cargo: f.turno ? `Porteiro ${f.turno}` : 'Porteiro',
-            ch: f.turno || '',
-            photo: '',
-            hasPortariaAccess: true,
-          }));
-          const criadosLocal = this.mockFuncionarios.filter(x => x.id > 1000);
-          return [...mapReais, ...criadosLocal];
-        }
-      }
-      return this.mockFuncionarios;
-    } catch (e) {
-      return this.mockFuncionarios;
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
+    const reais = await this.prisma.funcionarios_Portaria.findMany({
+      where: { id_condominio: Number(idCond), ativo: 1 },
+      orderBy: { nome: 'asc' },
+    });
+    return reais.map(f => ({
+      id: f.id,
+      nome: f.nome ?? '',
+      documento: '',
+      email: f.email ?? f.login ?? '',
+      telefone: f.telefone ?? '',
+      funcao: f.turno ? `Porteiro ${f.turno}` : 'Porteiro',
+      cargo: f.turno ? `Porteiro ${f.turno}` : 'Porteiro',
+      ch: f.turno ?? '',
+      photo: '',
+      hasPortariaAccess: true,
+    }));
   }
 
   async getFuncionarioById(id: number) {
-    try {
-      if (this.prisma.isConnected) {
-        const fReal = await this.prisma.funcionarios_Portaria.findFirst({ where: { id: Number(id) } });
-        if (fReal) {
-          return {
-            id: fReal.id,
-            nome: fReal.nome || '',
-            documento: '',
-            email: fReal.login || '',
-            telefone: '',
-            funcao: fReal.turno ? `Porteiro ${fReal.turno}` : 'Porteiro',
-            ch: fReal.turno || '',
-            photo: '',
-            hasPortariaAccess: true,
-          };
-        }
-      }
-    } catch (e) {}
-    const f = this.mockFuncionarios.find(x => x.id === Number(id));
-    return f || this.mockFuncionarios[0];
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
+    }
+    const f = await this.prisma.funcionarios_Portaria.findUnique({ where: { id: Number(id) } });
+    if (!f) throw new NotFoundException('Funcionário não encontrado.');
+    return {
+      id: f.id,
+      nome: f.nome ?? '',
+      documento: '',
+      email: f.email ?? f.login ?? '',
+      telefone: f.telefone ?? '',
+      funcao: f.turno ? `Porteiro ${f.turno}` : 'Porteiro',
+      ch: f.turno ?? '',
+      photo: '',
+      hasPortariaAccess: true,
+    };
   }
 
   async saveFuncionario(body: any, isEdit: boolean) {
-    const func = body.funcionario || body.funcionarios || {};
-    try {
-      const newId = Date.now();
-      this.mockFuncionarios.push({ id: newId, ...func });
-      return "";
-    } catch (e) {
-      return "";
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
+    const func = body.funcionario || body.funcionarios || {};
+    const idCondominio = Number(body.id_condominio);
+
+    if (isEdit) {
+      const id = Number(func.id);
+      if (!id) throw new BadRequestException('ID do funcionário é obrigatório para edição.');
+      const atual = await this.prisma.funcionarios_Portaria.findUnique({ where: { id } });
+      if (!atual) throw new NotFoundException('Funcionário não encontrado.');
+
+      const data: any = {};
+      if (func.nome !== undefined) data.nome = func.nome;
+      if (func.email !== undefined) data.email = func.email;
+      if (func.telefone !== undefined) data.telefone = func.telefone;
+      if (func.ch !== undefined || func.turno !== undefined) data.turno = func.ch ?? func.turno;
+      // Se mudou o login (email), atualiza também
+      if (func.email && func.email !== atual.login) {
+        const conflito = await this.prisma.funcionarios_Portaria.findFirst({
+          where: { login: func.email, NOT: { id } },
+          select: { id: true },
+        });
+        if (conflito) throw new BadRequestException('Já existe outro funcionário com este e-mail.');
+        data.login = func.email;
+      }
+
+      await this.prisma.funcionarios_Portaria.update({ where: { id }, data });
+      return '';
+    }
+
+    // Criação
+    if (!idCondominio) throw new BadRequestException('id_condominio é obrigatório.');
+    if (!func.nome) throw new BadRequestException('Nome é obrigatório.');
+    const loginFinal = func.email || func.login;
+    if (!loginFinal) throw new BadRequestException('E-mail é obrigatório para login do porteiro.');
+
+    const conflito = await this.prisma.funcionarios_Portaria.findUnique({ where: { login: loginFinal } });
+    if (conflito) throw new BadRequestException('Já existe um funcionário com este e-mail.');
+
+    // Senha inicial = documento ou '123456'
+    const senhaInicial = (func.documento && String(func.documento).trim()) || '123456';
+    const md5Pwd = createHash('md5').update(senhaInicial).digest('hex');
+
+    const created = await this.prisma.funcionarios_Portaria.create({
+      data: {
+        nome: func.nome,
+        login: loginFinal,
+        password: md5Pwd,
+        email: func.email ?? null,
+        telefone: func.telefone ?? null,
+        turno: func.ch ?? func.turno ?? null,
+        ativo: 1,
+        id_condominio: idCondominio,
+      },
+    });
+
+    return { id: created.id };
   }
 
   async removeFuncionario(id: number) {
-    this.mockFuncionarios = this.mockFuncionarios.filter(x => x.id !== Number(id));
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
+    }
+    try {
+      await this.prisma.funcionarios_Portaria.delete({ where: { id: Number(id) } });
+    } catch {
+      throw new NotFoundException('Funcionário não encontrado.');
+    }
     return true;
   }
 
   async getAllMoradores(idCond: number) {
-    try {
-      if (this.prisma.isConnected) {
-        const reais = await this.prisma.moradores.findMany({
-          where: { id_condominio: Number(idCond) || 1 },
-        });
-
-        if (reais && reais.length > 0) {
-          const mapReais = reais.map(m => ({
-            id: m.id,
-            nome: m.nome || '',
-            documento: m.documento || '',
-            email: m.email || '',
-            telefone: m.telefone || '',
-            bloco: m.bloco || 'A',
-            apartamento: m.apartamento || '',
-            photo: m.photo || '',
-            vinculo: m.vinculo || 'Proprietario',
-          }));
-          const criadosLocal = this.mockMoradores.filter(x => x.id > 1000);
-          return [...mapReais, ...criadosLocal];
-        }
-      }
-      return this.mockMoradores;
-    } catch (e) {
-      return this.mockMoradores;
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
+    const reais = await this.prisma.moradores.findMany({
+      where: { id_condominio: Number(idCond) },
+      orderBy: { nome: 'asc' },
+    });
+    return reais.map(m => ({
+      id: m.id,
+      nome: m.nome ?? '',
+      documento: m.documento ?? '',
+      email: m.email ?? '',
+      telefone: m.telefone ?? '',
+      bloco: m.bloco ?? '',
+      apartamento: m.apartamento ?? '',
+      photo: '',
+      vinculo: m.tipo ?? 'proprietario',
+      tipo: m.tipo ?? 'proprietario',
+    }));
   }
 
   async getMoradorById(id: number) {
-    try {
-      if (this.prisma.isConnected) {
-        const mReal = await this.prisma.moradores.findFirst({ where: { id: Number(id) } });
-        if (mReal) {
-          return {
-            id: mReal.id,
-            nome: mReal.nome || '',
-            documento: mReal.documento || '',
-            email: mReal.email || '',
-            telefone: mReal.telefone || '',
-            bloco: mReal.bloco || 'A',
-            apartamento: mReal.apartamento || '',
-            photo: mReal.photo || '',
-            vinculo: mReal.vinculo || 'Proprietario',
-          };
-        }
-      }
-    } catch (e) {}
-    const m = this.mockMoradores.find(x => x.id === Number(id));
-    return m || this.mockMoradores[0];
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
+    }
+    const m = await this.prisma.moradores.findUnique({ where: { id: Number(id) } });
+    if (!m) throw new NotFoundException('Morador não encontrado.');
+    return {
+      id: m.id,
+      nome: m.nome ?? '',
+      documento: m.documento ?? '',
+      email: m.email ?? '',
+      telefone: m.telefone ?? '',
+      data_nascimento: m.data_nascimento,
+      bloco: m.bloco ?? '',
+      apartamento: m.apartamento ?? '',
+      photo: '',
+      vinculo: m.tipo ?? 'proprietario',
+      tipo: m.tipo ?? 'proprietario',
+    };
   }
 
   async saveMorador(body: any, isEdit: boolean) {
@@ -857,12 +865,14 @@ export class MobileAuthService {
   }
 
   async removeMorador(id: number) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
+    }
     try {
-      if (this.prisma.isConnected) {
-        await this.prisma.moradores.delete({ where: { id: Number(id) } });
-      }
-    } catch (e) {}
-    this.mockMoradores = this.mockMoradores.filter(x => x.id !== Number(id));
+      await this.prisma.moradores.delete({ where: { id: Number(id) } });
+    } catch {
+      throw new NotFoundException('Morador não encontrado.');
+    }
     return true;
   }
 
@@ -871,123 +881,113 @@ export class MobileAuthService {
   // ==========================================
 
   async getAllApartamentos(idCond: number) {
-    try {
-      if (this.prisma.isConnected) {
-        const reais = await this.prisma.apartamentos.findMany({
-          where: { id_condominio: Number(idCond) || 1 },
-          include: {
-            users: {
-              include: { user: true }
-            },
-            _count: { select: { users: true } }
-          },
-          orderBy: [{ bloco: 'asc' }, { apto: 'asc' }],
-        });
-
-        if (reais && reais.length > 0) {
-          return reais.map(a => ({
-            id: a.id,
-            bloco: a.bloco || '',
-            apto: a.apto || '',
-            numero: a.apto || '', // Flutter espera 'numero' em alguns locais
-            fracao: a.fracao || '',
-            id_condominio: a.id_condominio,
-            qtdMoradores: a._count.users,
-            moradores: a.users.map(u => u.user.name).join(', '),
-          }));
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao buscar apartamentos (Mobile):', e);
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
-
-    // Fallback para mock se o banco estiver vazio, offline ou falhar
-    return [
-      { id: 1, bloco: 'A', apto: '101', numero: '101', fracao: '0.0125', id_condominio: idCond, moradores: 'Carlos Eduardo', qtdMoradores: 1 },
-      { id: 2, bloco: 'A', apto: '102', numero: '102', fracao: '0.0125', id_condominio: idCond, moradores: '', qtdMoradores: 0 },
-      { id: 3, bloco: 'B', apto: '201', numero: '201', fracao: '0.0150', id_condominio: idCond, moradores: 'Maria Oliveira', qtdMoradores: 1 },
-    ];
+    const reais = await this.prisma.apartamentos.findMany({
+      where: { id_condominio: Number(idCond) },
+      include: {
+        users: { include: { user: true } },
+        _count: { select: { users: true } },
+      },
+      orderBy: [{ bloco: 'asc' }, { apto: 'asc' }],
+    });
+    return reais.map(a => ({
+      id: a.id,
+      bloco: a.bloco ?? '',
+      apto: a.apto ?? '',
+      numero: a.apto ?? '',
+      fracao: a.fracao ?? '',
+      id_condominio: a.id_condominio,
+      qtdMoradores: a._count.users,
+      moradores: a.users.map(u => u.user.name ?? '').filter(Boolean).join(', '),
+    }));
   }
 
   async getMoradoresApto(idApto: number, tipo?: string) {
-    try {
-      if (this.prisma.isConnected) {
-        const rels = await this.prisma.apartamentos_Users.findMany({
-          where: { 
-            id_apto: Number(idApto),
-            ...(tipo ? { tipo } : {})
-          },
-          include: {
-            user: {
-              include: { moradores: true }
-            }
-          }
-        });
-
-        if (rels && rels.length > 0) {
-          return rels.map(r => {
-            const m = r.user.moradores[0];
-            return {
-              id: r.id_user,
-              nome: r.user.name || m?.nome || '',
-              email: r.user.email || m?.email || '',
-              telefone: r.user.phone || m?.telefone || '',
-              tipo: r.tipo || 'Morador',
-              photo: r.user.photo || '',
-            };
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao buscar moradores do apto (Mobile):', e);
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
-    return [];
+    // Normaliza filtro de tipo: "Proprietário" -> "proprietario"
+    const tipoNorm = tipo
+      ? tipo.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+      : undefined;
+
+    const rels = await this.prisma.apartamentos_Users.findMany({
+      where: {
+        id_apto: Number(idApto),
+        ...(tipoNorm ? { tipo: tipoNorm } : {}),
+      },
+      include: {
+        user: { include: { moradores: true } },
+      },
+    });
+
+    return rels.map(r => {
+      const m = r.user.moradores[0];
+      return {
+        id: m?.id ?? r.id_user, // Flutter usa esse id para abrir o detalhe
+        id_user: r.id_user,
+        nome: r.user.name ?? m?.nome ?? '',
+        email: r.user.email ?? m?.email ?? '',
+        telefone: r.user.phone ?? m?.telefone ?? '',
+        tipo: r.tipo ?? 'morador',
+        photo: r.user.photo ?? '',
+      };
+    });
   }
 
   async saveApto(body: any, isEdit: boolean) {
-    const idCond = Number(body.id_condominio);
-    const data = body.Apartamento;
-    try {
-      if (this.prisma.isConnected) {
-        if (isEdit) {
-          return await this.prisma.apartamentos.update({
-            where: { id: Number(data.id) },
-            data: {
-              bloco: data.bloco,
-              apto: data.apto,
-              fracao: data.fracao,
-            }
-          });
-        } else {
-          return await this.prisma.apartamentos.create({
-            data: {
-              id_condominio: idCond,
-              bloco: data.bloco,
-              apto: data.apto,
-              fracao: data.fracao,
-            }
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao salvar apartamento (Mobile):', e);
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
-    // Mock return if error or offline
-    return { id: data.id || Math.floor(Math.random() * 1000), ...data };
+    const idCond = Number(body.id_condominio);
+    const data = body.Apartamento ?? body.apartamento ?? {};
+
+    if (!data.apto) throw new BadRequestException('Apto é obrigatório.');
+
+    try {
+      if (isEdit) {
+        const id = Number(data.id);
+        if (!id) throw new BadRequestException('ID do apartamento é obrigatório para edição.');
+        return await this.prisma.apartamentos.update({
+          where: { id },
+          data: {
+            ...(data.bloco !== undefined && { bloco: data.bloco }),
+            ...(data.apto !== undefined && { apto: data.apto }),
+            ...(data.fracao !== undefined && { fracao: data.fracao }),
+          },
+        });
+      }
+      if (!idCond) throw new BadRequestException('id_condominio é obrigatório.');
+      return await this.prisma.apartamentos.create({
+        data: {
+          id_condominio: idCond,
+          bloco: data.bloco ?? null,
+          apto: data.apto,
+          fracao: data.fracao ?? null,
+        },
+      });
+    } catch (e: any) {
+      if (e?.response && e?.status) throw e;
+      // Erros conhecidos do Prisma (unique constraint, etc.)
+      if (e?.code === 'P2002') {
+        throw new BadRequestException('Já existe um apartamento com esse bloco/número neste condomínio.');
+      }
+      throw new BadRequestException(e?.message ?? 'Erro ao salvar apartamento.');
+    }
   }
 
   async removeApto(id: number) {
-    try {
-      if (this.prisma.isConnected) {
-        await this.prisma.apartamentos.delete({
-          where: { id: Number(id) }
-        });
-        return true;
-      }
-    } catch (e) {
-      console.error('Erro ao remover apartamento (Mobile):', e);
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
-    return true; // Mock success
+    try {
+      await this.prisma.apartamentos.delete({ where: { id: Number(id) } });
+    } catch {
+      throw new NotFoundException('Apartamento não encontrado.');
+    }
+    return true;
   }
 
   // ==========================================
@@ -995,33 +995,31 @@ export class MobileAuthService {
   // ==========================================
 
   async listOcorrenciasCategorias() {
-    try {
-      if (this.prisma.isConnected) {
-        return await this.prisma.ocorrencias_Categorias.findMany({
-          orderBy: { prioridade: 'asc' },
-        });
-      }
-    } catch (e) {}
-    return [];
+    if (!this.prisma.isConnected) return [];
+    return this.prisma.ocorrencias_Categorias.findMany({
+      orderBy: { prioridade: 'asc' },
+    });
   }
 
   async saveOcorrencia(body: any, idUser: number) {
-    try {
-      if (this.prisma.isConnected) {
-        return await this.prisma.ocorrencias.create({
-          data: {
-            id_condominio: Number(body.id_condominio),
-            descricao: body.descricao,
-            tipo: Number(body.tipo),
-            user: idUser,
-            status: 'Pendente',
-          }
-        });
-      }
-    } catch (e) {
-      console.error('Erro ao salvar ocorrência (Mobile):', e);
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
     }
-    return { id: Date.now(), success: true };
+    if (!body.descricao) throw new BadRequestException('Descrição é obrigatória.');
+    if (!body.id_condominio) throw new BadRequestException('id_condominio é obrigatório.');
+    try {
+      return await this.prisma.ocorrencias.create({
+        data: {
+          id_condominio: Number(body.id_condominio),
+          descricao: body.descricao,
+          tipo: body.tipo ? Number(body.tipo) : null,
+          user: idUser,
+          status: 'Pendente',
+        },
+      });
+    } catch (e: any) {
+      throw new BadRequestException(e?.message ?? 'Erro ao salvar ocorrência.');
+    }
   }
 
   async listOcorrencias(idUser: number) {
