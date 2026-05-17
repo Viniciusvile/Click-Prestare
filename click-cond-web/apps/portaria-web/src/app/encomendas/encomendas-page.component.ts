@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   CreateEncomenda, Encomenda, EncomendasApi,
 } from './encomendas.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-encomendas-page',
@@ -13,6 +14,7 @@ import {
 })
 export class EncomendasPageComponent implements OnInit {
   private api = inject(EncomendasApi);
+  private confirm = inject(ConfirmService);
 
   readonly encomendas = signal<Encomenda[]>([]);
   readonly loading = signal(false);
@@ -84,8 +86,14 @@ export class EncomendasPageComponent implements OnInit {
     w.document.close();
   }
 
-  remover(e: Encomenda) {
-    if (!confirm('Remover encomenda?')) return;
+  async remover(e: Encomenda) {
+    const ok = await this.confirm.ask({
+      title: 'Remover encomenda',
+      message: `A encomenda "${e.descricao}" será excluída do registro.`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.api.remove(e.id).subscribe({ next: () => this.carregar() });
   }
 

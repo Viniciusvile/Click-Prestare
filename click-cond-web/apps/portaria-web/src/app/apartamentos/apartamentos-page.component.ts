@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   Apartamento, ApartamentosApi, CreateApartamento,
 } from './apartamentos.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-apartamentos-page',
@@ -13,6 +14,7 @@ import {
 })
 export class ApartamentosPageComponent implements OnInit {
   private api = inject(ApartamentosApi);
+  private confirm = inject(ConfirmService);
   readonly apartamentos = signal<Apartamento[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -89,8 +91,14 @@ export class ApartamentosPageComponent implements OnInit {
       },
     });
   }
-  remover(a: Apartamento) {
-    if (!confirm(`Remover apto ${a.apto}?`)) return;
+  async remover(a: Apartamento) {
+    const ok = await this.confirm.ask({
+      title: 'Remover apartamento',
+      message: `O apto ${a.bloco ? a.bloco + ' / ' : ''}${a.apto} será removido. Moradores vinculados serão desvinculados.`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.api.remove(a.id).subscribe({ next: () => this.carregar() });
   }
 }

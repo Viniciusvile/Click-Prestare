@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Assembleia, AssembleiasApi, Votacao } from './assembleias.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-assembleias-page',
@@ -11,6 +12,7 @@ import { Assembleia, AssembleiasApi, Votacao } from './assembleias.service';
 })
 export class AssembleiasPageComponent implements OnInit {
   private api = inject(AssembleiasApi);
+  private confirm = inject(ConfirmService);
 
   readonly assembleias = signal<Assembleia[]>([]);
   readonly enquetes = signal<Votacao[]>([]);
@@ -55,21 +57,31 @@ export class AssembleiasPageComponent implements OnInit {
     this.carregarGeral();
   }
 
-  finalizarAssembleia(assemb: Assembleia) {
-    if (confirm('Deseja realmente encerrar a assembleia e gerar a ATA oficial na seção de Documentos?')) {
-      this.api.finishAssembleia(assemb).subscribe(res => {
-        alert(res?.message || 'Assembleia finalizada com sucesso!');
-        this.voltarLista();
-      });
-    }
+  async finalizarAssembleia(assemb: Assembleia) {
+    const ok = await this.confirm.ask({
+      title: 'Encerrar assembleia',
+      message: 'A assembleia será encerrada e a ATA oficial gerada automaticamente na seção de Documentos. Continuar?',
+      confirmLabel: 'Encerrar e gerar ATA',
+      variant: 'primary',
+    });
+    if (!ok) return;
+    this.api.finishAssembleia(assemb).subscribe(res => {
+      alert(res?.message || 'Assembleia finalizada com sucesso!');
+      this.voltarLista();
+    });
   }
 
-  excluirAssembleia(id: number) {
-    if (confirm('Tem certeza que deseja cancelar esta assembleia?')) {
-      this.api.removeAssembleia(id).subscribe(() => {
-        this.assembleias.update(l => l.filter(a => a.id !== id));
-      });
-    }
+  async excluirAssembleia(id: number) {
+    const ok = await this.confirm.ask({
+      title: 'Cancelar assembleia',
+      message: 'Esta assembleia será removida permanentemente.',
+      confirmLabel: 'Cancelar assembleia',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    this.api.removeAssembleia(id).subscribe(() => {
+      this.assembleias.update(l => l.filter(a => a.id !== id));
+    });
   }
 
   // Ações de Votação/Enquete
@@ -128,16 +140,21 @@ export class AssembleiasPageComponent implements OnInit {
     });
   }
 
-  removerVotacao(id: number, idAssembleiaRefresh?: number) {
-    if (confirm('Deseja excluir esta apuração?')) {
-      this.api.removeVotacao(id).subscribe(() => {
-        if (idAssembleiaRefresh) {
-          this.verAssembleia(idAssembleiaRefresh);
-        } else {
-          this.enquetes.update(l => l.filter(e => e.id !== id));
-        }
-      });
-    }
+  async removerVotacao(id: number, idAssembleiaRefresh?: number) {
+    const ok = await this.confirm.ask({
+      title: 'Excluir apuração',
+      message: 'A votação e seus votos serão removidos.',
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    this.api.removeVotacao(id).subscribe(() => {
+      if (idAssembleiaRefresh) {
+        this.verAssembleia(idAssembleiaRefresh);
+      } else {
+        this.enquetes.update(l => l.filter(e => e.id !== id));
+      }
+    });
   }
 
   encerrarVotacao(id: number) {

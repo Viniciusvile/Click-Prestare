@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   Categoria, CreateOcorrencia, Ocorrencia, OcorrenciaStatus, OcorrenciasApi,
 } from './ocorrencias.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-ocorrencias-page',
@@ -13,6 +14,7 @@ import {
 })
 export class OcorrenciasPageComponent implements OnInit {
   private api = inject(OcorrenciasApi);
+  private confirm = inject(ConfirmService);
 
   readonly ocorrencias = signal<Ocorrencia[]>([]);
   readonly categorias = signal<Categoria[]>([]);
@@ -77,8 +79,14 @@ export class OcorrenciasPageComponent implements OnInit {
     this.api.updateStatus(o.id, status).subscribe({ next: () => this.carregar() });
   }
 
-  remover(o: Ocorrencia) {
-    if (!confirm('Remover ocorrência?')) return;
+  async remover(o: Ocorrencia) {
+    const ok = await this.confirm.ask({
+      title: 'Remover ocorrência',
+      message: 'A ocorrência será removida do histórico.',
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.api.remove(o.id).subscribe({ next: () => this.carregar() });
   }
 

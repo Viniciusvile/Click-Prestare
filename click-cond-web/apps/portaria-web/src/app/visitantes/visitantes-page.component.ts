@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { VisitantesService } from './visitantes.service';
 import { ApartamentosApi, Apartamento } from '../apartamentos/apartamentos.service';
 import { CreateVisitante, Visitante } from './visitante.model';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-visitantes-page',
@@ -15,6 +16,7 @@ import { CreateVisitante, Visitante } from './visitante.model';
 export class VisitantesPageComponent implements OnInit {
   private service = inject(VisitantesService);
   private aptApi = inject(ApartamentosApi);
+  private confirm = inject(ConfirmService);
 
   readonly visitantes = signal<Visitante[]>([]);
   readonly apartamentos = signal<Apartamento[]>([]);
@@ -118,8 +120,14 @@ export class VisitantesPageComponent implements OnInit {
     });
   }
 
-  remover(v: Visitante) {
-    if (!confirm(`Remover registro de ${v.nome}?`)) return;
+  async remover(v: Visitante) {
+    const ok = await this.confirm.ask({
+      title: 'Remover visitante',
+      message: `Remover o registro de ${v.nome}?`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.service.remove(v.id).subscribe({
       next: () => this.carregar(),
       error: (e) => this.error.set(`Falha ao remover: ${e?.message ?? e}`),

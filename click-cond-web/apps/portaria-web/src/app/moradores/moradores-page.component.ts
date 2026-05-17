@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CreateMorador, Morador, MoradoresApi } from './moradores.service';
 import { ApartamentosApi, Apartamento } from '../apartamentos/apartamentos.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 declare var require: any;
 
@@ -15,6 +16,7 @@ declare var require: any;
 export class MoradoresPageComponent implements OnInit {
   private api = inject(MoradoresApi);
   private aptApi = inject(ApartamentosApi);
+  private confirm = inject(ConfirmService);
 
   readonly moradores = signal<Morador[]>([]);
   readonly apartamentos = signal<Apartamento[]>([]);
@@ -105,16 +107,28 @@ export class MoradoresPageComponent implements OnInit {
       },
     });
   }
-  remover(m: Morador) {
-    if (!confirm(`Remover ${m.nome}?`)) return;
+  async remover(m: Morador) {
+    const ok = await this.confirm.ask({
+      title: 'Remover morador',
+      message: `${m.nome} será desvinculado do condomínio.`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.api.remove(m.id).subscribe({ next: () => this.carregar() });
   }
-  sendCredentials(m: Morador) {
+  async sendCredentials(m: Morador) {
     if (!m.email) {
       alert('Este morador não possui e-mail cadastrado.');
       return;
     }
-    if (!confirm(`Enviar link e dados de acesso para o e-mail de ${m.nome}?`)) return;
+    const ok = await this.confirm.ask({
+      title: 'Enviar credenciais por e-mail',
+      message: `Um e-mail com link de acesso e senha inicial será enviado para ${m.email}.`,
+      confirmLabel: 'Enviar',
+      variant: 'primary',
+    });
+    if (!ok) return;
     this.api.sendCredentials(m.id).subscribe({
       next: () => alert('Credenciais enviadas com sucesso!'),
       error: () => alert('Houve um erro ao enviar as credenciais.'),

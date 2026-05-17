@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CreatePrestador, Prestador, PrestadoresApi } from './prestadores.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-prestadores-page',
@@ -11,6 +12,7 @@ import { CreatePrestador, Prestador, PrestadoresApi } from './prestadores.servic
 })
 export class PrestadoresPageComponent implements OnInit {
   private api = inject(PrestadoresApi);
+  private confirm = inject(ConfirmService);
   readonly prestadores = signal<Prestador[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -89,8 +91,14 @@ export class PrestadoresPageComponent implements OnInit {
       },
     });
   }
-  remover(p: Prestador) {
-    if (!confirm(`Remover ${p.nome}?`)) return;
+  async remover(p: Prestador) {
+    const ok = await this.confirm.ask({
+      title: 'Remover prestador',
+      message: `${p.nome} será removido da lista de autorizados.`,
+      confirmLabel: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.api.remove(p.id).subscribe({ next: () => this.carregar() });
   }
   categoriasArray(p: Prestador): string[] {

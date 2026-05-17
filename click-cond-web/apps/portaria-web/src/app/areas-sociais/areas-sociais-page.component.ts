@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgendamentoArea, AreaSocial, AreasSociaisApi } from './areas-sociais.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-areas-sociais-page',
@@ -11,6 +12,7 @@ import { AgendamentoArea, AreaSocial, AreasSociaisApi } from './areas-sociais.se
 })
 export class AreasSociaisPageComponent implements OnInit {
   private api = inject(AreasSociaisApi);
+  private confirm = inject(ConfirmService);
 
   readonly areas = signal<AreaSocial[]>([]);
   readonly agendamentos = signal<AgendamentoArea[]>([]);
@@ -53,12 +55,17 @@ export class AreasSociaisPageComponent implements OnInit {
     });
   }
 
-  excluirArea(id: number) {
-    if (confirm('Tem certeza que deseja excluir este espaço?')) {
-      this.api.removeArea(id).subscribe(() => {
-        this.areas.update(list => list.filter(a => a.id !== id));
-      });
-    }
+  async excluirArea(id: number) {
+    const ok = await this.confirm.ask({
+      title: 'Excluir espaço',
+      message: 'O espaço será removido junto com todas as reservas associadas.',
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    this.api.removeArea(id).subscribe(() => {
+      this.areas.update(list => list.filter(a => a.id !== id));
+    });
   }
 
   abrirModalArea() {

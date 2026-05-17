@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Comunicado, ComunicadosApi, CreateComunicado } from './comunicados.service';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-comunicados-page',
@@ -11,6 +12,7 @@ import { Comunicado, ComunicadosApi, CreateComunicado } from './comunicados.serv
 })
 export class ComunicadosPageComponent implements OnInit {
   private api = inject(ComunicadosApi);
+  private confirm = inject(ConfirmService);
 
   readonly comunicados = signal<Comunicado[]>([]);
   readonly loading = signal(true);
@@ -91,8 +93,14 @@ export class ComunicadosPageComponent implements OnInit {
     });
   }
 
-  remover(c: Comunicado) {
-    if (!confirm(`Excluir o comunicado "${c.titulo}"?`)) return;
+  async remover(c: Comunicado) {
+    const ok = await this.confirm.ask({
+      title: 'Excluir comunicado',
+      message: `O comunicado "${c.titulo}" será removido permanentemente.`,
+      confirmLabel: 'Excluir',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.api.remove(c.id).subscribe({
       next: () => this.carregar(),
       error: (e) =>
