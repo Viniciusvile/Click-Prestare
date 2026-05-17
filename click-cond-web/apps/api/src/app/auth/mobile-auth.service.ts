@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../common/mail/mail.service';
@@ -688,42 +688,171 @@ export class MobileAuthService {
   }
 
   async saveMorador(body: any, isEdit: boolean) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível. Tente novamente em instantes.');
+    }
     const mor = body.morador || body.moradores || {};
+    const idAptoRaw = mor.id_apto ?? body.id_apto;
+    const idApto = idAptoRaw ? Number(idAptoRaw) : null;
+    const tipoRaw = String(mor.tipo || mor.vinculo || 'proprietario');
+    // Normaliza: "Proprietário" -> "proprietario", "Inquilino" -> "inquilino"
+    const tipo = tipoRaw
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .trim();
+
     try {
-      if (this.prisma.isConnected) {
-        if (!isEdit) {
-          await this.prisma.moradores.create({
-            data: {
-              id_condominio: Number(body.id_condominio) || 1,
-              nome: mor.nome || '',
-              documento: mor.documento || '',
-              email: mor.email || '',
-              telefone: mor.telefone || '',
-              bloco: mor.bloco || 'A',
-              apartamento: mor.apartamento || '101',
-              vinculo: mor.vinculo || 'Proprietario',
-            }
+      // ===== EDIÇÃO =====
+      if (isEdit) {
+        const idMorador = Number(mor.id);
+        if (!idMorador) throw new BadRequestException('ID do morador é obrigatório para edição.');
+
+        const atual = await this.prisma.moradores.findUnique({
+          where: { id: idMorador },
+          include: { user: true },
+        });
+        if (!atual) throw new NotFoundException('Morador não encontrado.');
+
+        const emailMudou = mor.email !== undefined && mor.email !== atual.email;
+        if (emailMudou && mor.email) {
+          const conflito = await this.prisma.users.findFirst({
+            where: {
+              OR: [{ email: mor.email }, { login: mor.email }],
+              NOT: { id: atual.id_user },
+            },
+            select: { id: true },
           });
-        } else {
-          await this.prisma.moradores.update({
-            where: { id: Number(mor.id) },
-            data: {
-              nome: mor.nome,
-              documento: mor.documento,
-              email: mor.email,
-              telefone: mor.telefone,
-              bloco: mor.bloco,
-              apartamento: mor.apartamento,
-              vinculo: mor.vinculo,
-            }
-          });
+          if (conflito) throw new BadRequestException('Já existe outro usuário com este e-mail.');
         }
+
+        await this.prisma.$transaction(async (tx) => {
+          await tx.moradores.update({
+            where: { id: idMorador },
+            data: {
+              ...(mor.nome !== undefined && { nome: mor.nome }),
+              ...(mor.documento !== undefined && { documento: mor.documento }),
+              ...(mor.email !== undefined && { email: mor.email }),
+              ...(mor.telefone !== undefined && { telefone: mor.telefone }),
+              ...(mor.data_nascimento && { data_nascimento: new Date(mor.data_nascimento) }),
+              ...(tipo && { tipo }),
+            },
+          });
+
+          const userPatch: any = {};
+          if (mor.nome !== undefined) userPatch.name = mor.nome;
+          if (mor.telefone !== undefined) userPatch.phone = mor.telefone;
+          if (mor.documento !== undefined) userPatch.cpf = mor.documento || null;
+          if (emailMudou) {
+            userPatch.email = mor.email || null;
+            userPatch.login = mor.email || null;
+          }
+          if (Object.keys(userPatch).length > 0 && atual.id_user) {
+            await tx.users.update({ where: { id: atual.id_user }, data: userPatch });
+          }
+        });
+
+        return '';
       }
-      return "";
-    } catch (e) {
-      const newId = Date.now();
-      this.mockMoradores.push({ id: newId, ...mor });
-      return "";
+
+      // ===== CRIAÇÃO =====
+      if (!idApto) throw new BadRequestException('Apartamento não informado.');
+
+      const apto = await this.prisma.apartamentos.findUnique({ where: { id: idApto } });
+      if (!apto) throw new NotFoundException('Apartamento não encontrado.');
+
+      // Valida unicidade do email entre Users antes de tentar criar
+      if (mor.email) {
+        // Mantemos o reuso por email (lógica abaixo), então só checamos conflito de login se for outro usuário
+        // ... a checagem real fica no bloco de criação que reutiliza/cria o Users.
+      }
+
+      const idCondominio = Number(body.id_condominio) || apto.id_condominio;
+
+      // Cria/reutiliza Users por email (se fornecido) — senha inicial = documento ou '123456'
+      let userId: number;
+      const senhaInicial = (mor.documento && String(mor.documento).trim()) || '123456';
+      const md5Pwd = createHash('md5').update(senhaInicial).digest('hex');
+
+      if (mor.email) {
+        const existing = await this.prisma.users.findFirst({ where: { email: mor.email } });
+        if (existing) {
+          // Email já existe: garante que o registro tenha login/senha para acessar.
+          userId = existing.id;
+          if (!existing.login || !existing.password) {
+            await this.prisma.users.update({
+              where: { id: existing.id },
+              data: { login: mor.email, password: md5Pwd },
+            });
+          }
+        } else {
+          const u = await this.prisma.users.create({
+            data: {
+              name: mor.nome,
+              email: mor.email,
+              login: mor.email,
+              password: md5Pwd,
+              phone: mor.telefone,
+              cpf: mor.documento || null,
+              is_morador: 1,
+              login_type: 'morador',
+            },
+          });
+          userId = u.id;
+        }
+      } else {
+        // Morador sem email — cria Users só para satisfazer FK, mas sem acesso ao app
+        const u = await this.prisma.users.create({
+          data: {
+            name: mor.nome,
+            phone: mor.telefone,
+            cpf: mor.documento || null,
+            is_morador: 1,
+            login_type: 'morador',
+          },
+        });
+        userId = u.id;
+      }
+
+      // Vincula em Apartamentos_Users (45 dias de vencimento padrão)
+      const venc = new Date();
+      venc.setDate(venc.getDate() + 45);
+      try {
+        await this.prisma.apartamentos_Users.create({
+          data: { id_apto: apto.id, id_user: userId, tipo, vencimento: venc },
+        });
+      } catch {
+        // Vínculo pode já existir (mesmo user em outro fluxo). Ignora.
+      }
+
+      // Cria Moradores
+      const created = await this.prisma.moradores.create({
+        data: {
+          nome: mor.nome ?? '',
+          documento: mor.documento ?? null,
+          email: mor.email ?? null,
+          telefone: mor.telefone ?? null,
+          data_nascimento: mor.data_nascimento ? new Date(mor.data_nascimento) : null,
+          tipo,
+          id_user: userId,
+          id_condominio: idCondominio,
+          bloco: apto.bloco || null,
+          apartamento: apto.apto || null,
+        },
+      });
+
+      // Dispara email de boas-vindas (assíncrono, não bloqueia resposta)
+      if (mor.email && mor.sendCredentials !== false) {
+        this.mail
+          .sendWelcomeMorador(mor.email, mor.nome ?? '', senhaInicial)
+          .catch(() => {});
+      }
+
+      return { id: created.id };
+    } catch (e: any) {
+      // Repassa exceptions Nest (BadRequest, NotFound, etc.); embrulha o resto
+      if (e?.response && e?.status) throw e;
+      throw new BadRequestException(e?.message ?? 'Erro ao salvar morador.');
     }
   }
 
