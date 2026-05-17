@@ -1,9 +1,28 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class AssembleiasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  private async uploadDocs(docs: unknown, prefix: string): Promise<string[]> {
+    if (!Array.isArray(docs)) return [];
+    const out: string[] = [];
+    for (const doc of docs) {
+      if (typeof doc !== 'string') continue;
+      if (this.storage.isDataUrl(doc)) {
+        const url = await this.storage.uploadDataUrl(doc, prefix);
+        if (url) out.push(url);
+      } else if (doc.trim()) {
+        out.push(doc);
+      }
+    }
+    return out;
+  }
 
   // ==========================================
   // ASSEMBLEIAS
@@ -11,16 +30,8 @@ export class AssembleiasService {
   async insert(idCondominio: number, assembleia: any, userId: number) {
     if (!this.prisma.isConnected) return { success: true };
 
-    // Processar anexos (docs) se vierem base64
-    let listDocs: string[] = [];
-    if (Array.isArray(assembleia.docs)) {
-      listDocs = assembleia.docs.map((doc: string, idx: number) => {
-        if (doc.startsWith('data:')) {
-          return `https://example.com/doc_${idx}.pdf`;
-        }
-        return doc;
-      });
-    }
+    // Processar anexos (docs) — upload real para R2 quando vierem em base64
+    const listDocs = await this.uploadDocs(assembleia.docs, 'assembleias');
 
     // Datas no formato YYYY-MM-DD ou DD/MM/YYYY
     let dataObj: Date | undefined;
@@ -68,13 +79,7 @@ export class AssembleiasService {
   async update(idCondominio: number, assembleia: any, userId: number) {
     if (!this.prisma.isConnected) return { success: true };
 
-    let listDocs: string[] = [];
-    if (Array.isArray(assembleia.docs)) {
-      listDocs = assembleia.docs.map((doc: string, idx: number) => {
-        if (doc.startsWith('data:')) return `https://example.com/doc_${idx}.pdf`;
-        return doc;
-      });
-    }
+    const listDocs = await this.uploadDocs(assembleia.docs, 'assembleias');
 
     let dataObj: Date | undefined;
     if (assembleia.data) {
@@ -192,8 +197,8 @@ export class AssembleiasService {
     if (!this.prisma.isConnected) return { success: true };
 
     let linkDoc = '';
-    if (assembleia.doc && assembleia.doc.startsWith('data:')) {
-      linkDoc = 'https://example.com/ata_finalizada.pdf';
+    if (this.storage.isDataUrl(assembleia.doc)) {
+      linkDoc = (await this.storage.uploadDataUrl(assembleia.doc, 'atas')) ?? '';
     } else {
       linkDoc = assembleia.doc ?? '';
     }

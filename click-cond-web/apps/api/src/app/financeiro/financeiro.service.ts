@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class FinanceiroService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   // ==========================================
   // CRUD PRINCIPAL
@@ -25,8 +29,9 @@ export class FinanceiroService {
     }
 
     let photoUrl = financeiro.photo ?? '';
-    if (photoUrl && photoUrl.startsWith('data:')) {
-      photoUrl = 'https://example.com/comprovante_mock.jpg';
+    if (this.storage.isDataUrl(photoUrl)) {
+      const uploaded = await this.storage.uploadDataUrl(photoUrl, 'financeiro');
+      photoUrl = uploaded ?? '';
     }
 
     const parseDate = (dStr?: string) => {
@@ -80,8 +85,9 @@ export class FinanceiroService {
     }
 
     let photoUrl = financeiro.photo ?? undefined;
-    if (photoUrl && photoUrl.startsWith('data:')) {
-      photoUrl = 'https://example.com/comprovante_mock_updated.jpg';
+    if (this.storage.isDataUrl(photoUrl)) {
+      const uploaded = await this.storage.uploadDataUrl(photoUrl, 'financeiro');
+      photoUrl = uploaded ?? undefined;
     }
 
     const parseDate = (dStr?: string) => {
@@ -545,24 +551,31 @@ export class FinanceiroService {
   }
 
   async uploadSharedFile(id: number, fileBase64: string, type: string) {
-    if (!this.prisma.isConnected) return { url: 'https://example.com/arquivo_shared.pdf' };
+    if (!this.prisma.isConnected) return { url: '' };
 
-    const mockUrl = `https://example.com/${type}_upload_${Date.now()}.pdf`;
+    const prefix = type === 'boleto' ? 'boletos' : 'comprovantes';
+    const url = this.storage.isDataUrl(fileBase64)
+      ? await this.storage.uploadDataUrl(fileBase64, prefix)
+      : null;
+
+    if (!url) {
+      throw new NotFoundException('Falha ao subir arquivo (storage indisponível).');
+    }
 
     if (type === 'boleto') {
       await this.prisma.financeiro.update({
         where: { id: Number(id) },
-        data: { url_boleto: mockUrl },
+        data: { url_boleto: url },
       });
     } else {
       // comprovante, seta status = 2 (aguardando auditoria do sindico)
       await this.prisma.financeiro.update({
         where: { id: Number(id) },
-        data: { url_comprovante: mockUrl, status: '2' },
+        data: { url_comprovante: url, status: '2' },
       });
     }
 
-    return { url: mockUrl };
+    return { url };
   }
 
   async updateStatus(id: number, statusStr: string | number) {

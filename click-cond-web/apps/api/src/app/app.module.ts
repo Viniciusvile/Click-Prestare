@@ -19,6 +19,7 @@ import { AssembleiasModule } from './assembleias/assembleias.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
 import { DocumentosModule } from './documentos/documentos.module';
 import { MailModule } from './common/mail/mail.module';
+import { StorageModule } from './common/storage/storage.module';
 
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
@@ -29,6 +30,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
       limit: 100, // 100 requests per minute
     }]),
     MailModule,
+    StorageModule,
     PrismaModule,
     AuthModule,
     DashboardModule,

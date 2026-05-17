@@ -1,19 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class DocumentosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async insert(idCondominio: number, documento: any) {
     if (!this.prisma.isConnected) return { success: true };
 
     let linkDoc = documento.link_doc ?? '';
 
-    // Se veio base64 no campo doc, converte num mock URL
-    if (documento.doc && documento.doc.startsWith('data:')) {
-      const prefix = documento.is_ata ? 'ata' : 'doc';
-      linkDoc = `https://example.com/${prefix}_${Date.now()}.pdf`;
+    // Upload real para R2 se vier base64
+    if (this.storage.isDataUrl(documento.doc)) {
+      const prefix = documento.is_ata ? 'atas' : 'documentos';
+      const uploaded = await this.storage.uploadDataUrl(documento.doc, prefix);
+      if (uploaded) linkDoc = uploaded;
     }
 
     const isAta = (documento.is_ata === true || documento.is_ata === '1' || documento.is_ata === 1) ? 1 : 0;

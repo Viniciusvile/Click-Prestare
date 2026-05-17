@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../common/storage/storage.service';
 
 export interface CreateEncomendaDto {
   descricao: string;
@@ -16,6 +17,7 @@ export class EncomendasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly storage: StorageService,
   ) {}
 
   async findAll(idCondominio: number, status?: string) {
@@ -131,13 +133,18 @@ export class EncomendasService {
       };
     }
 
+    let fotoUrl: string | null = dto.foto_volume ?? null;
+    if (this.storage.isDataUrl(fotoUrl)) {
+      fotoUrl = (await this.storage.uploadDataUrl(fotoUrl, 'encomendas')) ?? null;
+    }
+
     const encomenda = await this.prisma.encomendas.create({
       data: {
         descricao: dto.descricao,
         destinatario_apto: dto.destinatario_apto,
         destinatario_bloco: dto.destinatario_bloco ?? null,
         recebido_de: dto.recebido_de ?? null,
-        foto_volume: dto.foto_volume ?? null,
+        foto_volume: fotoUrl,
         status: 'Aguardando',
         id_condominio: dto.id_condominio,
       },

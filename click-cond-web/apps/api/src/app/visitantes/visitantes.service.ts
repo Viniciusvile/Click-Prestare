@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../common/storage/storage.service';
 
 export interface CreateVisitanteDto {
   nome: string;
@@ -24,7 +25,16 @@ export class VisitantesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly storage: StorageService,
   ) {}
+
+  private async resolveFoto(value: string | undefined | null): Promise<string | null> {
+    if (!value) return value ?? null;
+    if (this.storage.isDataUrl(value)) {
+      return (await this.storage.uploadDataUrl(value, 'visitantes')) ?? null;
+    }
+    return value;
+  }
 
   async findAll(idCondominio: number, search?: string) {
     if (!this.prisma.isConnected) {
@@ -144,6 +154,9 @@ export class VisitantesService {
       };
     }
 
+    const fotoDoc = await this.resolveFoto(dto.foto_documento);
+    const fotoPes = await this.resolveFoto(dto.foto_pessoa);
+
     const visitante = await this.prisma.visitantes.create({
       data: {
         nome: dto.nome,
@@ -154,8 +167,8 @@ export class VisitantesService {
         is_prestador: dto.is_prestador ?? 0,
         id_apartamento: dto.id_apartamento,
         id_condominio: dto.id_condominio,
-        foto_documento: dto.foto_documento ?? null,
-        foto_pessoa: dto.foto_pessoa ?? null,
+        foto_documento: fotoDoc,
+        foto_pessoa: fotoPes,
       },
     });
 
@@ -196,6 +209,9 @@ export class VisitantesService {
       return { success: true, id: dto.id };
     }
 
+    const fotoDoc = dto.foto_documento !== undefined ? await this.resolveFoto(dto.foto_documento) : undefined;
+    const fotoPes = dto.foto_pessoa !== undefined ? await this.resolveFoto(dto.foto_pessoa) : undefined;
+
     try {
       return await this.prisma.visitantes.update({
         where: { id: Number(dto.id) },
@@ -211,8 +227,8 @@ export class VisitantesService {
           ...(dto.is_visitante !== undefined && { is_visitante: dto.is_visitante }),
           ...(dto.is_prestador !== undefined && { is_prestador: dto.is_prestador }),
           ...(dto.id_apartamento !== undefined && { id_apartamento: dto.id_apartamento }),
-          ...(dto.foto_documento !== undefined && { foto_documento: dto.foto_documento }),
-          ...(dto.foto_pessoa !== undefined && { foto_pessoa: dto.foto_pessoa }),
+          ...(fotoDoc !== undefined && { foto_documento: fotoDoc }),
+          ...(fotoPes !== undefined && { foto_pessoa: fotoPes }),
         },
       });
     } catch {
