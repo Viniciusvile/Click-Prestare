@@ -1,42 +1,113 @@
+import 'package:click/theme/app_colors.dart';
+import 'package:click/theme/app_spacing.dart';
+import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/localizable/localizable.dart';
-import 'package:click/widgets/label/label_default.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class CellMoradorAgendamento extends StatelessWidget {
-  final item;
-  final canEdit;
+  final dynamic item;
+  final bool canEdit;
 
   const CellMoradorAgendamento({
     Key? key,
-    required this.item, required this.canEdit, 
+    required this.item,
+    required this.canEdit,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width,
-      // height: 190,
-      child: Card(
-        elevation: 0,
-        child: Container(
-          padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-          child: 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [                   
-                Row(
-                  children: [
-                    if(canEdit)            
-                      Icon(Icons.edit, color: Colors.grey,),
-                      SizedBox(width: 4),
-                    LabelDefault(title: "${getText('lb_bloco')}: "+item['bloco'] , size: 14),
-                  ],
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: canEdit 
+              ? AppColors.primary.withOpacity(0.24) 
+              : AppColors.border(context),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            // Badge com ícone de casa
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (canEdit ? AppColors.primary : AppColors.textSecondary(context)).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                PhosphorIcons.house,
+                color: canEdit ? AppColors.primary : AppColors.textSecondary(context),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            
+            // Informações do agendamento
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${getText('lb_bloco')} ${item['bloco']}  •  ${getText('lb_apto')} ${item['apto']}',
+                    style: AppTypography.bodyMedium(context).copyWith(
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        PhosphorIcons.calendarBlank,
+                        size: 14,
+                        color: AppColors.textSecondary(context),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${item['data']}  •  ${item['horaDe']} às ${item['horaAte']}',
+                          style: AppTypography.caption(context).copyWith(
+                            color: AppColors.textSecondary(context),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            // Botão de editar (se elegível)
+            if (canEdit) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                LabelDefault(title: "${getText('lb_apto')}: "+item['apto'] , size: 14),
-                LabelDefault(title: '${item['data']}\n${item['horaDe']} até ${item['horaAte']}', size: 14, maxLines: 3,),
-              ],
-            )           
-        )         
+                child: const Icon(
+                  PhosphorIcons.pencil,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

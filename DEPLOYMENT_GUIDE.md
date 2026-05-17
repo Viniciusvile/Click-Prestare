@@ -64,3 +64,40 @@ npx prisma generate
 npx prisma db push
 ```
 *(Verifique se o DATABASE_URL no Railway está correto antes de rodar comandos de escrita)*.
+
+## 5. Configuração de Domínio Personalizado (Registro.br na Vercel)
+
+Para apontar e associar seu domínio próprio **`clickprestarecondominios.com.br`** ao projeto na Vercel, siga este passo a passo simples:
+
+### Passo 1: Adicionar o Domínio no Painel da Vercel
+1. Acesse o **Dashboard da Vercel** e entre na página do seu projeto web (por exemplo, `portaria-web`).
+2. Clique na aba **Settings** (Configurações) no menu superior.
+3. No menu lateral esquerdo, clique em **Domains** (Domínios).
+4. No campo de texto de domínios, digite **`clickprestarecondominios.com.br`** e clique em **Add** (Adicionar).
+5. A Vercel exibirá uma janela sugerindo adicionar também a versão com `www` (`www.clickprestarecondominios.com.br`) e criar um redirecionamento automático (ex: redirecionar de `www` para o domínio principal). **Selecione a opção recomendada** (Redirect to clickprestarecondominios.com.br).
+
+### Passo 2: Configurar os Apontamentos de DNS no Registro.br
+1. Faça login no painel do [Registro.br](https://registro.br).
+2. Clique em cima do domínio **`clickprestarecondominios.com.br`**.
+3. Role até a seção **DNS** e clique em **Configurar Zona** (ou *Configurar Endereçamento*, caso esteja usando os servidores DNS padrão do próprio Registro.br).
+   > [!NOTE]
+   > Se o seu domínio já estiver utilizando servidores de DNS externos (como Cloudflare, HostGator ou Locaweb), as configurações abaixo deverão ser feitas no painel desse respectivo provedor externo, e não no Registro.br.
+4. Adicione as seguintes entradas DNS:
+
+#### 1ª Entrada (Para o domínio sem `www`):
+* **Nome/Subdomínio**: Deixe vazio (ou digite `@`)
+* **Tipo**: `A`
+* **Dados/IP**: `216.198.79.1`
+
+#### 2ª Entrada (Para o subdomínio com `www`):
+* **Nome/Subdomínio**: `www`
+* **Tipo**: `CNAME`
+* **Dados/Destino**: `6ad416ae3babd97b.vercel-dns-017.com.`
+
+5. Clique em **Salvar alterações**.
+
+### Passo 3: Confirmação e SSL Grátis
+* Assim que salvar no Registro.br, a Vercel detectará os novos apontamentos DNS (geralmente leva de 15 minutos até 2 horas para propagação total).
+* O status no painel da Vercel mudará de "Invalid Configuration" para **"Valid Configuration"** (verde).
+* A própria Vercel gerará e renovará automaticamente o certificado **SSL gratuito (HTTPS/Cadeado)** para seu domínio.
+

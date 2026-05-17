@@ -1,12 +1,12 @@
 const db = require('./MySQL.js');
 
 module.exports = {
-  insertApto: async function(bloco, apto, fracao, id_condominio){
+  insertApto: async function (bloco, apto, fracao, id_condominio) {
     const query = `insert into Apartamentos (bloco, apto, fracao, id_condominio)
                         values ('${bloco}', '${apto}', '${fracao}', '${id_condominio}')`;
 
-    await db.query(query).then((response) => {  
-      if(response.status == 'Error'){
+    await db.query(query).then((response) => {
+      if (response.status == 'Error') {
         if (response.error.sqlMessage.includes('un_apto_cond')) {
           throw new Error('Apartamento já cadastrado!');
         }
@@ -22,7 +22,7 @@ module.exports = {
     const query = `select id, bloco, apto, fracao
                     from Apartamentos
                       where id_condominio=${id_cond}`;
-                    console.log(query);
+    console.log(query);
     const { results } = await db.query(query);
     return results;
   },
@@ -38,27 +38,27 @@ module.exports = {
                     apto='${apto}',
                     fracao='${fracao}'                   
                   where id=${idApto}`;
-    
-    await db.query(query).then((response) => {  
-      if(response.status == 'Error'){
+
+    await db.query(query).then((response) => {
+      if (response.status == 'Error') {
         if (response.error.sqlMessage.includes('un_apto_cond')) {
           throw new Error('Apartamento já cadastrado!');
         }
         throw new Error('Houve um erro ao realizar o seu cadastro. Por favor, tente novamente!');
       }
-    });                  
+    });
 
     const result2 = await db.query(`select id, bloco, apto, fracao from Apartamentos where id=${idApto}`);
     return result2.results[0];
   },
-    
+
   getMoradores: async function (id_apto, tipo) {
     const query = `select u.id, u.photo, m.nome, m.documento, m.data_nascimento, m.email, m.telefone,  m.extra1, m.extra2, m.extra3, m.extra4 
                     from Moradores m
                     inner join Users u on m.id_user = u.id
                     inner join Apartamentos_Users au on au.id_user = u.id
                       where au.tipo='${tipo}' and au.id_apto=${id_apto}`;
-                      
+
     const { results } = await db.query(query);
     return results;
   },

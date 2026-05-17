@@ -35,7 +35,8 @@ apiSaveObject(String route, String nameObj, dynamic obj, bool isEdit) async {
         .post(
           url,
           headers: _authHeaders(withContentType: true),
-          body: utf8.encode(body),
+          body: body,
+          encoding: utf8,
         )
         .timeout(_kTimeout);
   } catch (e) {

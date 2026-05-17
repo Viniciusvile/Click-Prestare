@@ -155,14 +155,6 @@ class _NewAptoPageState extends State<NewApto> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  AppInput(
-                    label: getText('apto_fracao'),
-                    controller: txtFracao,
-                    prefixIcon: PhosphorIcons.percent,
-                    readOnly: !canEdit,
-                    keyboard: TextInputType.number,
-                  ),
                   if (isEdit) ...[
                     const SizedBox(height: AppSpacing.xl),
                     _MoradorSection(

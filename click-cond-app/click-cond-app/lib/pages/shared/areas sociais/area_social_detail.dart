@@ -124,6 +124,16 @@ class _AreaSocialDetailPageState extends State<AreaSocialDetail> {
                                     ],
                                   ),
                                   const SizedBox(height: AppSpacing.sm),
+                                  if (obj['agendamentos'].isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                                      child: Center(
+                                        child: Text(
+                                          getText('alert_list_empty_generic'),
+                                          style: AppTypography.bodySecondary(context),
+                                        ),
+                                      ),
+                                    ),
                                   for (var item in obj['agendamentos'])
                                     GestureDetector(
                                       onTap: () {

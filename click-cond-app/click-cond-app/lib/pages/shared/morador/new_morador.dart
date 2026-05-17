@@ -94,32 +94,64 @@ class _NewMoradorPageState extends State<NewMorador> {
   }
 
   Future<void> save() async {
+    // Validações básicas antes de tentar enviar
+    if (txtNome.text.trim().isEmpty) {
+      displayMessage(context, getText('alert'), 'Informe o nome do morador.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
     try {
-      setState(() => _isSaving = true);
-      String? base64;
-      if (imageFile != null && imageChanged) {
-        List<int> imageBytes = [];
-        base64 = "data:image/png;base64," + base64Encode(imageBytes);
-      }
-      var morador = MoradorModel(
-        id: myId, nome: txtNome.text, documento: txtDocumento.text,
-        email: txtEmail.text, telefone: txtTelefone.text, tipo: widget.tipo,
-        data_nascimento: txtDN.text, id_apto: widget.id_apto,
-        extra1: txtExtra1.text, extra2: txtExtra2.text,
-        extra3: txtExtra3.text, extra4: txtExtra4.text, photo: base64,
+      final morador = MoradorModel(
+        id: myId,
+        nome: txtNome.text.trim(),
+        documento: txtDocumento.text.trim(),
+        email: txtEmail.text.trim(),
+        telefone: txtTelefone.text.trim(),
+        tipo: widget.tipo,
+        data_nascimento: txtDN.text.trim(),
+        id_apto: widget.id_apto,
+        extra1: txtExtra1.text.trim(),
+        extra2: txtExtra2.text.trim(),
+        extra3: txtExtra3.text.trim(),
+        extra4: txtExtra4.text.trim(),
+        photo: null, // upload de foto não suportado por aqui ainda
         sendCredentials: _sendCredentials,
       );
-      var res = await apiSaveObject("moradores", "morador", morador, widget.isEdit);
-      if (res.toString().isEmpty) {
+
+      final res = await apiSaveObject(
+        'moradores',
+        'morador',
+        morador,
+        widget.isEdit,
+      );
+
+      if (!mounted) return;
+
+      if (res is String && res.isEmpty) {
         if (!widget.isEdit) {
-          await displayMessage(context, getText('alert_success'), getText('apto_usuario_criado_msg'));
+          await displayMessage(
+            context,
+            getText('alert_success'),
+            getText('apto_usuario_criado_msg'),
+          );
         }
         if (mounted) Navigator.of(context).pop(true);
       } else {
-        if (mounted) displayMessage(context, getText('alert_error'), res.toString());
+        displayMessage(context, getText('alert_error'), res.toString());
       }
-    } catch (e) {
-      if (mounted) displayMessage(context, getText('alert_error'), e.toString());
+    } catch (e, st) {
+      // Loga o stack no console para diagnóstico de erros web
+      // ignore: avoid_print
+      print('Erro ao salvar morador: $e\n$st');
+      if (mounted) {
+        displayMessage(
+          context,
+          getText('alert_error'),
+          'Não foi possível salvar. Tente novamente.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

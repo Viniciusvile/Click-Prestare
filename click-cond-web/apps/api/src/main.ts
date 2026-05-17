@@ -32,6 +32,8 @@ async function bootstrap() {
     'http://localhost:4200',
     'http://localhost:3000',
     'https://click-prestare.vercel.app',
+    'https://clickprestarecondominios.com.br',
+    'https://www.clickprestarecondominios.com.br',
   ];
   const allowedOrigins = allowedOriginsEnv
     ? allowedOriginsEnv.split(',').map((o) => o.trim()).filter(Boolean)
