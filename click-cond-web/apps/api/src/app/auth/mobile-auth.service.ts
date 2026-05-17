@@ -769,52 +769,75 @@ export class MobileAuthService {
       const apto = await this.prisma.apartamentos.findUnique({ where: { id: idApto } });
       if (!apto) throw new NotFoundException('Apartamento não encontrado.');
 
-      // Valida unicidade do email entre Users antes de tentar criar
-      if (mor.email) {
-        // Mantemos o reuso por email (lógica abaixo), então só checamos conflito de login se for outro usuário
-        // ... a checagem real fica no bloco de criação que reutiliza/cria o Users.
-      }
-
       const idCondominio = Number(body.id_condominio) || apto.id_condominio;
 
-      // Cria/reutiliza Users por email (se fornecido) — senha inicial = documento ou '123456'
+      // Cria/reutiliza Users por email OU cpf — senha inicial = documento ou '123456'
       let userId: number;
-      const senhaInicial = (mor.documento && String(mor.documento).trim()) || '123456';
+      const cpf = mor.documento ? String(mor.documento).trim() : null;
+      const senhaInicial = cpf || '123456';
       const md5Pwd = createHash('md5').update(senhaInicial).digest('hex');
 
-      if (mor.email) {
-        const existing = await this.prisma.users.findFirst({ where: { email: mor.email } });
-        if (existing) {
-          // Email já existe: garante que o registro tenha login/senha para acessar.
-          userId = existing.id;
-          if (!existing.login || !existing.password) {
-            await this.prisma.users.update({
-              where: { id: existing.id },
-              data: { login: mor.email, password: md5Pwd },
-            });
-          }
-        } else {
-          const u = await this.prisma.users.create({
-            data: {
-              name: mor.nome,
-              email: mor.email,
-              login: mor.email,
-              password: md5Pwd,
-              phone: mor.telefone,
-              cpf: mor.documento || null,
-              is_morador: 1,
-              login_type: 'morador',
-            },
-          });
-          userId = u.id;
+      // Procura usuário existente: por email ou por CPF (campos UNIQUE)
+      const existing = await this.prisma.users.findFirst({
+        where: {
+          OR: [
+            ...(mor.email ? [{ email: mor.email }] : []),
+            ...(cpf ? [{ cpf }] : []),
+          ],
+        },
+      });
+
+      if (existing) {
+        // Se já existe Users, verifica se NÃO é morador deste mesmo apartamento ainda
+        const jaVinculado = await this.prisma.apartamentos_Users.findFirst({
+          where: { id_user: existing.id, id_apto: apto.id },
+        });
+        if (jaVinculado) {
+          throw new BadRequestException(
+            `${existing.name ?? 'Este usuário'} já está cadastrado neste apartamento.`,
+          );
         }
+
+        // Se o conflito é por CPF mas email é DIFERENTE → bloqueia (são pessoas distintas)
+        if (cpf && existing.cpf === cpf && mor.email && existing.email && existing.email !== mor.email) {
+          throw new BadRequestException(
+            'Já existe um morador cadastrado com este CPF (com outro e-mail). Verifique o documento informado.',
+          );
+        }
+
+        userId = existing.id;
+        // Garante que o usuário tem login/senha para acessar o app
+        const patch: any = {};
+        if (!existing.login && mor.email) patch.login = mor.email;
+        if (!existing.password) patch.password = md5Pwd;
+        if (!existing.email && mor.email) patch.email = mor.email;
+        if (!existing.cpf && cpf) patch.cpf = cpf;
+        if (!existing.phone && mor.telefone) patch.phone = mor.telefone;
+        if (!existing.name && mor.nome) patch.name = mor.nome;
+        if (Object.keys(patch).length > 0) {
+          await this.prisma.users.update({ where: { id: existing.id }, data: patch });
+        }
+      } else if (mor.email) {
+        const u = await this.prisma.users.create({
+          data: {
+            name: mor.nome,
+            email: mor.email,
+            login: mor.email,
+            password: md5Pwd,
+            phone: mor.telefone,
+            cpf,
+            is_morador: 1,
+            login_type: 'morador',
+          },
+        });
+        userId = u.id;
       } else {
         // Morador sem email — cria Users só para satisfazer FK, mas sem acesso ao app
         const u = await this.prisma.users.create({
           data: {
             name: mor.nome,
             phone: mor.telefone,
-            cpf: mor.documento || null,
+            cpf,
             is_morador: 1,
             login_type: 'morador',
           },
@@ -858,8 +881,16 @@ export class MobileAuthService {
 
       return { id: created.id };
     } catch (e: any) {
-      // Repassa exceptions Nest (BadRequest, NotFound, etc.); embrulha o resto
+      // Repassa exceptions Nest (BadRequest, NotFound, etc.)
       if (e?.response && e?.status) throw e;
+      // Traduz erros conhecidos do Prisma para mensagens claras
+      if (e?.code === 'P2002') {
+        const target = (e?.meta?.target as string | undefined)?.toLowerCase() ?? '';
+        if (target.includes('cpf')) throw new BadRequestException('Já existe um usuário com este CPF.');
+        if (target.includes('email')) throw new BadRequestException('Já existe um usuário com este e-mail.');
+        if (target.includes('login')) throw new BadRequestException('Já existe um usuário com este e-mail (login).');
+        throw new BadRequestException('Já existe outro registro com esses dados únicos.');
+      }
       throw new BadRequestException(e?.message ?? 'Erro ao salvar morador.');
     }
   }
