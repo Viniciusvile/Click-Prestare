@@ -40,6 +40,10 @@ export class ApartamentosApi {
     return this.http.post<Apartamento>(this.base, dto);
   }
 
+  update(id: number, dto: Partial<CreateApartamento>): Observable<Apartamento> {
+    return this.http.put<Apartamento>(`${this.base}/${id}`, dto);
+  }
+
   remove(id: number): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }

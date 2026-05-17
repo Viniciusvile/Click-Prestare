@@ -27,7 +27,7 @@
         Importar Excel
       </button>
 
-      <button (click)="showForm = !showForm; error.set(null)"
+      <button (click)="showForm ? cancelarForm() : abrirNovo()"
               class="px-4 py-2.5 rounded-xl font-medium text-sm text-white bg-accent hover:bg-accent-600 transition flex items-center gap-2">
         @if (showForm) {
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -96,7 +96,9 @@
     <div class="p-6 rounded-2xl bg-graphite-200 border border-accent/30">
       <div class="flex items-center gap-2 mb-4">
         <div class="w-1 h-5 rounded-full bg-accent"></div>
-        <h2 class="text-sm font-semibold text-white">Cadastrar novo morador</h2>
+        <h2 class="text-sm font-semibold text-white">
+          {{ editingId ? 'Editar morador' : 'Cadastrar novo morador' }}
+        </h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="block">
@@ -139,21 +141,28 @@
           </select>
         </label>
       </div>
-      <!-- Opções -->
-      <div class="mt-4 pt-4 border-t border-white/5">
-        <label class="flex items-center gap-2.5 cursor-pointer">
-          <input type="checkbox" [(ngModel)]="novo.sendCredentials"
-                 class="w-4 h-4 rounded text-accent bg-graphite border-white/10 focus:ring-accent focus:ring-offset-graphite-200" />
-          <span class="text-xs text-slate-300 select-none">
-            Enviar link de acesso e senha inicial para o e-mail do morador ao salvar
-          </span>
-        </label>
-      </div>
+      <!-- Opções (somente ao cadastrar) -->
+      @if (!editingId) {
+        <div class="mt-4 pt-4 border-t border-white/5">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="novo.sendCredentials"
+                   class="w-4 h-4 rounded text-accent bg-graphite border-white/10 focus:ring-accent focus:ring-offset-graphite-200" />
+            <span class="text-xs text-slate-300 select-none">
+              Enviar link de acesso e senha inicial para o e-mail do morador ao salvar
+            </span>
+          </label>
+        </div>
+      }
       <div class="mt-5 flex justify-end gap-2">
-        <button (click)="showForm = false"
-          class="px-4 py-2 text-sm rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition">Cancelar</button>
-        <button (click)="registrar()"
-          class="px-5 py-2 text-sm rounded-lg font-medium text-white bg-accent hover:bg-accent-600 transition">Cadastrar</button>
+        <button (click)="cancelarForm()" [disabled]="saving()"
+          class="px-4 py-2 text-sm rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition disabled:opacity-50">Cancelar</button>
+        <button (click)="salvar()" [disabled]="saving()"
+          class="px-5 py-2 text-sm rounded-lg font-medium text-white bg-accent hover:bg-accent-600 transition disabled:opacity-50 flex items-center gap-2">
+          @if (saving()) {
+            <div class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          }
+          {{ editingId ? 'Salvar alterações' : 'Cadastrar' }}
+        </button>
       </div>
     </div>
   }
@@ -222,6 +231,12 @@
               <td class="px-5 py-3 text-slate-400 text-xs font-mono">{{ m.telefone || '—' }}</td>
               <td class="px-5 py-3 text-right">
                 <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <button (click)="abrirEditar(m)" title="Editar morador"
+                          class="p-1 rounded text-slate-500 hover:text-accent hover:bg-white/5 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </button>
                   <button (click)="sendCredentials(m)" title="Enviar/Reenviar Acesso por E-mail"
                           class="p-1 rounded text-slate-500 hover:text-accent hover:bg-white/5 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

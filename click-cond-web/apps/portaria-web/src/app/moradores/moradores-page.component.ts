@@ -40,6 +40,8 @@ export class MoradoresPageComponent implements OnInit {
 
   novo: CreateMorador = this.estadoInicial();
   showForm = false;
+  editingId: number | null = null;
+  readonly saving = signal(false);
 
   ngOnInit() {
     this.carregar();
@@ -56,14 +58,51 @@ export class MoradoresPageComponent implements OnInit {
       error: (e) => { this.error.set(e?.message ?? 'Erro'); this.loading.set(false); },
     });
   }
-  registrar() {
+  abrirNovo() {
+    this.editingId = null;
+    this.novo = this.estadoInicial();
+    this.error.set(null);
+    this.showForm = true;
+  }
+  abrirEditar(m: Morador) {
+    this.editingId = m.id;
+    this.novo = {
+      nome: m.nome,
+      documento: m.documento ?? '',
+      email: m.email ?? '',
+      telefone: m.telefone ?? '',
+      tipo: m.tipo ?? 'proprietario',
+      id_apartamento: m.id_apartamento,
+      sendCredentials: false,
+    };
+    this.error.set(null);
+    this.showForm = true;
+  }
+  cancelarForm() {
+    this.showForm = false;
+    this.editingId = null;
+    this.error.set(null);
+  }
+  salvar() {
     if (!this.novo.nome?.trim() || !this.novo.id_apartamento) {
       this.error.set('Nome e apartamento são obrigatórios.');
       return;
     }
-    this.api.create(this.novo).subscribe({
-      next: () => { this.showForm = false; this.novo = this.estadoInicial(); this.carregar(); },
-      error: (e) => this.error.set(e?.message ?? 'Erro'),
+    this.saving.set(true);
+    const obs = this.editingId
+      ? this.api.update(this.editingId, this.novo)
+      : this.api.create(this.novo);
+    obs.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.cancelarForm();
+        this.novo = this.estadoInicial();
+        this.carregar();
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.error?.message ?? e?.message ?? 'Erro');
+      },
     });
   }
   remover(m: Morador) {

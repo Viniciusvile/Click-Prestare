@@ -50,6 +50,10 @@ export class MoradoresApi {
     return this.http.post<Morador>(this.base, dto);
   }
 
+  update(id: number, dto: Partial<CreateMorador>): Observable<Morador> {
+    return this.http.put<Morador>(`${this.base}/${id}`, dto);
+  }
+
   remove(id: number): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }

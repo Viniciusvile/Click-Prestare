@@ -41,6 +41,8 @@ export class ApartamentosPageComponent implements OnInit {
 
   novo: CreateApartamento = { apto: '', bloco: '', fracao: '' };
   showForm = false;
+  editingId: number | null = null;
+  readonly saving = signal(false);
 
   ngOnInit() { this.carregar(); }
 
@@ -51,11 +53,40 @@ export class ApartamentosPageComponent implements OnInit {
       error: (e) => { this.error.set(e?.message ?? 'Erro'); this.loading.set(false); },
     });
   }
-  registrar() {
+  abrirNovo() {
+    this.editingId = null;
+    this.novo = { apto: '', bloco: '', fracao: '' };
+    this.error.set(null);
+    this.showForm = true;
+  }
+  abrirEditar(a: Apartamento) {
+    this.editingId = a.id;
+    this.novo = { apto: a.apto, bloco: a.bloco ?? '', fracao: a.fracao ?? '' };
+    this.error.set(null);
+    this.showForm = true;
+  }
+  cancelarForm() {
+    this.showForm = false;
+    this.editingId = null;
+    this.error.set(null);
+  }
+  salvar() {
     if (!this.novo.apto?.trim()) { this.error.set('Apto é obrigatório.'); return; }
-    this.api.create(this.novo).subscribe({
-      next: () => { this.showForm = false; this.novo = { apto: '', bloco: '', fracao: '' }; this.carregar(); },
-      error: (e) => this.error.set(e?.message ?? 'Erro'),
+    this.saving.set(true);
+    const obs = this.editingId
+      ? this.api.update(this.editingId, this.novo)
+      : this.api.create(this.novo);
+    obs.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.cancelarForm();
+        this.novo = { apto: '', bloco: '', fracao: '' };
+        this.carregar();
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.error?.message ?? e?.message ?? 'Erro');
+      },
     });
   }
   remover(a: Apartamento) {
