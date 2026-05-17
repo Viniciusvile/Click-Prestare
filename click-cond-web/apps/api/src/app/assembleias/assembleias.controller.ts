@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { AssembleiasService } from './assembleias.service';
 import { ReqUser } from '../auth/req-user.decorator';
 import { JwtPayload } from '../auth/jwt-payload.interface';
@@ -81,13 +81,17 @@ export class AssembleiasController {
   @Post('votacoes/voto/insert')
   @HttpCode(200)
   registerVoto(
-    @Body() body: { voto: { votacao_id: string | number; opcao_id: string | number } },
+    @Body() body: { voto?: { votacao_id?: string | number; opcao_id?: string | number } },
     @ReqUser() payload: JwtPayload,
   ) {
     const userId = payload?.user?.id ?? payload?.sub ?? 1;
+    const voto = body?.voto;
+    if (!voto || voto.votacao_id == null || voto.opcao_id == null) {
+      throw new BadRequestException('Payload inválido: { voto: { votacao_id, opcao_id } } é obrigatório.');
+    }
     return this.service.registerVoto(
-      Number(body.voto.votacao_id),
-      Number(body.voto.opcao_id),
+      Number(voto.votacao_id),
+      Number(voto.opcao_id),
       Number(userId),
     );
   }
