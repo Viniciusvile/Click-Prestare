@@ -239,6 +239,26 @@ export class OcorrenciasMobileController {
     const idUser = payload.user?.id ?? payload.sub;
     return this.service.listOcorrencias(Number(idUser));
   }
+
+  @Get('todos/get-all')
+  listTodos(
+    @Query('id_condominio') idCond: string,
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const idUser = payload.user?.id ?? payload.sub;
+    const typeAccess = payload.typeAccess ?? payload.user?.typeAccess ?? 'Morador';
+    return this.service.listOcorrenciasTodos(Number(idCond), Number(idUser), typeAccess);
+  }
+
+  @Get('pendentes/get-all')
+  listPendentes(
+    @Query('id_condominio') idCond: string,
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const idUser = payload.user?.id ?? payload.sub;
+    const typeAccess = payload.typeAccess ?? payload.user?.typeAccess ?? 'Morador';
+    return this.service.listOcorrenciasPendentes(Number(idCond), Number(idUser), typeAccess);
+  }
 }
 
 // ==========================================

@@ -1023,16 +1023,65 @@ export class MobileAuthService {
   }
 
   async listOcorrencias(idUser: number) {
-    try {
-      if (this.prisma.isConnected) {
-        return await this.prisma.ocorrencias.findMany({
-          where: { user: idUser },
-          include: { categoria: true },
-          orderBy: { created_at: 'desc' },
-        });
-      }
-    } catch (e) {}
-    return [];
+    if (!this.prisma.isConnected) return [];
+    return this.prisma.ocorrencias.findMany({
+      where: { user: idUser },
+      include: { categoria: true },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Lista todas as ocorrências visíveis para o usuário logado.
+   * - Síndico/Funcionário: vê todas do condomínio.
+   * - Morador: vê só as próprias.
+   */
+  async listOcorrenciasTodos(idCondominio: number, idUser: number, typeAccess: string) {
+    if (!this.prisma.isConnected) return [];
+    const isPrivileged = typeAccess === 'Sindico' || typeAccess === 'Funcionario';
+    const where: any = { id_condominio: Number(idCondominio) };
+    if (!isPrivileged) where.user = Number(idUser);
+
+    const list = await this.prisma.ocorrencias.findMany({
+      where,
+      include: { categoria: true, criadoPor: { select: { name: true } } },
+      orderBy: { created_at: 'desc' },
+    });
+    return list.map(o => this.mapOcorrencia(o));
+  }
+
+  /**
+   * Lista somente as ocorrências NÃO solucionadas (Pendente, Ciente, etc.).
+   */
+  async listOcorrenciasPendentes(idCondominio: number, idUser: number, typeAccess: string) {
+    if (!this.prisma.isConnected) return [];
+    const isPrivileged = typeAccess === 'Sindico' || typeAccess === 'Funcionario';
+    const where: any = {
+      id_condominio: Number(idCondominio),
+      status: { notIn: ['Solucionado', 'solucionado', 'Resolvida', 'resolvida'] },
+    };
+    if (!isPrivileged) where.user = Number(idUser);
+
+    const list = await this.prisma.ocorrencias.findMany({
+      where,
+      include: { categoria: true, criadoPor: { select: { name: true } } },
+      orderBy: { created_at: 'desc' },
+    });
+    return list.map(o => this.mapOcorrencia(o));
+  }
+
+  private mapOcorrencia(o: any) {
+    return {
+      id: o.id,
+      descricao: o.descricao ?? '',
+      tipo: o.categoria?.nome ?? '',
+      status: o.status ?? 'Pendente',
+      resposta: o.resposta ?? '',
+      resposta_at: o.resposta_at,
+      criado_por: o.criadoPor?.name ?? '',
+      created_at: o.created_at,
+      updated_at: o.updated_at,
+    };
   }
 
   // ==========================================
