@@ -26,6 +26,10 @@ export class VisitantesService {
     return this.http.post<Visitante>(this.base, dto);
   }
 
+  update(id: number, dto: Partial<CreateVisitante>): Observable<Visitante> {
+    return this.http.put<Visitante>(`${this.base}/${id}`, dto);
+  }
+
   remove(id: number): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }

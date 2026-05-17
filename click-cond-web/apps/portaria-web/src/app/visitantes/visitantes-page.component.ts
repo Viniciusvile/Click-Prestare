@@ -38,6 +38,8 @@ export class VisitantesPageComponent implements OnInit {
 
   novo: CreateVisitante = this.estadoInicial();
   showForm = false;
+  editingId: number | null = null;
+  readonly saving = signal(false);
 
   ngOnInit() {
     this.carregar();
@@ -61,18 +63,58 @@ export class VisitantesPageComponent implements OnInit {
     });
   }
 
-  registrar() {
+  abrirNovo() {
+    this.editingId = null;
+    this.novo = this.estadoInicial();
+    this.error.set(null);
+    this.showForm = true;
+  }
+
+  abrirEditar(v: Visitante) {
+    this.editingId = v.id;
+    this.novo = {
+      nome: v.nome,
+      doc_identificacao: v.doc_identificacao ?? '',
+      id_apartamento: v.id_apartamento,
+      is_visitante: v.is_visitante ?? 1,
+      is_prestador: v.is_prestador ?? 0,
+      data_hora_inicio: v.data_hora_inicio
+        ? new Date(v.data_hora_inicio).toISOString().slice(0, 16)
+        : undefined,
+      data_hora_termino: v.data_hora_termino
+        ? new Date(v.data_hora_termino).toISOString().slice(0, 16)
+        : undefined,
+    } as CreateVisitante;
+    this.error.set(null);
+    this.showForm = true;
+  }
+
+  cancelarForm() {
+    this.showForm = false;
+    this.editingId = null;
+    this.error.set(null);
+  }
+
+  salvar() {
     if (!this.novo.nome?.trim() || !this.novo.id_apartamento) {
       this.error.set('Informe nome e selecione o apartamento.');
       return;
     }
-    this.service.create(this.novo).subscribe({
+    this.saving.set(true);
+    const obs = this.editingId
+      ? this.service.update(this.editingId, this.novo)
+      : this.service.create(this.novo);
+    obs.subscribe({
       next: () => {
-        this.showForm = false;
+        this.saving.set(false);
+        this.cancelarForm();
         this.novo = this.estadoInicial();
         this.carregar();
       },
-      error: (e) => this.error.set(`Falha ao registrar: ${e?.message ?? e}`),
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(`Falha ao salvar: ${e?.error?.message ?? e?.message ?? e}`);
+      },
     });
   }
 

@@ -29,6 +29,10 @@ export class FinanceiroPageComponent implements OnInit {
   readonly modalLancamento = signal(false);
   novoLancamento: any = { nome: '', tipo: 'C', valor: null, data: '', data_vencimento: '', categoria: 'Receitas' };
 
+  // Upload de boleto/comprovante por lançamento
+  readonly uploadingId = signal<number | null>(null);
+  readonly uploadError = signal<string | null>(null);
+
   ngOnInit() {
     // Configura o mês atual inicialmente
     const hoje = new Date();
@@ -103,6 +107,44 @@ export class FinanceiroPageComponent implements OnInit {
     this.api.insertLancamento(this.novoLancamento).subscribe(() => {
       this.modalLancamento.set(false);
       this.carregarDados();
+    });
+  }
+
+  /** Dispara o seletor de arquivo para subir boleto ou comprovante. */
+  abrirUpload(item: Lancamento, tipo: 'boleto' | 'comprovante') {
+    this.uploadError.set(null);
+    const inputEl = document.createElement('input');
+    inputEl.type = 'file';
+    inputEl.accept = tipo === 'boleto' ? 'application/pdf,image/*' : 'image/*,application/pdf';
+    inputEl.onchange = () => {
+      const file = inputEl.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        this.uploadError.set('Arquivo maior que 5MB. Comprima e tente novamente.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onerror = () => this.uploadError.set('Falha ao ler o arquivo.');
+      reader.onload = () => {
+        const dataUrl = String(reader.result ?? '');
+        this.enviarArquivo(item.id, dataUrl, tipo);
+      };
+      reader.readAsDataURL(file);
+    };
+    inputEl.click();
+  }
+
+  private enviarArquivo(id: number, dataUrl: string, tipo: 'boleto' | 'comprovante') {
+    this.uploadingId.set(id);
+    this.api.uploadSharedFile(id, dataUrl, tipo).subscribe({
+      next: () => {
+        this.uploadingId.set(null);
+        this.carregarDados();
+      },
+      error: (e) => {
+        this.uploadingId.set(null);
+        this.uploadError.set(`Falha ao subir ${tipo}: ${e?.error?.message ?? e?.message ?? 'erro'}`);
+      },
     });
   }
 }

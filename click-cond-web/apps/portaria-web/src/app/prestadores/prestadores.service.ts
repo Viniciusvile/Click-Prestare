@@ -38,6 +38,10 @@ export class PrestadoresApi {
     return this.http.post<Prestador>(this.base, dto);
   }
 
+  update(id: number, dto: Partial<CreatePrestador>): Observable<Prestador> {
+    return this.http.put<Prestador>(`${this.base}/${id}`, dto);
+  }
+
   remove(id: number): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }

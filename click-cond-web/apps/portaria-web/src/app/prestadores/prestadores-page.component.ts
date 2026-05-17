@@ -37,6 +37,8 @@ export class PrestadoresPageComponent implements OnInit {
 
   novo: CreatePrestador = { nome: '', telefone: '', categorias: '' };
   showForm = false;
+  editingId: number | null = null;
+  readonly saving = signal(false);
 
   ngOnInit() { this.carregar(); }
 
@@ -47,11 +49,44 @@ export class PrestadoresPageComponent implements OnInit {
       error: (e) => { this.error.set(e?.message ?? 'Erro'); this.loading.set(false); },
     });
   }
-  registrar() {
+  abrirNovo() {
+    this.editingId = null;
+    this.novo = { nome: '', telefone: '', categorias: '' };
+    this.error.set(null);
+    this.showForm = true;
+  }
+  abrirEditar(p: Prestador) {
+    this.editingId = p.id;
+    this.novo = {
+      nome: p.nome,
+      telefone: p.telefone ?? '',
+      categorias: p.categorias ?? '',
+    };
+    this.error.set(null);
+    this.showForm = true;
+  }
+  cancelarForm() {
+    this.showForm = false;
+    this.editingId = null;
+    this.error.set(null);
+  }
+  salvar() {
     if (!this.novo.nome?.trim()) { this.error.set('Nome é obrigatório.'); return; }
-    this.api.create(this.novo).subscribe({
-      next: () => { this.showForm = false; this.novo = { nome: '', telefone: '', categorias: '' }; this.carregar(); },
-      error: (e) => this.error.set(e?.message ?? 'Erro'),
+    this.saving.set(true);
+    const obs = this.editingId
+      ? this.api.update(this.editingId, this.novo)
+      : this.api.create(this.novo);
+    obs.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.cancelarForm();
+        this.novo = { nome: '', telefone: '', categorias: '' };
+        this.carregar();
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.error?.message ?? e?.message ?? 'Erro');
+      },
     });
   }
   remover(p: Prestador) {
