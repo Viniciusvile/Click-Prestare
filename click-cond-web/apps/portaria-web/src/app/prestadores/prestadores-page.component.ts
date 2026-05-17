@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CreatePrestador, Prestador, PrestadoresApi } from './prestadores.service';
 import { ConfirmService } from '../shared/confirm.service';
+import { InputMaskDirective } from '../shared/input-mask.directive';
 
 @Component({
   selector: 'app-prestadores-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, InputMaskDirective],
   templateUrl: './prestadores-page.component.html',
 })
 export class PrestadoresPageComponent implements OnInit {

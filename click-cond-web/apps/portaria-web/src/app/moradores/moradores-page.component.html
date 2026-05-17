@@ -107,18 +107,18 @@
             class="w-full px-3 py-2.5 text-sm rounded-lg bg-graphite border border-white/10 text-white focus:outline-none focus:border-accent/60" />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-slate-400 mb-1.5 block">Documento (CPF/RG)</span>
-          <input [(ngModel)]="novo.documento"
+          <span class="text-xs font-medium text-slate-400 mb-1.5 block">Documento (CPF)</span>
+          <input [(ngModel)]="novo.documento" appMask="cpf" placeholder="000.000.000-00"
             class="w-full px-3 py-2.5 text-sm rounded-lg bg-graphite border border-white/10 text-white focus:outline-none focus:border-accent/60" />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-slate-400 mb-1.5 block">E-mail</span>
-          <input [(ngModel)]="novo.email" type="email"
+          <input [(ngModel)]="novo.email" type="email" placeholder="morador@email.com"
             class="w-full px-3 py-2.5 text-sm rounded-lg bg-graphite border border-white/10 text-white focus:outline-none focus:border-accent/60" />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-slate-400 mb-1.5 block">Telefone</span>
-          <input [(ngModel)]="novo.telefone" placeholder="(11) 99999-9999"
+          <input [(ngModel)]="novo.telefone" appMask="phone" placeholder="(11) 99999-9999"
             class="w-full px-3 py-2.5 text-sm rounded-lg bg-graphite border border-white/10 text-white focus:outline-none focus:border-accent/60" />
         </label>
         <label class="block">

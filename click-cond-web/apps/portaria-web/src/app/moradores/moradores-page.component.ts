@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { CreateMorador, Morador, MoradoresApi } from './moradores.service';
 import { ApartamentosApi, Apartamento } from '../apartamentos/apartamentos.service';
 import { ConfirmService } from '../shared/confirm.service';
+import { InputMaskDirective, validators } from '../shared/input-mask.directive';
 
 declare var require: any;
 
 @Component({
   selector: 'app-moradores-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, InputMaskDirective],
   templateUrl: './moradores-page.component.html',
 })
 export class MoradoresPageComponent implements OnInit {
@@ -88,6 +89,18 @@ export class MoradoresPageComponent implements OnInit {
   salvar() {
     if (!this.novo.nome?.trim() || !this.novo.id_apartamento) {
       this.error.set('Nome e apartamento são obrigatórios.');
+      return;
+    }
+    if (this.novo.email && !validators.isEmail(this.novo.email)) {
+      this.error.set('E-mail inválido.');
+      return;
+    }
+    if (this.novo.telefone && !validators.isPhone(this.novo.telefone)) {
+      this.error.set('Telefone inválido. Use o formato (11) 99999-9999.');
+      return;
+    }
+    if (this.novo.documento && !validators.isCpf(this.novo.documento)) {
+      this.error.set('CPF inválido. Use o formato 000.000.000-00.');
       return;
     }
     this.saving.set(true);

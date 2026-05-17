@@ -104,8 +104,8 @@
             class="w-full px-3 py-2.5 text-sm rounded-lg bg-graphite border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-accent/60" />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-slate-400 mb-1.5 block">Documento (RG/CPF)</span>
-          <input [(ngModel)]="novo.doc_identificacao" placeholder="000.000.000-00"
+          <span class="text-xs font-medium text-slate-400 mb-1.5 block">Documento (CPF/CNPJ)</span>
+          <input [(ngModel)]="novo.doc_identificacao" appMask="cpfCnpj" placeholder="000.000.000-00"
             class="w-full px-3 py-2.5 text-sm rounded-lg bg-graphite border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-accent/60" />
         </label>
         <label class="block">
