@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../common/mail/mail.service';
 import * as crypto from 'crypto';
@@ -228,8 +228,32 @@ export class MoradoresService {
       }
       throw new NotFoundException(`Morador ${id} não encontrado`);
     }
-    try {
-      return await this.prisma.moradores.update({
+
+    // Carrega o morador atual com seu Users vinculado
+    const atual = await this.prisma.moradores.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+    if (!atual) throw new NotFoundException(`Morador ${id} não encontrado`);
+
+    // Se o email mudou, valida unicidade no Users (login + email)
+    const emailMudou = dto.email !== undefined && dto.email !== atual.email;
+    if (emailMudou && dto.email) {
+      const conflito = await this.prisma.users.findFirst({
+        where: {
+          OR: [{ email: dto.email }, { login: dto.email }],
+          NOT: { id: atual.id_user },
+        },
+        select: { id: true },
+      });
+      if (conflito) {
+        throw new BadRequestException('Já existe outro usuário com este e-mail.');
+      }
+    }
+
+    return await this.prisma.$transaction(async (tx) => {
+      // Atualiza moradores
+      const morador = await tx.moradores.update({
         where: { id },
         data: {
           ...(dto.nome !== undefined && { nome: dto.nome }),
@@ -242,9 +266,25 @@ export class MoradoresService {
           }),
         },
       });
-    } catch {
-      throw new NotFoundException(`Morador ${id} não encontrado`);
-    }
+
+      // Propaga para Users (login/email/phone/name/cpf) para manter o acesso ao app
+      const userPatch: any = {};
+      if (dto.nome !== undefined) userPatch.name = dto.nome;
+      if (dto.telefone !== undefined) userPatch.phone = dto.telefone;
+      if (dto.documento !== undefined) userPatch.cpf = dto.documento || null;
+      if (emailMudou) {
+        userPatch.email = dto.email || null;
+        userPatch.login = dto.email || null;
+      }
+      if (Object.keys(userPatch).length > 0 && atual.id_user) {
+        await tx.users.update({
+          where: { id: atual.id_user },
+          data: userPatch,
+        });
+      }
+
+      return morador;
+    });
   }
 
   async remove(id: number) {
