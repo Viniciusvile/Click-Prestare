@@ -7,8 +7,13 @@ import { AuthService } from '../auth/auth.service';
 export interface Comunicado {
   id: number;
   titulo: string;
-  descricao: string;
+  descricao: string | null;
   created_at: string;
+}
+
+export interface CreateComunicado {
+  titulo: string;
+  descricao?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -23,5 +28,17 @@ export class ComunicadosApi {
 
   list(): Observable<Comunicado[]> {
     return this.http.get<Comunicado[]>(this.base);
+  }
+
+  create(dto: CreateComunicado): Observable<Comunicado> {
+    return this.http.post<Comunicado>(this.base, dto);
+  }
+
+  update(id: number, dto: CreateComunicado): Observable<Comunicado> {
+    return this.http.put<Comunicado>(`${this.base}/${id}`, dto);
+  }
+
+  remove(id: number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }
 }
