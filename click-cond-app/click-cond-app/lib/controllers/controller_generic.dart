@@ -11,31 +11,51 @@ Uri _buildUri(String path, [Map<String, String>? params]) =>
 
 Map<String, String> _authHeaders({bool withContentType = false}) {
   final headers = <String, String>{"Authorization": getToken()};
-  if (withContentType) headers["Content-Type"] = "application/json";
+  if (withContentType) headers["Content-Type"] = "application/json; charset=utf-8";
   return headers;
 }
 
 apiSaveObject(String route, String nameObj, dynamic obj, bool isEdit) async {
+  http.Response? response;
   try {
     final endUri = isEdit ? 'update' : 'insert';
     final url = _buildUri('/$route/$endUri');
-    final body = json.encode({
-      "id_condominio": Singleton.instance.id_condominio.toString(),
-      nameObj: obj,
-    });
-    final response = await http
-        .post(url, headers: _authHeaders(withContentType: true), body: body)
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return "";
+
+    // Serializa o objeto: prefere obj.toJson() se existir, senão usa direto
+    final Map<String, dynamic> payload = {};
+    payload['id_condominio'] = Singleton.instance.id_condominio.toString();
     try {
-      final parsed = jsonDecode(response.body) as Map<String, dynamic>;
-      return (parsed["message"] ?? "Erro desconhecido").toString();
+      payload[nameObj] = obj is Map ? obj : obj.toJson();
     } catch (_) {
-      return "Erro ${response.statusCode}";
+      payload[nameObj] = obj;
     }
+    final body = json.encode(payload);
+
+    response = await http
+        .post(
+          url,
+          headers: _authHeaders(withContentType: true),
+          body: utf8.encode(body),
+        )
+        .timeout(_kTimeout);
   } catch (e) {
-    return e.toString();
+    // Falha de rede / timeout / serialização — devolve mensagem amigável
+    return "Falha de comunicação com o servidor. Verifique sua conexão.";
   }
+
+  // Sucesso
+  if (response.statusCode >= 200 && response.statusCode < 300) return "";
+
+  // Erro — tenta extrair message do body
+  try {
+    final parsed = jsonDecode(response.body);
+    if (parsed is Map && parsed["message"] != null) {
+      final msg = parsed["message"];
+      if (msg is List) return msg.join(', ');
+      return msg.toString();
+    }
+  } catch (_) {}
+  return "Erro ${response.statusCode}";
 }
 
 apiDeleteObject(String route, int idObj) async {
