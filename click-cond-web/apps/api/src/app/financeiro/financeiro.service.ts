@@ -150,6 +150,7 @@ export class FinanceiroService {
 
     if (!result) throw new NotFoundException('Lançamento não encontrado.');
 
+    const isMorador = user?.typeAccess === 'Morador';
     if (isMorador && result.nome && !result.nome.includes('Apto')) {
       // Logic for isolation (dummy for now since id_usuario is missing)
     }
