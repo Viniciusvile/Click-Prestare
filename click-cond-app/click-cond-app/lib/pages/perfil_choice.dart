@@ -11,7 +11,6 @@ import 'package:click/widgets/app/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/local_storage.dart';
 
@@ -70,182 +69,81 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: AppColors.bg(context),
         body: Stack(
           children: [
-            // Background Grid Pattern matching the premium Web look
-            Positioned.fill(
-              child: CustomPaint(
-                painter: GridPainter(context),
-              ),
-            ),
             SafeArea(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: AppSpacing.xxxl),
-                    
-                    // Corporate Branding row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Icon(
-                            PhosphorIcons.buildings,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'PRESTARE ',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  color: AppColors.textPrimary(context),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'CLICK',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  color: AppColors.primary,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: AppSpacing.xxxl),
-
-                    // Rounded Badge
+                    const SizedBox(height: AppSpacing.huge),
                     Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.all(AppSpacing.xl),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.18),
-                            width: 1,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft, end: Alignment.bottomRight,
+                            colors: [AppColors.primaryGradientStart, AppColors.primaryGradientEnd],
                           ),
-                        ),
-                        child: Text(
-                          'CONDOMÍNIO INTELIGENTE',
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Premium Title with highlighted segment
-                    Text.rich(
-                      TextSpan(
-                        style: GoogleFonts.poppins(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary(context),
-                          height: 1.3,
-                        ),
-                        children: [
-                          const TextSpan(text: 'A inteligência operacional que '),
-                          TextSpan(
-                            text: 'conecta seu condomínio',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              shadows: [
-                                Shadow(
-                                  color: AppColors.primary.withOpacity(0.25),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                          borderRadius: BorderRadius.circular(AppRadius.xxl),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.25),
+                              blurRadius: 24, offset: const Offset(0, 8),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Icon(
+                          PhosphorIcons.buildingsFill,
+                          size: 56, color: Colors.white,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
-
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Sub-heading
-                    Text(
-                      'Acesse a plataforma corporativa e gerencie correspondências, visitantes, prestadores de serviços e comunicados com rastreabilidade absoluta.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.textSecondary(context),
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
                     const SizedBox(height: AppSpacing.xxxl),
-
-                    // Modern Profile Selection Cards
-                    _buildProfileCard(
-                      context: context,
-                      icon: PhosphorIcons.shieldCheck,
-                      title: getText("sou_sindico"),
-                      description: 'Gestão completa e inteligência operacional',
-                      onTap: () {
+                    Text(
+                      'Bem-vindo',
+                      style: AppTypography.display(context),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Gerencie seu condomínio com simplicidade',
+                      style: AppTypography.bodySecondary(context),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.huge),
+                    AppButton(
+                      label: getText("sou_sindico"),
+                      variant: AppButtonVariant.primary,
+                      trailingIcon: PhosphorIcons.arrowRight,
+                      onPressed: () {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const Hello()));
                       },
                     ),
-
                     const SizedBox(height: AppSpacing.md),
-
-                    _buildProfileCard(
-                      context: context,
-                      icon: PhosphorIcons.house,
-                      title: getText("sou_morador"),
-                      description: 'Reservas, comunicados e encomendas',
-                      onTap: () {
+                    AppButton(
+                      label: getText("sou_morador"),
+                      variant: AppButtonVariant.secondary,
+                      trailingIcon: PhosphorIcons.arrowRight,
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const LoginSindico(loginType: 'morador')),
                         );
                       },
                     ),
-
                     const SizedBox(height: AppSpacing.md),
-
-                    _buildProfileCard(
-                      context: context,
-                      icon: PhosphorIcons.identificationCard,
-                      title: getText("sou_funcionario"),
-                      description: 'Controle de acesso e portaria inteligente',
-                      onTap: () {
+                    AppButton(
+                      label: getText("sou_funcionario"),
+                      variant: AppButtonVariant.ghost,
+                      trailingIcon: PhosphorIcons.arrowRight,
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const LoginSindico(loginType: 'funcionario')),
                         );
                       },
                     ),
-
                     const SizedBox(height: AppSpacing.huge),
-
-                    // App Version Footer
                     Text(
                       '${getText("vesaoApp")} $_appVersion',
                       style: AppTypography.tiny(context),
@@ -298,108 +196,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  Widget _buildProfileCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String description,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceElevated(context),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: AppColors.border(context),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isDark ? Colors.black : AppColors.primary).withOpacity(isDark ? 0.12 : 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary(context),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.textSecondary(context),
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              PhosphorIcons.caretRight,
-              color: AppColors.textSecondary(context).withOpacity(0.6),
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class GridPainter extends CustomPainter {
-  final BuildContext context;
-  GridPainter(this.context);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final paint = Paint()
-      ..color = (isDark ? Colors.white : Colors.black).withOpacity(isDark ? 0.02 : 0.025)
-      ..strokeWidth = 0.8;
-
-    const double step = 38.0;
-
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
