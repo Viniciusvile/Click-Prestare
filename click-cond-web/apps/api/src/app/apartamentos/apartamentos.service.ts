@@ -116,4 +116,48 @@ export class ApartamentosService {
       throw new NotFoundException(`Apartamento ${id} não encontrado`);
     }
   }
+
+  async importBulk(idCondominio: number, linhas: any[]) {
+    const criados = [];
+    for (const item of linhas) {
+      const apto = item.apto?.toString() || item.lote?.toString();
+      if (!apto) continue;
+      const bloco = item.bloco?.toString() || item.quadra?.toString() || null;
+      const fracao = item.fracao?.toString() || null;
+
+      try {
+        if (this.prisma.isConnected) {
+          const existing = await this.prisma.apartamentos.findFirst({
+            where: {
+              id_condominio: Number(idCondominio),
+              apto,
+              bloco,
+            },
+          });
+          if (existing) continue;
+
+          const novo = await this.prisma.apartamentos.create({
+            data: {
+              bloco,
+              apto,
+              fracao,
+              id_condominio: Number(idCondominio),
+            },
+          });
+          criados.push(novo);
+        } else {
+          criados.push({
+            id: Date.now() + Math.random(),
+            bloco,
+            apto,
+            fracao,
+            id_condominio: Number(idCondominio),
+          });
+        }
+      } catch (err: any) {
+        console.log('Erro ao importar apartamento:', apto, err?.message);
+      }
+    }
+    return { ok: true, total: criados.length, criados };
+  }
 }

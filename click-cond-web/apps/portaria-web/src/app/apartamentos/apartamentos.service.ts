@@ -47,4 +47,8 @@ export class ApartamentosApi {
   remove(id: number): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }
+
+  importBulk(linhas: any[]): Observable<{ ok: boolean; total: number; criados: any[] }> {
+    return this.http.post<{ ok: boolean; total: number; criados: any[] }>(`${this.base}/import-bulk`, { linhas });
+  }
 }

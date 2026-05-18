@@ -6,6 +6,8 @@ import {
 } from './apartamentos.service';
 import { ConfirmService } from '../shared/confirm.service';
 
+declare var require: any;
+
 @Component({
   selector: 'app-apartamentos-page',
   standalone: true,
@@ -100,5 +102,101 @@ export class ApartamentosPageComponent implements OnInit {
     });
     if (!ok) return;
     this.api.remove(a.id).subscribe({ next: () => this.carregar() });
+  }
+
+  // Controle de Importação em Lote (Excel/CSV)
+  showBulkModal = false;
+  bulkLinhas = signal<any[]>([]);
+  bulkStatus = signal<'idle' | 'reading' | 'ready' | 'uploading' | 'done'>('idle');
+  bulkResult = signal<{ total?: number; criados?: any[] }>({});
+
+  downloadTemplate() {
+    const headers = 'Quadra/Bloco,Lote/Apto,Fração\nBloco A,101,0.0125\nBloco A,102,0.0125\nQuadra B,Lote 12,0.0150';
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'template_importacao_apartamentos.csv';
+    link.click();
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target?.files[0];
+    if (!file) return;
+    this.bulkStatus.set('reading');
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      try {
+        const data = e.target.result;
+        const linhas: any[] = [];
+        if (file.name.endsWith('.csv')) {
+          const text = new TextDecoder().decode(data);
+          const rows = text.split('\n').map(r => r.trim()).filter(r => r);
+          for (let i = 1; i < rows.length; i++) {
+            const cols = rows[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            const apto = cols[1];
+            if (apto) {
+              linhas.push({
+                bloco: cols[0] || '',
+                apto: apto,
+                fracao: cols[2] || '',
+              });
+            }
+          }
+        } else {
+          try {
+            const xlsx = require('xlsx');
+            const wb = xlsx.read(data, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const json: any[] = xlsx.utils.sheet_to_json(ws);
+            json.forEach(row => {
+              const apto = row['Lote/Apto'] || row['Lote'] || row['Apto'] || row['apto'] || row['lote'];
+              const bloco = row['Quadra/Bloco'] || row['Quadra'] || row['Bloco'] || row['bloco'] || row['quadra'] || '';
+              const fracao = row['Fração'] || row['Fracao'] || row['fracao'] || '';
+              if (apto) {
+                linhas.push({
+                  bloco,
+                  apto,
+                  fracao,
+                });
+              }
+            });
+          } catch {
+            alert('Para arquivos .xlsx nativos, por favor converta para .csv ou baixe nosso template em CSV padronizado.');
+            this.bulkStatus.set('idle');
+            return;
+          }
+        }
+        this.bulkLinhas.set(linhas);
+        this.bulkStatus.set('ready');
+      } catch {
+        alert('Erro ao decodificar a planilha.');
+        this.bulkStatus.set('idle');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  confirmBulkImport() {
+    const list = this.bulkLinhas();
+    if (!list.length) return;
+    this.bulkStatus.set('uploading');
+    this.api.importBulk(list).subscribe({
+      next: (res) => {
+        this.bulkStatus.set('done');
+        this.bulkResult.set(res);
+        this.carregar();
+      },
+      error: () => {
+        alert('Erro ao importar em lote');
+        this.bulkStatus.set('ready');
+      },
+    });
+  }
+
+  fecharBulkModal() {
+    this.showBulkModal = false;
+    this.bulkLinhas.set([]);
+    this.bulkStatus.set('idle');
+    this.bulkResult.set({});
   }
 }

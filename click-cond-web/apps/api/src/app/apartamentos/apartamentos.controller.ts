@@ -41,4 +41,12 @@ export class ApartamentosController {
     this.service.remove(id);
     return { ok: true };
   }
+
+  @Post('import-bulk')
+  importBulk(
+    @Param('idCondominio', ParseIntPipe) idCondominio: number,
+    @Body() body: { linhas: any[] },
+  ) {
+    return this.service.importBulk(idCondominio, body.linhas);
+  }
 }
