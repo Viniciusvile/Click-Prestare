@@ -100,6 +100,19 @@ export class MailService implements OnModuleInit {
     await this.send(email, subject, html);
   }
 
+  async sendWelcomeMoradorExisting(email: string, nome: string): Promise<void> {
+    const subject = 'CLICK - Bem-vindo(a)! Novo vínculo de condomínio';
+    const html = `
+      Olá, <b>${this.escape(nome)}</b>!<br><br>
+      O seu acesso ao aplicativo <b>CLICK Condomínios</b> foi vinculado a um novo apartamento com sucesso.<br><br>
+      Como você já possui um cadastro ativo no sistema associado a este e-mail, **utilize a sua senha cadastrada anteriormente** para acessar a sua conta.<br><br>
+      Se você não se lembra da sua senha atual, basta abrir o aplicativo e tocar em **"Esqueci minha senha"** na tela de login para redefini-la.<br><br>
+      Seja muito bem-vindo(a)!<br>
+      Equipe CLICK
+    `;
+    await this.send(email, subject, html);
+  }
+
   async sendForgotPassword(email: string, novaSenha: string, tipoUsuario: string): Promise<void> {
     const subject = 'CLICK - Recuperação de Senha';
     const html = `

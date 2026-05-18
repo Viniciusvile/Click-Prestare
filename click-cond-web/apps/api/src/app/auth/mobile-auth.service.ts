@@ -773,6 +773,7 @@ export class MobileAuthService {
 
       // Cria/reutiliza Users por email OU cpf — senha inicial = documento ou '123456'
       let userId: number;
+      let passwordWasSet = false;
       const cpf = mor.documento ? String(mor.documento).trim() : null;
       const senhaInicial = cpf || '123456';
       const md5Pwd = createHash('md5').update(senhaInicial).digest('hex');
@@ -809,7 +810,10 @@ export class MobileAuthService {
         // Garante que o usuário tem login/senha para acessar o app
         const patch: any = {};
         if (!existing.login && mor.email) patch.login = mor.email;
-        if (!existing.password) patch.password = md5Pwd;
+        if (!existing.password) {
+          patch.password = md5Pwd;
+          passwordWasSet = true;
+        }
         if (!existing.email && mor.email) patch.email = mor.email;
         if (!existing.cpf && cpf) patch.cpf = cpf;
         if (!existing.phone && mor.telefone) patch.phone = mor.telefone;
@@ -831,6 +835,7 @@ export class MobileAuthService {
           },
         });
         userId = u.id;
+        passwordWasSet = true;
       } else {
         // Morador sem email — cria Users só para satisfazer FK, mas sem acesso ao app
         const u = await this.prisma.users.create({
@@ -874,9 +879,15 @@ export class MobileAuthService {
 
       // Dispara email de boas-vindas (assíncrono, não bloqueia resposta)
       if (mor.email && mor.sendCredentials !== false) {
-        this.mail
-          .sendWelcomeMorador(mor.email, mor.nome ?? '', senhaInicial)
-          .catch(() => {});
+        if (passwordWasSet) {
+          this.mail
+            .sendWelcomeMorador(mor.email, mor.nome ?? '', senhaInicial)
+            .catch(() => {});
+        } else {
+          this.mail
+            .sendWelcomeMoradorExisting(mor.email, mor.nome ?? '')
+            .catch(() => {});
+        }
       }
 
       return { id: created.id };

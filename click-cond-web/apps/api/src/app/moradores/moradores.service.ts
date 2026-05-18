@@ -29,10 +29,16 @@ export class MoradoresService {
     private readonly mail: MailService,
   ) {}
 
-  private fireWelcomeEmail(email: string, nome: string, senha: string) {
-    this.mail
-      .sendWelcomeMorador(email, nome, senha)
-      .catch((err) => this.logger.warn(`Falha ao enviar credenciais para ${email}: ${err?.message ?? err}`));
+  private fireWelcomeEmail(email: string, nome: string, senha?: string) {
+    if (senha) {
+      this.mail
+        .sendWelcomeMorador(email, nome, senha)
+        .catch((err) => this.logger.warn(`Falha ao enviar credenciais para ${email}: ${err?.message ?? err}`));
+    } else {
+      this.mail
+        .sendWelcomeMoradorExisting(email, nome)
+        .catch((err) => this.logger.warn(`Falha ao enviar boas-vindas para ${email}: ${err?.message ?? err}`));
+    }
   }
 
   /**
@@ -125,6 +131,7 @@ export class MoradoresService {
       return newM;
     }
     const md5Password = crypto.createHash('md5').update(dto.documento || '123456').digest('hex');
+    let passwordWasSet = false;
 
     // Cria/encontra Users por email se fornecido
     let userId: number;
@@ -143,6 +150,7 @@ export class MoradoresService {
               password: md5Password,
             },
           });
+          passwordWasSet = true;
         }
       } else {
         const u = await this.prisma.users.create({
@@ -158,6 +166,7 @@ export class MoradoresService {
           },
         });
         userId = u.id;
+        passwordWasSet = true;
       }
     } else {
       const u = await this.prisma.users.create({
@@ -213,7 +222,7 @@ export class MoradoresService {
     });
 
     if (dto.sendCredentials && dto.email) {
-      this.fireWelcomeEmail(dto.email, dto.nome, dto.documento || '123456');
+      this.fireWelcomeEmail(dto.email, dto.nome, passwordWasSet ? (dto.documento || '123456') : undefined);
     }
 
     return createdMorador;
