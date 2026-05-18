@@ -596,6 +596,76 @@ export class MobileAuthService {
     const func = body.funcionario || body.funcionarios || {};
     const idCondominio = Number(body.id_condominio);
 
+    // Função auxiliar para sincronizar com as tabelas de Users e Funcionarios do app mobile
+    const sincronizarUsuarioMobile = async (fp: any, senhaPlana?: string) => {
+      try {
+        let user = await this.prisma.users.findFirst({ where: { login: fp.login } });
+        const md5Pwd = senhaPlana ? createHash('md5').update(senhaPlana).digest('hex') : fp.password;
+
+        if (!user) {
+          user = await this.prisma.users.create({
+            data: {
+              login: fp.login,
+              email: fp.email || fp.login,
+              password: md5Pwd,
+              name: fp.nome,
+              phone: fp.telefone,
+              is_funcionario: 1,
+              is_sindico: 0,
+              is_morador: 0,
+            }
+          });
+        } else {
+          await this.prisma.users.update({
+            where: { id: user.id },
+            data: {
+              name: fp.nome,
+              phone: fp.telefone,
+              email: fp.email || fp.login,
+              password: md5Pwd,
+              is_funcionario: 1,
+            }
+          });
+        }
+
+        const f = await this.prisma.funcionarios.findFirst({ where: { id_user: user.id } });
+        if (!f) {
+          await this.prisma.funcionarios.create({
+            data: {
+              nome: fp.nome,
+              email: fp.email || fp.login,
+              telefone: fp.telefone,
+              funcao: 'Porteiro',
+              ch: fp.turno || '',
+              id_user: user.id,
+              id_condominio: fp.id_condominio,
+              areas_sociais: 1,
+              comunicados: 1,
+              ocorrencias: 1,
+              manutencoes_programadas: 1,
+              prestadores_servico: 1,
+              agendar_mudanca: 1,
+              cadastrar_visitante: 1,
+              apartamentos: 1,
+            }
+          });
+        } else {
+          await this.prisma.funcionarios.update({
+            where: { id: f.id },
+            data: {
+              nome: fp.nome,
+              email: fp.email || fp.login,
+              telefone: fp.telefone,
+              ch: fp.turno || '',
+              id_condominio: fp.id_condominio,
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Falha ao sincronizar funcionário com tabelas mobile:', err);
+      }
+    };
+
     if (isEdit) {
       const id = Number(func.id);
       if (!id) throw new BadRequestException('ID do funcionário é obrigatório para edição.');
@@ -617,7 +687,8 @@ export class MobileAuthService {
         data.login = func.email;
       }
 
-      await this.prisma.funcionarios_Portaria.update({ where: { id }, data });
+      const updated = await this.prisma.funcionarios_Portaria.update({ where: { id }, data });
+      await sincronizarUsuarioMobile(updated, func.senha || func.password);
       return '';
     }
 
@@ -647,6 +718,8 @@ export class MobileAuthService {
       },
     });
 
+    await sincronizarUsuarioMobile(created, senhaInicial);
+
     return { id: created.id };
   }
 
@@ -655,7 +728,15 @@ export class MobileAuthService {
       throw new ServiceUnavailableException('Banco indisponível.');
     }
     try {
-      await this.prisma.funcionarios_Portaria.delete({ where: { id: Number(id) } });
+      const fp = await this.prisma.funcionarios_Portaria.findUnique({ where: { id: Number(id) } });
+      if (fp) {
+        const user = await this.prisma.users.findFirst({ where: { login: fp.login } });
+        if (user) {
+          await this.prisma.funcionarios.deleteMany({ where: { id_user: user.id } });
+          await this.prisma.users.delete({ where: { id: user.id } });
+        }
+        await this.prisma.funcionarios_Portaria.delete({ where: { id: Number(id) } });
+      }
     } catch {
       throw new NotFoundException('Funcionário não encontrado.');
     }
