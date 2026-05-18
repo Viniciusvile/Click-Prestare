@@ -43,10 +43,10 @@ passRecoveryApi(String email, String loginType) async {
         .timeout(_kTimeout);
     if (response.statusCode == 200) {
       final parsed = jsonDecode(response.body) as Map<String, dynamic>;
-      return parsed["message"];
+      return parsed["message"] ?? parsed["msg"] ?? "E-mail de recuperação enviado com sucesso!";
     }
     final parsed = jsonDecode(response.body) as Map<String, dynamic>;
-    throw parsed["message"] ?? "Houve um erro, tente novamente!";
+    throw parsed["message"] ?? parsed["msg"] ?? "Houve um erro, tente novamente!";
   } catch (e) {
     throw e;
   }

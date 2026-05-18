@@ -58,7 +58,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       await showAppDialog(
         context,
         title: getText('alert_success'),
-        message: msg,
+        message: msg ?? 'E-mail de recuperação enviado com sucesso!',
         icon: PhosphorIcons.checkCircle,
         iconColor: AppColors.success,
       );
