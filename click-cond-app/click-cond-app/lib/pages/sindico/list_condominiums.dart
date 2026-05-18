@@ -99,23 +99,7 @@ class _ListCondomiumsState extends State<ListCondomiums> {
       return;
     }
 
-    final dias = item["dias_restantes_condominio"] ?? 0;
-    final type = getUserType();
-    if (type == "sindico" && dias <= 7) {
-      Navigator.push(context, MaterialPageRoute(
-        builder: (_) => AssinaturaSindico(condominio: item),
-      )).then((value) {
-        if (mounted && (dias > 0 || value == true)) _push(item["id"]);
-      });
-    } else if (type == "morador" && (item["dias_restantes_morador"] ?? 0) <= 7) {
-      Navigator.push(context, MaterialPageRoute(
-        builder: (_) => AssinaturaMorador(condominio: item),
-      )).then((value) {
-        if (mounted && ((item["dias_restantes_morador"] ?? 0) > 0 || value == true)) _push(item["id"]);
-      });
-    } else {
-      _push(item["id"]);
-    }
+    _push(item["id"]);
   }
 
   void _push(int id) {

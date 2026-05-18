@@ -271,22 +271,7 @@ class _ConfiguracoesViewState extends State<ConfiguracoesView> {
                   );
                 },
               ),
-            if (type != 'funcionario')
-              _SettingsTile(
-                icon: PhosphorIcons.creditCard,
-                label: getText('assinatura'),
-                onTap: () {
-                  if (type == 'sindico') {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => AssinaturaSindico(condominio: widget.condominio),
-                    ));
-                  } else {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => AssinaturaMorador(condominio: widget.condominio),
-                    ));
-                  }
-                },
-              ),
+
             AppSpacing.gapXl,
             _SectionTitle('Sobre'),
             _SettingsTile(
