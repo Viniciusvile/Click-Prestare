@@ -103,6 +103,13 @@ export const appRoutes: Route[] = [
             (m) => m.DocumentosPageComponent,
           ),
       },
+      {
+        path: 'configuracoes',
+        loadComponent: () =>
+          import('./configuracoes/configuracoes-page.component').then(
+            (m) => m.ConfiguracoesPageComponent,
+          ),
+      },
     ],
   },
 ];
