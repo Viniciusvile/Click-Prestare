@@ -68,6 +68,85 @@ export class MobileAuthService {
     return { token: this.jwt.sign(payload), user: userObj };
   }
 
+  async signupSindico(body: {
+    nome: string;
+    email: string;
+    password?: string;
+    senha?: string;
+    date_birth?: string;
+    phone?: string;
+    doc_identification?: string;
+    photo?: string;
+  }) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco de dados indisponível. Tente novamente em instantes.');
+    }
+
+    const emailNormalized = body.email.toLowerCase().trim();
+
+    // Verificar se login já existe
+    const existing = await this.prisma.users.findFirst({
+      where: { login: emailNormalized }
+    });
+
+    if (existing) {
+      throw new BadRequestException('Este e-mail já está sendo utilizado por outro usuário.');
+    }
+
+    const pwdRaw = body.password ?? body.senha ?? '';
+    if (!pwdRaw) {
+      throw new BadRequestException('A senha é obrigatória.');
+    }
+    const hashedPassword = await bcrypt.hash(pwdRaw, 10);
+
+    // Evitar conflitos em campos @unique com valores vazios/nulos
+    const docId = body.doc_identification?.trim() || null;
+    const phone = body.phone?.trim() || null;
+
+    let parsedBirth: Date | null = null;
+    if (body.date_birth) {
+      try {
+        const parts = body.date_birth.split('/');
+        if (parts.length === 3) {
+          parsedBirth = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        } else {
+          parsedBirth = new Date(body.date_birth);
+        }
+      } catch (e) {}
+    }
+
+    // 1. Criar Usuário
+    const user = await this.prisma.users.create({
+      data: {
+        login: emailNormalized,
+        email: emailNormalized,
+        password: hashedPassword,
+        is_sindico: 1,
+        name: body.nome,
+        phone: phone,
+        photo: body.photo || null,
+        cpf: docId,
+      }
+    });
+
+    // 2. Criar Perfil de Síndico
+    const sindico = await this.prisma.sindicos.create({
+      data: {
+        id_user: user.id,
+        name: body.nome,
+        email: emailNormalized,
+        phone: phone,
+        doc_identification: docId,
+        date_birth: parsedBirth,
+      }
+    });
+
+    const userObj = { id: user.id, name: sindico.name, photo: user.photo ?? '' };
+    const payload = { sub: user.id, nome: sindico.name, typeAccess: 'Sindico', user: userObj };
+
+    return { token: this.jwt.sign(payload), user: userObj };
+  }
+
   async listCondominiosSindico(idUser: number) {
     if (!this.prisma.isConnected) {
       return [{

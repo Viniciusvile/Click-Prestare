@@ -20,6 +20,13 @@ export class SindicoMobileController {
   }
 
   @Public()
+  @Post('signup')
+  @HttpCode(200)
+  signup(@Body() body: any) {
+    return this.service.signupSindico(body);
+  }
+
+  @Public()
   @Post('recovery-password')
   @HttpCode(200)
   recoveryPassword(@Body() body: { email: string }) {
