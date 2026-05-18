@@ -147,6 +147,120 @@ export class MobileAuthService {
     return { token: this.jwt.sign(payload), user: userObj };
   }
 
+  async getSindicoByIdUser(idUser: number) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
+    }
+    const user = await this.prisma.users.findUnique({
+      where: { id: idUser },
+      include: { sindicos: true },
+    });
+    if (!user || !user.sindicos || user.sindicos.length === 0) {
+      throw new NotFoundException('Perfil de síndico não encontrado.');
+    }
+    const s = user.sindicos[0];
+    
+    // Formatar data_birth para DD/MM/YYYY
+    let dobString = '';
+    if (s.date_birth) {
+      const d = new Date(s.date_birth);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      dobString = `${day}/${month}/${year}`;
+    }
+
+    return {
+      id: s.id,
+      name: s.name ?? '',
+      email: s.email ?? '',
+      date_birth: dobString,
+      phone: s.phone ?? '',
+      doc_identification: s.doc_identification ?? '',
+      photo: user.photo ?? '',
+    };
+  }
+
+  async updateSindico(idUser: number, body: {
+    nome?: string;
+    email?: string;
+    date_birth?: string;
+    phone?: string;
+    doc_identification?: string;
+    photo?: string;
+  }) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException('Banco indisponível.');
+    }
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: idUser },
+      include: { sindicos: true },
+    });
+    if (!user || !user.sindicos || user.sindicos.length === 0) {
+      throw new NotFoundException('Síndico não encontrado.');
+    }
+    const s = user.sindicos[0];
+
+    const emailNormalized = body.email?.toLowerCase().trim();
+    if (emailNormalized && emailNormalized !== user.email) {
+      const existing = await this.prisma.users.findFirst({
+        where: {
+          OR: [{ email: emailNormalized }, { login: emailNormalized }],
+          NOT: { id: idUser },
+        }
+      });
+      if (existing) {
+        throw new BadRequestException('Este e-mail já está sendo utilizado por outro usuário.');
+      }
+    }
+
+    let parsedBirth: Date | null = s.date_birth;
+    if (body.date_birth) {
+      try {
+        const parts = body.date_birth.split('/');
+        if (parts.length === 3) {
+          parsedBirth = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        } else {
+          parsedBirth = new Date(body.date_birth);
+        }
+      } catch (e) {}
+    }
+
+    const docId = body.doc_identification?.trim() || null;
+    const phone = body.phone?.trim() || null;
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Atualizar tabela users
+      await tx.users.update({
+        where: { id: idUser },
+        data: {
+          name: body.nome || user.name,
+          email: emailNormalized || user.email,
+          login: emailNormalized || user.login,
+          phone: phone,
+          cpf: docId,
+          photo: body.photo !== undefined ? body.photo : user.photo,
+        }
+      });
+
+      // 2. Atualizar tabela sindicos
+      await tx.sindicos.update({
+        where: { id: s.id },
+        data: {
+          name: body.nome || s.name,
+          email: emailNormalized || s.email,
+          phone: phone,
+          doc_identification: docId,
+          date_birth: parsedBirth,
+        }
+      });
+    });
+
+    return { success: true };
+  }
+
+
   async listCondominiosSindico(idUser: number) {
     if (!this.prisma.isConnected) {
       return [{
@@ -844,24 +958,45 @@ export class MobileAuthService {
     }));
   }
 
-  async getMoradorById(id: number) {
+  async getMoradorById(id: number, idUser: number) {
     if (!this.prisma.isConnected) {
       throw new ServiceUnavailableException('Banco indisponível.');
     }
-    const m = await this.prisma.moradores.findUnique({ where: { id: Number(id) } });
+    let m;
+    if (id === 0) {
+      m = await this.prisma.moradores.findFirst({ where: { id_user: idUser } });
+    } else {
+      m = await this.prisma.moradores.findUnique({ where: { id: Number(id) } });
+    }
+
     if (!m) throw new NotFoundException('Morador não encontrado.');
+
+    // Formatar data_nascimento para DD/MM/YYYY
+    let dobString = '';
+    if (m.data_nascimento) {
+      const d = new Date(m.data_nascimento);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      dobString = `${day}/${month}/${year}`;
+    }
+
     return {
       id: m.id,
       nome: m.nome ?? '',
       documento: m.documento ?? '',
       email: m.email ?? '',
       telefone: m.telefone ?? '',
-      data_nascimento: m.data_nascimento,
+      data_nascimento: dobString,
       bloco: m.bloco ?? '',
       apartamento: m.apartamento ?? '',
-      photo: '',
+      photo: m.photo ?? '',
       vinculo: m.tipo ?? 'proprietario',
       tipo: m.tipo ?? 'proprietario',
+      extra1: m.extra1 ?? '',
+      extra2: m.extra2 ?? '',
+      extra3: m.extra3 ?? '',
+      extra4: m.extra4 ?? '',
     };
   }
 

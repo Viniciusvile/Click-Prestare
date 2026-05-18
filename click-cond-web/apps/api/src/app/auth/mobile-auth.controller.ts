@@ -38,6 +38,19 @@ export class SindicoMobileController {
     const idUser = payload.user?.id ?? payload.sub;
     return this.service.listCondominiosSindico(Number(idUser));
   }
+
+  @Get('get')
+  getSindico(@ReqUser() payload: JwtPayload) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.getSindicoByIdUser(Number(idUser));
+  }
+
+  @Post('update')
+  @HttpCode(200)
+  updateSindico(@ReqUser() payload: JwtPayload, @Body() body: any) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.updateSindico(Number(idUser), body);
+  }
 }
 
 // ==========================================
@@ -74,8 +87,9 @@ export class MoradoresMobileController {
   }
 
   @Get('get')
-  getMorador(@Query('id') id: string) {
-    return this.service.getMoradorById(Number(id));
+  getMorador(@ReqUser() payload: JwtPayload, @Query('id') id: string) {
+    const idUser = payload.user?.id ?? payload.sub;
+    return this.service.getMoradorById(Number(id), Number(idUser));
   }
 
   @Post('insert')
