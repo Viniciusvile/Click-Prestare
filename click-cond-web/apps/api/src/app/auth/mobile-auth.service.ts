@@ -207,7 +207,17 @@ export class MobileAuthService {
         };
       }).filter(Boolean);
 
-      if (resultList.length > 0) return resultList;
+      // Remove duplicados de relacionamento com o mesmo apartamento
+      const uniqueResult = [];
+      const seenAptoIds = new Set();
+      for (const item of resultList) {
+        if (item && !seenAptoIds.has(item.apto_id)) {
+          seenAptoIds.add(item.apto_id);
+          uniqueResult.push(item);
+        }
+      }
+
+      if (uniqueResult.length > 0) return uniqueResult;
     } catch (e) {
       // Ignora falhas e retorna mock
     }
