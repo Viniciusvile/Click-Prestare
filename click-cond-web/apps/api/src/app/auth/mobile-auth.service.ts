@@ -620,8 +620,8 @@ export class MobileAuthService {
     const conflito = await this.prisma.funcionarios_Portaria.findUnique({ where: { login: loginFinal } });
     if (conflito) throw new BadRequestException('Já existe um funcionário com este e-mail.');
 
-    // Senha inicial = documento ou '123456'
-    const senhaInicial = (func.documento && String(func.documento).trim()) || '123456';
+    // Senha inicial = senha recebida, documento ou '123456'
+    const senhaInicial = func.senha || func.password || (func.documento && String(func.documento).trim()) || '123456';
     const md5Pwd = createHash('md5').update(senhaInicial).digest('hex');
 
     const created = await this.prisma.funcionarios_Portaria.create({

@@ -40,7 +40,7 @@ async function bootstrap() {
     : defaultOrigins;
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       // Permite qualquer localhost (Flutter web usa porta dinâmica)
