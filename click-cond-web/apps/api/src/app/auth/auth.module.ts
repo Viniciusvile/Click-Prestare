@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { MobileAuthService } from './mobile-auth.service';
+import { QrSessionStore } from './qr-session.store';
 import {
   SindicoMobileController,
   MoradoresMobileController,
@@ -37,6 +38,7 @@ import {
     FinanceiroMobileController,
     EncomendasMobileController,
   ],
-  providers: [AuthService, MobileAuthService, JwtStrategy],
+  providers: [AuthService, MobileAuthService, JwtStrategy, QrSessionStore],
+  exports: [AuthService, QrSessionStore],
 })
 export class AuthModule {}

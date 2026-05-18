@@ -4,12 +4,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { createHash } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './jwt-payload.interface';
+import { QrSessionStore } from './qr-session.store';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly qrStore: QrSessionStore,
   ) {}
 
   async loginPortaria(login: string, senha: string) {
@@ -102,7 +104,7 @@ export class AuthService {
       data: { password: newHash },
     });
 
-    return { success: true, message: 'Senha atualizada com sucesso.' };
+    return { success: true, message: 'Senha updated com sucesso.' };
   }
 
   async getCondominioNome(id: number) {
@@ -114,5 +116,75 @@ export class AuthService {
       select: { nome: true },
     });
     return { nome: cond?.nome || 'Click Condomínio' };
+  }
+
+  createQrSession() {
+    const session = this.qrStore.create();
+    return { qrToken: session.qrToken, expiresAt: session.expiresAt };
+  }
+
+  async getQrStatus(qrToken: string) {
+    const session = this.qrStore.get(qrToken);
+    if (!session) {
+      return { status: 'expired' };
+    }
+
+    if (session.status === 'confirmed') {
+      return {
+        status: 'confirmed',
+        access_token: session.access_token,
+        id: session.idUser,
+        nome: session.nome,
+        turno: session.typeAccess === 'Sindico' ? 'Síndico' : 'Porteiro (App)',
+        id_condominio: session.id_condominio,
+        condominio_nome: session.condominio_nome,
+      };
+    }
+
+    return { status: 'pending' };
+  }
+
+  async authorizeQrSession(payload: JwtPayload, qrToken: string, idCondominio: number) {
+    const session = this.qrStore.get(qrToken);
+    if (!session) {
+      throw new UnauthorizedException('QR Code expirado ou inválido.');
+    }
+
+    if (session.status !== 'pending') {
+      throw new UnauthorizedException('Sessão QR Code já processada.');
+    }
+
+    const cond = await this.prisma.condominios.findUnique({
+      where: { id: idCondominio },
+      select: { nome: true },
+    });
+
+    if (!cond) {
+      throw new UnauthorizedException('Condomínio não encontrado.');
+    }
+
+    const userId = payload.sub;
+    const typeAccess = payload.typeAccess ?? 'Sindico';
+    const nomeUsuario = payload.nome;
+
+    const portariaPayload: JwtPayload = {
+      sub: userId,
+      nome: nomeUsuario,
+      id_condominio: idCondominio,
+      turno: typeAccess === 'Sindico' ? 'Síndico' : 'Porteiro (App)',
+    };
+
+    const accessToken = this.jwt.sign(portariaPayload);
+
+    this.qrStore.confirm(qrToken, {
+      idUser: userId,
+      nome: nomeUsuario,
+      typeAccess,
+      id_condominio: idCondominio,
+      condominio_nome: cond.nome,
+      access_token: accessToken,
+    });
+
+    return { success: true };
   }
 }

@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, Post, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
+import { ReqUser } from './req-user.decorator';
+import { JwtPayload } from './jwt-payload.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -23,5 +25,27 @@ export class AuthController {
   @HttpCode(200)
   changePassword(@Body() body: { id: number; senhaAtual: string; novaSenha: string }) {
     return this.authService.changePassword(body.id, body.senhaAtual, body.novaSenha);
+  }
+
+  @Public()
+  @Post('qr/session')
+  @HttpCode(200)
+  createQrSession() {
+    return this.authService.createQrSession();
+  }
+
+  @Public()
+  @Get('qr/status/:qrToken')
+  getQrStatus(@Param('qrToken') qrToken: string) {
+    return this.authService.getQrStatus(qrToken);
+  }
+
+  @Post('qr/authorize')
+  @HttpCode(200)
+  authorizeQrSession(
+    @ReqUser() payload: JwtPayload,
+    @Body() body: { qrToken: string; id_condominio: number }
+  ) {
+    return this.authService.authorizeQrSession(payload, body.qrToken, Number(body.id_condominio));
   }
 }

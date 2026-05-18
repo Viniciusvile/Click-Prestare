@@ -1,4 +1,4 @@
-﻿import 'package:click/controllers/controller_condominio.dart';
+import 'package:click/controllers/controller_condominio.dart';
 import 'package:click/controllers/controller_generic.dart';
 import 'package:click/pages/shared/configuracoes/modal_new_password.dart';
 import 'package:click/pages/shared/morador/assinatura_morador.dart';
@@ -16,6 +16,7 @@ import 'package:click/widgets/app/app_dialog.dart';
 import 'package:click/widgets/app/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:click/pages/settings/qr_web_access_page.dart';
 
 class ConfiguracoesView extends StatefulWidget {
   final dynamic condominio;
@@ -185,7 +186,7 @@ class _ConfiguracoesViewState extends State<ConfiguracoesView> {
                 try {
                   await updateMoedaCondominioApi(
                       widget.condominio["id"].toString(), symbol);
-                  Singleton.instance.moeda = symbol;
+                   Singleton.instance.moeda = symbol;
                   if (!mounted) return;
                   showAppDialog(context,
                       title: getText('alert_success'),
@@ -256,6 +257,20 @@ class _ConfiguracoesViewState extends State<ConfiguracoesView> {
                 showDialog(context: context, builder: (_) => const ModalNewPassword());
               },
             ),
+            if (type == 'sindico' || type == 'funcionario')
+              _SettingsTile(
+                icon: PhosphorIcons.qrCode,
+                label: 'Acesso Web por QR Code',
+                onTap: () {
+                  final int condId = widget.condominio?['id'] ?? Singleton.instance.id_condominio ?? 1;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QrWebAccessPage(idCondominio: condId),
+                    ),
+                  );
+                },
+              ),
             if (type != 'funcionario')
               _SettingsTile(
                 icon: PhosphorIcons.creditCard,

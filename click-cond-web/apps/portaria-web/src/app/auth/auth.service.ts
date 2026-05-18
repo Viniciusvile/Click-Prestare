@@ -80,6 +80,22 @@ export class AuthService {
       );
   }
 
+  loginComToken(res: PorteiroInfo) {
+    localStorage.setItem(TOKEN_KEY, res.access_token);
+    const info = {
+      id: res.id,
+      nome: res.nome,
+      turno: res.turno,
+      id_condominio: res.id_condominio,
+      condominio_nome: res.condominio_nome
+    };
+    localStorage.setItem(INFO_KEY, JSON.stringify(info));
+    this._info.set(info);
+    if (res.condominio_nome) {
+      this.condominioNome.set(res.condominio_nome);
+    }
+  }
+
   alterarSenha(senhaAtual: string, novaSenha: string) {
     const info = this._info();
     const id = info?.id ?? 1;
