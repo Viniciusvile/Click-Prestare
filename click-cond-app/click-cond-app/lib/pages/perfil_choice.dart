@@ -78,147 +78,188 @@ class _HomePageState extends State<HomePage> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: Theme.of(context).brightness == Brightness.dark
-                        ? [const Color(0xFF0A1628), const Color(0xFF131D2E)]
+                        ? [const Color(0xFF090E1A), const Color(0xFF04060A)]
                         : [const Color(0xFFEBF3FC), const Color(0xFFFFFFFF)],
                   ),
                 ),
               ),
             ),
+            if (Theme.of(context).brightness == Brightness.dark) ...[
+              // Top-left soft glow
+              Positioned(
+                top: -180,
+                left: -180,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF1AAEEB).withOpacity(0.15),
+                        const Color(0xFF1AAEEB).withOpacity(0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Bottom-right soft glow
+              Positioned(
+                bottom: -180,
+                right: -180,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF00C896).withOpacity(0.12),
+                        const Color(0xFF00C896).withOpacity(0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             Positioned.fill(
               child: CustomPaint(
                 painter: GridPainter(context),
               ),
             ),
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: AppSpacing.lg),
-                    
-                    // Corporate Branding row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
+            Positioned.fill(
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: AppSpacing.lg),
+                      
+                      // Corporate Branding row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            child: Icon(
+                              PhosphorIcons.buildings,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'PRESTARE ',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: AppColors.textPrimary(context),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'CLICK',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: AppColors.primary,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.xl),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Icon(
-                            PhosphorIcons.buildings,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'PRESTARE ',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  color: AppColors.textPrimary(context),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'CLICK',
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  color: AppColors.primary,
-                                  letterSpacing: 0.5,
-                                ),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft, end: Alignment.bottomRight,
+                              colors: [AppColors.primaryGradientStart, AppColors.primaryGradientEnd],
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadius.xxl),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.25),
+                                blurRadius: 24, offset: const Offset(0, 8),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xxl),
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft, end: Alignment.bottomRight,
-                            colors: [AppColors.primaryGradientStart, AppColors.primaryGradientEnd],
+                          child: Icon(
+                            PhosphorIcons.buildingsFill,
+                            size: 56, color: Colors.white,
                           ),
-                          borderRadius: BorderRadius.circular(AppRadius.xxl),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.25),
-                              blurRadius: 24, offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          PhosphorIcons.buildingsFill,
-                          size: 56, color: Colors.white,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxxl),
-                    Text(
-                      'Bem-vindo',
-                      style: AppTypography.display(context),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Gerencie seu condomínio com simplicidade',
-                      style: AppTypography.bodySecondary(context),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.huge),
-                    AppButton(
-                      label: getText("sou_sindico"),
-                      variant: AppButtonVariant.primary,
-                      trailingIcon: PhosphorIcons.arrowRight,
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const Hello()));
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppButton(
-                      label: getText("sou_morador"),
-                      variant: AppButtonVariant.secondary,
-                      trailingIcon: PhosphorIcons.arrowRight,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginSindico(loginType: 'morador')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppButton(
-                      label: getText("sou_funcionario"),
-                      variant: AppButtonVariant.ghost,
-                      trailingIcon: PhosphorIcons.arrowRight,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginSindico(loginType: 'funcionario')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.huge),
-                    Text(
-                      '${getText("vesaoApp")} $_appVersion',
-                      style: AppTypography.tiny(context),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                  ],
+                      const SizedBox(height: AppSpacing.xxxl),
+                      Text(
+                        'Bem-vindo',
+                        style: AppTypography.display(context),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Gerencie seu condomínio com simplicidade',
+                        style: AppTypography.bodySecondary(context),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.huge),
+                      AppButton(
+                        label: getText("sou_sindico"),
+                        variant: AppButtonVariant.primary,
+                        trailingIcon: PhosphorIcons.arrowRight,
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const Hello()));
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        label: getText("sou_morador"),
+                        variant: AppButtonVariant.secondary,
+                        trailingIcon: PhosphorIcons.arrowRight,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginSindico(loginType: 'morador')),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        label: getText("sou_funcionario"),
+                        variant: AppButtonVariant.ghost,
+                        trailingIcon: PhosphorIcons.arrowRight,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginSindico(loginType: 'funcionario')),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.huge),
+                      Text(
+                        '${getText("vesaoApp")} $_appVersion',
+                        style: AppTypography.tiny(context),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
                 ),
               ),
             ),
+
             // Floating Light/Dark Mode Theme Toggle Button (placed at the end of Stack so it stays on top of everything for hit-testing)
             Positioned(
               top: MediaQuery.of(context).padding.top + AppSpacing.md,
