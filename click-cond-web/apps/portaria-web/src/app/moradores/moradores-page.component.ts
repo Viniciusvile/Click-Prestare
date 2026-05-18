@@ -171,12 +171,36 @@ export class MoradoresPageComponent implements OnInit {
   bulkResult = signal<{ total?: number; criados?: any[] }>({});
 
   downloadTemplate() {
-    const headers = 'Nome Completo,Documento,E-mail,Telefone,Quadra/Bloco,Lote/Apto,Vínculo\nCarlos Exemplo,12345678900,carlos@email.com,11988887777,Quadra A,Lote 12,proprietario';
-    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'template_importacao_moradores.csv';
-    link.click();
+    try {
+      const xlsx = require('xlsx');
+      const data = [
+        {
+          'Nome Completo': 'Carlos Exemplo',
+          'Documento': '12345678900',
+          'E-mail': 'carlos@email.com',
+          'Telefone': '11988887777',
+          'Quadra/Bloco': 'Quadra A',
+          'Lote/Apto': 'Lote 12',
+          'Vínculo': 'proprietario'
+        }
+      ];
+      const ws = xlsx.utils.json_to_sheet(data);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, 'Template');
+      const wbout = xlsx.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'template_importacao_moradores.xlsx';
+      link.click();
+    } catch {
+      const headers = 'Nome Completo;Documento;E-mail;Telefone;Quadra/Bloco;Lote/Apto;Vínculo\nCarlos Exemplo;12345678900;carlos@email.com;11988887777;Quadra A;Lote 12;proprietario';
+      const blob = new Blob(['\ufeff' + headers], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'template_importacao_moradores.csv';
+      link.click();
+    }
   }
 
   exportarPlanilha() {
@@ -203,19 +227,23 @@ export class MoradoresPageComponent implements OnInit {
         if (file.name.endsWith('.csv')) {
           const text = new TextDecoder().decode(data);
           const rows = text.split('\n').map(r => r.trim()).filter(r => r);
-          for (let i = 1; i < rows.length; i++) {
-            const cols = rows[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-            if (cols[0]) {
-              linhas.push({
-                nome: cols[0],
-                documento: cols[1] || '',
-                email: cols[2] || '',
-                telefone: cols[3] || '',
-                quadra: cols[4] || '',
-                lote: cols[5] || '',
-                tipo: cols[6] || 'proprietario',
-                sendCredentials: true,
-              });
+          if (rows.length > 0) {
+            const header = rows[0];
+            const separator = (header.split(';').length > header.split(',').length) ? ';' : ',';
+            for (let i = 1; i < rows.length; i++) {
+              const cols = rows[i].split(separator).map(c => c.replace(/^"|"$/g, '').trim());
+              if (cols[0]) {
+                linhas.push({
+                  nome: cols[0],
+                  documento: cols[1] || '',
+                  email: cols[2] || '',
+                  telefone: cols[3] || '',
+                  quadra: cols[4] || '',
+                  lote: cols[5] || '',
+                  tipo: cols[6] || 'proprietario',
+                  sendCredentials: true,
+                });
+              }
             }
           }
         } else {

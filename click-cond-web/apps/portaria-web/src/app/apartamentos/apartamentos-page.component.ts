@@ -111,12 +111,30 @@ export class ApartamentosPageComponent implements OnInit {
   bulkResult = signal<{ total?: number; criados?: any[] }>({});
 
   downloadTemplate() {
-    const headers = 'Quadra/Bloco,Lote/Apto,Fração\nBloco A,101,0.0125\nBloco A,102,0.0125\nQuadra B,Lote 12,0.0150';
-    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'template_importacao_apartamentos.csv';
-    link.click();
+    try {
+      const xlsx = require('xlsx');
+      const data = [
+        { 'Quadra/Bloco': 'Bloco A', 'Lote/Apto': '101', 'Fração Ideal': '0.0125' },
+        { 'Quadra/Bloco': 'Bloco A', 'Lote/Apto': '102', 'Fração Ideal': '0.0125' },
+        { 'Quadra/Bloco': 'Quadra B', 'Lote/Apto': 'Lote 12', 'Fração Ideal': '0.0150' }
+      ];
+      const ws = xlsx.utils.json_to_sheet(data);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, 'Template');
+      const wbout = xlsx.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'template_importacao_apartamentos.xlsx';
+      link.click();
+    } catch {
+      const headers = 'Quadra/Bloco;Lote/Apto;Fração Ideal\nBloco A;101;0.0125\nBloco A;102;0.0125\nQuadra B;Lote 12;0.0150';
+      const blob = new Blob(['\ufeff' + headers], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'template_importacao_apartamentos.csv';
+      link.click();
+    }
   }
 
   onFileSelected(event: any) {
@@ -131,15 +149,19 @@ export class ApartamentosPageComponent implements OnInit {
         if (file.name.endsWith('.csv')) {
           const text = new TextDecoder().decode(data);
           const rows = text.split('\n').map(r => r.trim()).filter(r => r);
-          for (let i = 1; i < rows.length; i++) {
-            const cols = rows[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-            const apto = cols[1];
-            if (apto) {
-              linhas.push({
-                bloco: cols[0] || '',
-                apto: apto,
-                fracao: cols[2] || '',
-              });
+          if (rows.length > 0) {
+            const header = rows[0];
+            const separator = (header.split(';').length > header.split(',').length) ? ';' : ',';
+            for (let i = 1; i < rows.length; i++) {
+              const cols = rows[i].split(separator).map(c => c.replace(/^"|"$/g, '').trim());
+              const apto = cols[1];
+              if (apto) {
+                linhas.push({
+                  bloco: cols[0] || '',
+                  apto: apto,
+                  fracao: cols[2] || '',
+                });
+              }
             }
           }
         } else {
@@ -151,7 +173,7 @@ export class ApartamentosPageComponent implements OnInit {
             json.forEach(row => {
               const apto = row['Lote/Apto'] || row['Lote'] || row['Apto'] || row['apto'] || row['lote'];
               const bloco = row['Quadra/Bloco'] || row['Quadra'] || row['Bloco'] || row['bloco'] || row['quadra'] || '';
-              const fracao = row['Fração'] || row['Fracao'] || row['fracao'] || '';
+              const fracao = row['Fração Ideal'] || row['Fração'] || row['Fracao'] || row['fracao'] || '';
               if (apto) {
                 linhas.push({
                   bloco,
