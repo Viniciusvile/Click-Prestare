@@ -11,6 +11,7 @@ import 'package:click/widgets/app/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/local_storage.dart';
 
@@ -69,13 +70,77 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: AppColors.bg(context),
         body: Stack(
           children: [
+            // Background Gradient & Grid Pattern matching the premium Web look
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: Theme.of(context).brightness == Brightness.dark
+                        ? [const Color(0xFF0A1628), const Color(0xFF131D2E)]
+                        : [const Color(0xFFEBF3FC), const Color(0xFFFFFFFF)],
+                  ),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: CustomPaint(
+                painter: GridPainter(context),
+              ),
+            ),
             SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: AppSpacing.huge),
+                    const SizedBox(height: AppSpacing.lg),
+                    
+                    // Corporate Branding row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Icon(
+                            PhosphorIcons.buildings,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'PRESTARE ',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: AppColors.textPrimary(context),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'CLICK',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: AppColors.primary,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
                     Center(
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -196,4 +261,29 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+class GridPainter extends CustomPainter {
+  final BuildContext context;
+  GridPainter(this.context);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final paint = Paint()
+      ..color = (isDark ? Colors.white : Colors.black).withOpacity(isDark ? 0.02 : 0.025)
+      ..strokeWidth = 0.8;
+
+    const double step = 38.0;
+
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
