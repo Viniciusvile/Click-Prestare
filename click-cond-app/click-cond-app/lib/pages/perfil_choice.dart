@@ -4,6 +4,7 @@ import 'package:click/pages/sindico/login.dart';
 import 'package:click/theme/app_colors.dart';
 import 'package:click/theme/app_spacing.dart';
 import 'package:click/theme/app_typography.dart';
+import 'package:click/theme/theme_controller.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/utils/utils.dart';
 import 'package:click/widgets/app/app_button.dart';
@@ -73,6 +74,43 @@ class _HomePageState extends State<HomePage> {
             Positioned.fill(
               child: CustomPaint(
                 painter: GridPainter(context),
+              ),
+            ),
+            // Floating Light/Dark Mode Theme Toggle Button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + AppSpacing.md,
+              right: AppSpacing.lg,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                child: Material(
+                  color: AppColors.surfaceElevated(context),
+                  child: InkWell(
+                    onTap: () {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      ThemeController.instance.setMode(
+                        isDark ? ThemeMode.light : ThemeMode.dark,
+                      );
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.border(context),
+                          width: 1.2,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Theme.of(context).brightness == Brightness.dark
+                            ? PhosphorIcons.sun
+                            : PhosphorIcons.moon,
+                        color: AppColors.textPrimary(context),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             SafeArea(
