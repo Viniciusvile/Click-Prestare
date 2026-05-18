@@ -1,100 +1,140 @@
-
 import 'package:click/controllers/controller_sindico.dart';
+import 'package:click/theme/app_colors.dart';
+import 'package:click/theme/app_spacing.dart';
+import 'package:click/theme/app_typography.dart';
 import 'package:click/utils/localizable/localizable.dart';
 import 'package:click/utils/utils.dart';
-import 'package:click/widgets/alerts/loader.dart';
-import 'package:click/widgets/buttons/default_button.dart';
+import 'package:click/widgets/app/app_button.dart';
+import 'package:click/widgets/app/app_dialog.dart';
+import 'package:click/widgets/app/app_input.dart';
+import 'package:click/widgets/app/app_scaffold.dart';
 import 'package:flutter/material.dart';
-import 'package:click/widgets/textfields/textfield_rounded.dart';
-import 'package:click/widgets/navigation/navigation.dart';
-import 'package:click/widgets/label/label_title.dart';
-import 'package:click/widgets/label/label_default.dart';
-import 'package:click/widgets/containers/box_main_rounded.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ForgotPassword extends StatefulWidget {
   final loginType;
   const ForgotPassword({Key? key, required this.loginType}) : super(key: key);
 
   @override
-  _ForgotPasswordSindicoPageState createState() => _ForgotPasswordSindicoPageState();
+  _ForgotPasswordState createState() => _ForgotPasswordState();
 }
 
-class _ForgotPasswordSindicoPageState extends State<ForgotPassword> {
+class _ForgotPasswordState extends State<ForgotPassword> {
   final txtEmail = TextEditingController();
-  var _isLoading = false;
+  bool _isLoading = false;
   String loginType = "";
 
   @override
   void initState() {
     super.initState();
-    if(widget.loginType == "sindico"){ loginType="sindico"; }
-    if(widget.loginType == "morador"){ loginType="moradores"; }
-    if(widget.loginType == "funcionario"){ loginType="funcionarios"; }
+    if (widget.loginType == "sindico") { loginType = "sindico"; }
+    if (widget.loginType == "morador") { loginType = "moradores"; }
+    if (widget.loginType == "funcionario") { loginType = "funcionarios"; }
   }
 
-  recovery() async {
-    try{
-      changeLoading(true);
-      var msg = await passRecoveryApi(txtEmail.text, loginType);
-      await displayMessage(context, getText('alert_success'), msg);  
-      Navigator.pop(context);    
-    }catch(e){
-      displayMessage(context, getText('alert'), e.toString());
-    }finally{
-      changeLoading(false);
-    }    
+  @override
+  void dispose() {
+    txtEmail.dispose();
+    super.dispose();
   }
 
-  changeLoading(bool value){
-    _isLoading = value;
-    setState(() {});
+  Future<void> recovery() async {
+    final email = txtEmail.text.trim();
+    if (email.isEmpty) {
+      showAppDialog(
+        context,
+        title: getText('alert_error'),
+        message: getText('email_error') ?? 'Por favor, insira o seu e-mail.',
+        icon: PhosphorIcons.warning,
+        iconColor: AppColors.error,
+      );
+      return;
+    }
+
+    try {
+      setState(() => _isLoading = true);
+      var msg = await passRecoveryApi(email, loginType);
+      if (!mounted) return;
+      await showAppDialog(
+        context,
+        title: getText('alert_success'),
+        message: msg,
+        icon: PhosphorIcons.checkCircle,
+        iconColor: AppColors.success,
+      );
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      showAppDialog(
+        context,
+        title: getText('alert_error'),
+        message: e.toString(),
+        icon: PhosphorIcons.warning,
+        iconColor: AppColors.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          Container(  
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(0, 149, 218, 1),           
-            ),    
-            child: Column(
-              children: [
-                NavigationDefault(title: getText('esqueci_senha_nav')),
-                Flexible(
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.fromLTRB(25, 20, 25, 25), 
-                    height: MediaQuery.of(context).size.height,
-                    decoration: BoxMainRounded(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 10),
-                        LabelTitle(title: getText('esqueci_senha_title'), size: 20),
-                        SizedBox(height: 20),
-                        LabelDefault(title: getText('esqueci_senha_description'), maxLines: 5,),
-                        SizedBox(height: 50),
-                        TextFieldRounded(title: getText('email'), isPassword: false, controller: txtEmail,),
-                        SizedBox(height: 40),                     
-                        DefaultButton(title: getText('btn_enviar'), hasArrow: false,                   
-                          onPressed: () {
-                            recovery();
-                          }
-                        ),
-                      ],
-                    ),
-                  )
+    return AppScaffold(
+      title: getText('esqueci_senha_nav'),
+      showBackButton: true,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: AppSpacing.xl),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-              ],
-            ), 
-          ),
-          if(_isLoading)
-            const Loader(loadingTxt: '', opacity: 0.7, color: Colors.black, dismissibles: false)  
-        ],
-      )
+                child: Icon(
+                  PhosphorIcons.lock,
+                  size: 36,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              getText('esqueci_senha_title') ?? 'Esqueceu a senha?',
+              style: AppTypography.display(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              getText('esqueci_senha_description') ??
+                  'Não se preocupe, preencha o seu e-mail abaixo que enviaremos um link de recuperação.',
+              style: AppTypography.bodySecondary(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xxxl),
+            AppInput(
+              label: getText('email'),
+              controller: txtEmail,
+              keyboard: TextInputType.emailAddress,
+              prefixIcon: PhosphorIcons.envelope,
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            AppButton(
+              label: getText('btn_enviar'),
+              loading: _isLoading,
+              onPressed: recovery,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
     );
   }
 }
