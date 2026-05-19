@@ -779,7 +779,19 @@ export class FinanceiroService implements OnModuleInit {
       });
     }
 
-    return Array.from(setMesesMap.values());
+    const result = Array.from(setMesesMap.values());
+    result.sort((a, b) => {
+      const yearA = parseInt(a.ano);
+      const yearB = parseInt(b.ano);
+      if (yearA !== yearB) {
+        return yearA - yearB;
+      }
+      const monthA = parseInt(a.mes);
+      const monthB = parseInt(b.mes);
+      return monthA - monthB;
+    });
+
+    return result;
   }
 
   async handleAsaasWebhook(body: any) {
