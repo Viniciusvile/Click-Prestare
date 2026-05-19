@@ -126,6 +126,29 @@ export class MailService implements OnModuleInit {
     await this.send(email, subject, html);
   }
 
+  async sendBillingReminder(
+    email: string,
+    nome: string,
+    descricao: string,
+    vencimento: string,
+    valor: string,
+    copiacola?: string,
+  ): Promise<void> {
+    const subject = `Lembrete de Cobrança: ${descricao}`;
+    const html = `
+      Olá, <b>${this.escape(nome)}</b>!<br><br>
+      Este é um aviso automático sobre a seguinte cobrança pendente:<br><br>
+      <b>Descrição:</b> ${this.escape(descricao)}<br>
+      <b>Valor:</b> ${this.escape(valor)}<br>
+      <b>Vencimento:</b> ${this.escape(vencimento)}<br><br>
+      ${copiacola ? `Você pode efetuar o pagamento diretamente usando a chave Pix Copia e Cola abaixo:<br><br><pre style="background: #f4f4f4; padding: 10px; border-radius: 5px; word-break: break-all;">${this.escape(copiacola)}</pre><br><br>` : ''}
+      Regularize sua situação financeira pelo aplicativo CLICK.<br><br>
+      Atenciosamente,<br>
+      Equipe CLICK
+    `;
+    await this.send(email, subject, html);
+  }
+
   private async send(to: string, subject: string, html: string): Promise<void> {
     if (this.resend) {
       try {

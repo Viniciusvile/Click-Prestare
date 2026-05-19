@@ -567,6 +567,14 @@ export class MobileAuthService {
 
       let packagesCount = 0;
       for (const m of moras) {
+        if (
+          m.id_condominio === null ||
+          m.id_condominio === undefined ||
+          m.apartamento === null ||
+          m.apartamento === undefined
+        ) {
+          continue;
+        }
         const cnt = await this.prisma.encomendas.count({
           where: {
             id_condominio: m.id_condominio,
@@ -732,7 +740,7 @@ export class MobileAuthService {
     if (!func) throw new NotFoundException('E-mail não encontrado');
     const novaSenha = this.gerarNovaSenha();
     const md5Hash = createHash('md5').update(novaSenha).digest('hex');
-    await this.prisma.funcionarios_Portaria.update({ where: { id: func.id }, data: { senha: md5Hash } });
+    await this.prisma.funcionarios_Portaria.update({ where: { id: func.id }, data: { password: md5Hash } });
     await this.mail.sendForgotPassword(email, novaSenha, 'Funcionário');
     return { success: true };
   }
@@ -964,9 +972,15 @@ export class MobileAuthService {
     }
     let m;
     if (id === 0) {
-      m = await this.prisma.moradores.findFirst({ where: { id_user: idUser } });
+      m = await this.prisma.moradores.findFirst({
+        where: { id_user: idUser },
+        include: { user: true },
+      });
     } else {
-      m = await this.prisma.moradores.findUnique({ where: { id: Number(id) } });
+      m = await this.prisma.moradores.findUnique({
+        where: { id: Number(id) },
+        include: { user: true },
+      });
     }
 
     if (!m) throw new NotFoundException('Morador não encontrado.');
@@ -990,7 +1004,7 @@ export class MobileAuthService {
       data_nascimento: dobString,
       bloco: m.bloco ?? '',
       apartamento: m.apartamento ?? '',
-      photo: m.photo ?? '',
+      photo: m.user?.photo ?? '',
       vinculo: m.tipo ?? 'proprietario',
       tipo: m.tipo ?? 'proprietario',
       extra1: m.extra1 ?? '',
@@ -1477,9 +1491,17 @@ export class MobileAuthService {
 
         let total: any[] = [];
         for (const m of moras) {
+          if (
+            m.id_condominio === null ||
+            m.id_condominio === undefined ||
+            m.apartamento === null ||
+            m.apartamento === undefined
+          ) {
+            continue;
+          }
           const list = await this.prisma.encomendas.findMany({
             where: {
-              id_condominio: m.id_condominio!,
+              id_condominio: m.id_condominio,
               destinatario_bloco: m.bloco,
               destinatario_apto: m.apartamento,
             },

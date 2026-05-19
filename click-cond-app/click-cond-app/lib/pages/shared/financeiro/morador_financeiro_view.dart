@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' as io;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:click/controllers/controller_financeiro.dart';
 import 'package:click/pages/singleton.dart';
@@ -255,6 +256,85 @@ class _MoradorFinanceiroViewState extends State<MoradorFinanceiroView> {
               Text(item['valorReal'], style: AppTypography.bodyMedium(context).copyWith(fontWeight: FontWeight.bold, color: isPago ? Colors.green : AppColors.textPrimary(context))),
             ],
           ),
+          if (!isPago) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (item['pix_copia_cola'] != null && item['pix_copia_cola'].toString().trim().isNotEmpty)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: item['pix_copia_cola'].toString()));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Pix Copia e Cola copiado!"),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      },
+                      icon: const Icon(PhosphorIcons.qrCode, size: 16),
+                      label: const Text(
+                        "Copiar Pix",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                if (item['linha_digitavel'] != null && item['linha_digitavel'].toString().trim().isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: item['linha_digitavel'].toString()));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text("Código de barras copiado!"),
+                            backgroundColor: AppColors.textSecondary(context),
+                          ),
+                        );
+                      },
+                      icon: const Icon(PhosphorIcons.barcode, size: 16),
+                      label: const Text(
+                        "Copiar Código",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary(context),
+                        side: BorderSide(color: AppColors.textSecondary(context).withOpacity(0.3)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+                if (item['url_boleto'] != null && item['url_boleto'].toString().trim().isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => launchUrl(Uri.parse(item['url_boleto'])),
+                      icon: const Icon(PhosphorIcons.filePdf, color: Colors.redAccent, size: 16),
+                      label: const Text(
+                        "Ver Boleto",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent, width: 0.8),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
           const Divider(height: 24, color: Colors.white10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -262,12 +342,9 @@ class _MoradorFinanceiroViewState extends State<MoradorFinanceiroView> {
               _buildStatusBadge(item['status'], item['pago']),
               Row(
                 children: [
-                  if (item['url_boleto'] != null)
-                    IconButton(
-                      icon: const Icon(PhosphorIcons.filePdf, color: Colors.redAccent),
-                      onPressed: () => launchUrl(Uri.parse(item['url_boleto'])),
-                    ),
-                  if (!isPago && !isVerifying)
+                  if (!isPago && !isVerifying &&
+                      (item['pix_copia_cola'] == null || item['pix_copia_cola'].toString().trim().isEmpty) &&
+                      (item['linha_digitavel'] == null || item['linha_digitavel'].toString().trim().isEmpty))
                     ElevatedButton.icon(
                       onPressed: () => _uploadComprovante(item['id']),
                       icon: const Icon(PhosphorIcons.uploadSimple, size: 16),

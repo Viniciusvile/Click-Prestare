@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post, Get, Param, ParseIntPipe } from '@nes
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 import { ReqUser } from './req-user.decorator';
-import { JwtPayload } from './jwt-payload.interface';
+import type { JwtPayload } from './jwt-payload.interface';
 
 @Controller('auth')
 export class AuthController {

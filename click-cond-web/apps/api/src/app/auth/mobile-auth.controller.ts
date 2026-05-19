@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { MobileAuthService } from './mobile-auth.service';
 import { Public } from './public.decorator';
 import { ReqUser } from './req-user.decorator';
-import { JwtPayload } from './jwt-payload.interface';
+import type { JwtPayload } from './jwt-payload.interface';
 
 // ==========================================
 // SÍNDICO

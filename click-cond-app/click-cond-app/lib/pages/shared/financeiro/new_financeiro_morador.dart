@@ -39,6 +39,8 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
   final txtValor = TextEditingController();
   final txtConta = TextEditingController();
   final txtDescricao = TextEditingController();
+  final txtLinhaDigitavel = TextEditingController();
+  final txtPixCopiaCola = TextEditingController();
 
   String _selectedCategoria = 'Condomínio';
   String? _urlBoleto;
@@ -48,6 +50,7 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
     txtBloco.dispose(); txtApto.dispose(); txtReferencia.dispose();
     txtVencimento.dispose(); txtPagamento.dispose();
     txtValor.dispose(); txtConta.dispose(); txtDescricao.dispose();
+    txtLinhaDigitavel.dispose(); txtPixCopiaCola.dispose();
     super.dispose();
   }
 
@@ -65,6 +68,8 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
       txtValor.text = widget.apto['valor'].toString();
       txtDescricao.text = widget.apto['descricao'] ?? '';
       txtConta.text = widget.apto['conta'] ?? '';
+      txtLinhaDigitavel.text = widget.apto['linha_digitavel'] ?? '';
+      txtPixCopiaCola.text = widget.apto['pix_copia_cola'] ?? '';
       _selectedCategoria = widget.apto['categoria'] ?? 'Condomínio';
       _urlBoleto = widget.apto['url_boleto'];
     } else if (widget.id != null) {
@@ -87,6 +92,8 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
       txtValor.text = obj['valor'].toString();
       txtDescricao.text = obj['descricao']?.toString() ?? '';
       txtConta.text = obj['conta']?.toString() ?? '';
+      txtLinhaDigitavel.text = obj['linha_digitavel']?.toString() ?? '';
+      txtPixCopiaCola.text = obj['pix_copia_cola']?.toString() ?? '';
       _selectedCategoria = obj['categoria'] ?? 'Condomínio';
       _urlBoleto = obj['url_boleto'];
       id = obj['id'];
@@ -113,6 +120,8 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
         conta: txtConta.text, descricao: txtDescricao.text,
         valor: txtValor.text.isNotEmpty ? double.parse(txtValor.text.replaceAll('.', '').replaceAll(',', '.')) : 0.0,
         url_boleto: _urlBoleto,
+        linha_digitavel: txtLinhaDigitavel.text,
+        pix_copia_cola: txtPixCopiaCola.text,
       );
       var res = await apiSaveObject("financeiro", "financeiro", obj, id != null && id != -1);
       if (res.toString().isEmpty) {
@@ -248,6 +257,21 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
                     icon: PhosphorIcons.filePdf,
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  _section("Pix Copia e Cola"),
+                  AppInput(
+                    label: "Código Pix Copia e Cola (opcional)",
+                    controller: txtPixCopiaCola,
+                    prefixIcon: PhosphorIcons.qrCode,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _section("Código de Barras (Boleto)"),
+                  AppInput(
+                    label: "Linha Digitável / Código de barras (opcional)",
+                    controller: txtLinhaDigitavel,
+                    prefixIcon: PhosphorIcons.barcode,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   AppInput(
                     label: getText('financeiro_conta_bancaria'),
                     controller: txtConta,
@@ -296,12 +320,14 @@ class _NewFinanceiroMoradorPageState extends State<NewFinanceiroMorador> {
 class FinanceiroModel {
   int? id, id_condominio;
   String? nome, tipo, data, data_vencimento, categoria, conta, descricao, cliente, forma_pagamento, photo, url_boleto, url_comprovante;
+  String? linha_digitavel, pix_copia_cola;
   double? valor;
   int? parcelas, status;
 
   FinanceiroModel({this.id, this.id_condominio, this.nome, this.tipo, this.data, this.data_vencimento,
       this.valor, this.categoria, this.conta, this.descricao, this.cliente,
-      this.forma_pagamento, this.parcelas, this.photo, this.url_boleto, this.url_comprovante, this.status});
+      this.forma_pagamento, this.parcelas, this.photo, this.url_boleto, this.url_comprovante, this.status,
+      this.linha_digitavel, this.pix_copia_cola});
 
   Map toJson() => {
         'id': id, 'nome': nome, 'tipo': tipo, 'data': data,
@@ -309,6 +335,7 @@ class FinanceiroModel {
         'data_vencimento': data_vencimento, 'valor': valor, 'categoria': categoria,
         'conta': conta, 'descricao': descricao, 'cliente': cliente,
         'forma_pagamento': forma_pagamento, 'parcelas': parcelas, 'photo': photo,
-        'url_boleto': url_boleto, 'url_comprovante': url_comprovante, 'status': status
+        'url_boleto': url_boleto, 'url_comprovante': url_comprovante, 'status': status,
+        'linha_digitavel': linha_digitavel, 'pix_copia_cola': pix_copia_cola
       };
 }

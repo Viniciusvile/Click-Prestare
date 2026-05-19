@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { FinanceiroService } from './financeiro.service';
 import { ReqUser } from '../auth/req-user.decorator';
 import { JwtPayload } from '../auth/jwt-payload.interface';
+import { Public } from '../auth/public.decorator';
 
 @Controller('financeiro')
 export class FinanceiroController {
@@ -98,5 +99,38 @@ export class FinanceiroController {
   @HttpCode(200)
   updateStatus(@Body() body: { id: string | number; status: string | number }) {
     return this.service.updateStatus(Number(body.id), body.status);
+  }
+
+  @Public()
+  @Post('webhook/asaas')
+  @HttpCode(200)
+  handleAsaasWebhook(@Body() body: any) {
+    return this.service.handleAsaasWebhook(body);
+  }
+
+  @Post('recorrencia/register-card')
+  @HttpCode(200)
+  registerRecurringCard(@ReqUser() payload: JwtPayload, @Body() body: { cardData: any }) {
+    return this.service.registerRecurringCard(Number(payload.user.id), body.cardData);
+  }
+
+  @Post('rateio')
+  @HttpCode(200)
+  createRateio(
+    @Body() body: { id_condominio: string | number; rateioData: any },
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const operatorName = payload?.user?.name ?? payload?.user?.nome ?? 'Administrador';
+    return this.service.createRateio(Number(body.id_condominio), body.rateioData, operatorName);
+  }
+
+  @Post('inadimplente/acordo')
+  @HttpCode(200)
+  createAcordoInadimplente(
+    @Body() body: { id_condominio: string | number; acordoData: any },
+    @ReqUser() payload: JwtPayload,
+  ) {
+    const operatorName = payload?.user?.name ?? payload?.user?.nome ?? 'Administrador';
+    return this.service.createAcordoInadimplente(Number(body.id_condominio), body.acordoData, operatorName);
   }
 }

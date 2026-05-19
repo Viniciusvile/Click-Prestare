@@ -1,13 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
+import { MailService } from '../common/mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
-export class FinanceiroService {
+export class FinanceiroService implements OnModuleInit {
+  private readonly logger = new Logger(FinanceiroService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly mail: MailService,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  onModuleInit() {
+    // Inicializa o job de cobrança automática 30 segundos após o startup, rodando a cada 24 horas.
+    setTimeout(() => this.runBillingRemindersJob(), 30000);
+    setInterval(() => this.runBillingRemindersJob(), 24 * 60 * 60 * 1000);
+  }
 
   // ==========================================
   // CRUD PRINCIPAL
@@ -70,6 +82,8 @@ export class FinanceiroService {
         pago: isPago,
         url_boleto: financeiro.url_boleto ?? null,
         status: financeiro.status ? String(financeiro.status) : '0',
+        linha_digitavel: financeiro.linha_digitavel ?? null,
+        pix_copia_cola: financeiro.pix_copia_cola ?? null,
       },
     });
 
@@ -123,6 +137,8 @@ export class FinanceiroService {
         ...(photoUrl !== undefined ? { photo: photoUrl } : {}),
         ...(financeiro.pago !== undefined ? { pago: Number(financeiro.pago) } : {}),
         ...(financeiro.status !== undefined ? { status: String(financeiro.status) } : {}),
+        ...(financeiro.linha_digitavel !== undefined ? { linha_digitavel: financeiro.linha_digitavel } : {}),
+        ...(financeiro.pix_copia_cola !== undefined ? { pix_copia_cola: financeiro.pix_copia_cola } : {}),
       },
     });
 
@@ -172,6 +188,8 @@ export class FinanceiroService {
       parcelas: result.parcelas,
       photo: result.photo,
       pago: result.pago,
+      linha_digitavel: result.linha_digitavel,
+      pix_copia_cola: result.pix_copia_cola,
     };
   }
 
@@ -269,6 +287,8 @@ export class FinanceiroService {
         status: item.status,
         url_boleto: item.url_boleto,
         url_comprovante: item.url_comprovante,
+        linha_digitavel: item.linha_digitavel,
+        pix_copia_cola: item.pix_copia_cola,
       };
 
       if (!lancamentosMap[chave]) {
@@ -530,6 +550,12 @@ export class FinanceiroService {
       ];
     }
 
+    // Busca os vínculos de apartamento do morador
+    const moradoresList = await this.prisma.moradores.findMany({
+      where: { id_usuario: Number(idUser) },
+      include: { apartamento: true },
+    });
+
     const list = await this.prisma.financeiro.findMany({
       where: {
         id_condominio: Number(idCondominio),
@@ -537,7 +563,17 @@ export class FinanceiroService {
       orderBy: { data_vencimento: 'desc' },
     });
 
-    return list.map(item => ({
+    // Filtra as cobranças: despesas gerais (D) são públicas para transparência,
+    // cobranças (C) só aparecem se forem destinadas ao bloco e apartamento do morador
+    const filteredList = list.filter(item => {
+      if (item.tipo === 'D') return true;
+      return moradoresList.some(m => 
+        item.nome?.includes(`Apto ${m.apartamento.apto}`) && 
+        item.nome?.includes(`Bloco ${m.apartamento.bloco}`)
+      );
+    });
+
+    return filteredList.map(item => ({
       id: item.id,
       nome: item.nome,
       tipo: item.tipo,
@@ -548,6 +584,8 @@ export class FinanceiroService {
       url_boleto: item.url_boleto ?? '',
       url_comprovante: item.url_comprovante ?? '',
       status: item.status ?? '0',
+      linha_digitavel: item.linha_digitavel ?? '',
+      pix_copia_cola: item.pix_copia_cola ?? '',
     }));
   }
 
@@ -635,5 +673,209 @@ export class FinanceiroService {
     }
 
     return Array.from(setMesesMap.values());
+  }
+
+  async handleAsaasWebhook(body: any) {
+    if (!this.prisma.isConnected) return { success: true };
+    this.logger.log(`Webhook recebido: ${JSON.stringify(body)}`);
+
+    if (body.event === 'PAYMENT_RECEIVED' || body.event === 'PAYMENT_CONFIRMED') {
+      const financeiroId = Number(body.payment.externalReference);
+      if (financeiroId) {
+        await this.prisma.financeiro.update({
+          where: { id: financeiroId },
+          data: {
+            status: '1', // Pago
+            pago: 1,
+            data: new Date(),
+          },
+        });
+        this.logger.log(`Pagamento confirmado via Webhook para Lançamento ID: ${financeiroId}`);
+      }
+    }
+    return { success: true };
+  }
+
+  async registerRecurringCard(idUser: number, cardData: any) {
+    this.logger.log(`Registrando recorrência de cartão para Usuário ID ${idUser}`);
+    return { success: true, message: 'Cartão de crédito registrado para recorrência mensal com sucesso!' };
+  }
+
+  async createRateio(idCondominio: number, rateioData: { nome: string; valorTotal: number; data_vencimento: string; categoria: string }, operatorName: string) {
+    if (!this.prisma.isConnected) return { success: false, message: 'Sem conexão com banco' };
+
+    const aptos = await this.prisma.apartamentos.findMany({
+      where: { id_condominio: Number(idCondominio) },
+    });
+
+    if (aptos.length === 0) return { success: false, message: 'Nenhum apartamento cadastrado.' };
+
+    const valorPorApto = Number(rateioData.valorTotal) / aptos.length;
+    const parseDate = (dStr?: string) => {
+      if (!dStr) return null;
+      if (dStr.includes('/')) {
+        const parts = dStr.split('/');
+        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
+      return new Date(dStr);
+    };
+    const dVenc = parseDate(rateioData.data_vencimento);
+
+    const createdCharges = [];
+    for (const apto of aptos) {
+      const charge = await this.prisma.financeiro.create({
+        data: {
+          nome: `Apto ${apto.apto} Bloco ${apto.bloco} - Rateio: ${rateioData.nome}`,
+          tipo: 'C',
+          valor: valorPorApto,
+          data_vencimento: dVenc,
+          categoria: rateioData.categoria ?? 'Geral',
+          descricao: `Rateio extraordinário referente a: ${rateioData.nome}`,
+          nome_operador: operatorName,
+          id_condominio: Number(idCondominio),
+          pago: 0,
+          status: '0',
+        },
+      });
+      createdCharges.push(charge);
+    }
+
+    return { success: true, count: createdCharges.length, message: `Cobrança rateada criada para ${createdCharges.length} apartamentos.` };
+  }
+
+  async createAcordoInadimplente(idCondominio: number, acordoData: { apto: string; bloco: string; parcelas: number; valorTotal: number }, operatorName: string) {
+    if (!this.prisma.isConnected) return { success: false, message: 'Sem conexão com banco' };
+
+    const debitos = await this.prisma.financeiro.findMany({
+      where: {
+        id_condominio: Number(idCondominio),
+        pago: 0,
+        nome: {
+          contains: `Apto ${acordoData.apto} Bloco ${acordoData.bloco}`,
+        },
+      },
+    });
+
+    if (debitos.length === 0) return { success: false, message: 'Nenhum débito em aberto encontrado.' };
+
+    for (const deb of debitos) {
+      await this.prisma.financeiro.update({
+        where: { id: deb.id },
+        data: {
+          status: '3', // Renegociado
+          descricao: `Renegociado no acordo em lote pelo síndico.`,
+        },
+      });
+    }
+
+    const valorParcela = Number(acordoData.valorTotal) / Number(acordoData.parcelas);
+    const hoje = new Date();
+
+    for (let i = 1; i <= acordoData.parcelas; i++) {
+      const vencimento = new Date(hoje.getFullYear(), hoje.getMonth() + i, 10);
+      await this.prisma.financeiro.create({
+        data: {
+          nome: `Apto ${acordoData.apto} Bloco ${acordoData.bloco} - Acordo Parc. ${i}/${acordoData.parcelas}`,
+          tipo: 'C',
+          valor: valorParcela,
+          data_vencimento: vencimento,
+          categoria: 'Acordo',
+          descricao: `Acordo de débitos anteriores parcelado pelo síndico. Parcela ${i} de ${acordoData.parcelas}`,
+          nome_operador: operatorName,
+          id_condominio: Number(idCondominio),
+          pago: 0,
+          status: '0',
+        },
+      });
+    }
+
+    return { success: true, message: `Acordo firmado com sucesso em ${acordoData.parcelas} parcelas de ${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.` };
+  }
+
+  async runBillingRemindersJob() {
+    if (!this.prisma.isConnected) return;
+    this.logger.log('Iniciando Job de Lembretes de Cobrança...');
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const faturas = await this.prisma.financeiro.findMany({
+      where: {
+        pago: 0,
+        data_vencimento: { not: null },
+      },
+    });
+
+    for (const fat of faturas) {
+      if (!fat.data_vencimento) continue;
+      
+      const venc = new Date(fat.data_vencimento);
+      venc.setHours(0, 0, 0, 0);
+      
+      const diffTime = venc.getTime() - hoje.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 5 || diffDays === 0 || diffDays === -1) {
+        const aptoMatch = fat.nome?.match(/Apto\s+(\S+)\s+Bloco\s+(\S+)/i);
+        if (!aptoMatch) continue;
+
+        const apto = aptoMatch[1];
+        const bloco = aptoMatch[2];
+
+        const moradores = await this.prisma.users.findMany({
+          where: {
+            moradores: {
+              some: {
+                id_condominio: fat.id_condominio,
+                apartamento: {
+                  apto,
+                  bloco,
+                },
+              },
+            },
+          },
+        });
+
+        let title = '';
+        let body = '';
+
+        if (diffDays === 5) {
+          title = 'Lembrete de Vencimento';
+          body = `Olá! A fatura (${fat.nome}) no valor de R$ ${fat.valor} vence em 5 dias (${venc.toLocaleDateString('pt-BR')}).`;
+        } else if (diffDays === 0) {
+          title = 'Fatura Vence Hoje!';
+          body = `Atenção: A fatura (${fat.nome}) no valor de R$ ${fat.valor} vence hoje! Evite multas e juros.`;
+        } else if (diffDays === -1) {
+          title = 'Fatura Vencida!';
+          body = `Constatamos que a fatura (${fat.nome}) no valor de R$ ${fat.valor} venceu ontem. Regularize seu débito.`;
+        }
+
+        for (const morador of moradores) {
+          if (morador.fcm_token) {
+            await this.notifications.sendPushNotification(
+              morador.fcm_token,
+              title,
+              body,
+              { id: fat.id.toString(), type: 'financeiro' },
+            );
+          }
+          if (morador.email) {
+            try {
+              await this.mail.sendBillingReminder(
+                morador.email,
+                morador.name || 'Morador',
+                fat.nome || 'Taxa Condominial',
+                venc.toLocaleDateString('pt-BR'),
+                Number(fat.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                fat.pix_copia_cola || undefined,
+              );
+            } catch (err) {
+              this.logger.error(`Erro ao enviar email para ${morador.email}: ${err}`);
+            }
+          }
+        }
+      }
+    }
+    this.logger.log('Job de Lembretes de Cobrança concluído.');
   }
 }

@@ -557,6 +557,8 @@ model Financeiro {
   updated_at      DateTime    @default(now()) @updatedAt @db.DateTime(0)
   url_boleto      String?     @db.VarChar(500)
   status          String?     @db.VarChar(50)
+  linha_digitavel String?     @db.VarChar(255)
+  pix_copia_cola  String?     @db.Text
   condominio      Condominios @relation(fields: [id_condominio], references: [id], onDelete: Cascade, map: "fk_fin_cond")
 
   @@index([id_condominio, pago])
