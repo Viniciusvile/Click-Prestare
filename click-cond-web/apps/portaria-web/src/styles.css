@@ -147,6 +147,18 @@ html, body {
   border-color: rgba(10, 22, 40, 0.15) !important;
 }
 
+.light .bg-slate-900\/80 {
+  background-color: var(--bg-surface) !important;
+}
+
+.light .bg-slate-950\/50 {
+  background-color: rgba(10, 22, 40, 0.04) !important;
+}
+
+.light .text-rose-400 {
+  color: #DC2626 !important;
+}
+
 /* Scrollbar com cores dinâmicas */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
