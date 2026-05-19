@@ -59,7 +59,7 @@ class CellVotacao extends StatelessWidget {
                     SizedBox(height: 10),
                     Row(
                       children: <Widget>[
-                        Expanded(child: Align(alignment: Alignment.center, child: LabelDefault(title: title ?? item['titulo'], color: Colors.black, weight: FontWeight.bold, size: 17))),
+                        Expanded(child: Align(alignment: Alignment.center, child: LabelDefault(title: title ?? item['titulo'], color: Theme.of(context).textTheme.bodyLarge?.color, weight: FontWeight.bold, size: 17))),
                       ],
                     ),
                     SizedBox(height: 10),
