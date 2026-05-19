@@ -286,7 +286,7 @@ export class FinanceiroService implements OnModuleInit {
         pago: item.pago,
         status: item.status,
         url_boleto: item.url_boleto,
-        url_comprovante: item.url_comprovante,
+        url_comprovante: item.photo,
         linha_digitavel: item.linha_digitavel,
         pix_copia_cola: item.pix_copia_cola,
       };
@@ -347,10 +347,11 @@ export class FinanceiroService implements OnModuleInit {
         descricao: fin?.descricao ?? '',
       };
 
-      if (!blocosMap[a.bloco]) {
-        blocosMap[a.bloco] = [];
+      const blocoKey = a.bloco || 'Sem Bloco';
+      if (!blocosMap[blocoKey]) {
+        blocosMap[blocoKey] = [];
       }
-      blocosMap[a.bloco].push(itemApto);
+      blocosMap[blocoKey].push(itemApto);
     }
 
     const listBlocos = Object.keys(blocosMap).map(b => {
@@ -404,10 +405,11 @@ export class FinanceiroService implements OnModuleInit {
       }
 
       const devendoCount = meses.length - pagosCount;
+      const blocoKey = a.bloco || 'Sem Bloco';
       if (devendoCount > 0) {
-        if (!blocosMap[a.bloco]) blocosMap[a.bloco] = [];
-        blocosMap[a.bloco].push({
-          bloco: a.bloco,
+        if (!blocosMap[blocoKey]) blocosMap[blocoKey] = [];
+        blocosMap[blocoKey].push({
+          bloco: blocoKey,
           apto: a.apto,
           qtd: devendoCount,
         });
@@ -690,7 +692,7 @@ export class FinanceiroService implements OnModuleInit {
       data: item.data ? item.data.toLocaleDateString('pt-BR') : '',
       pago: item.pago,
       url_boleto: item.url_boleto ?? '',
-      url_comprovante: item.url_comprovante ?? '',
+      url_comprovante: item.photo ?? '',
       status: item.status ?? '0',
       linha_digitavel: item.linha_digitavel ?? '',
       pix_copia_cola: item.pix_copia_cola ?? '',
@@ -718,7 +720,7 @@ export class FinanceiroService implements OnModuleInit {
       // comprovante, seta status = 2 (aguardando auditoria do sindico)
       await this.prisma.financeiro.update({
         where: { id: Number(id) },
-        data: { url_comprovante: url, status: '2' },
+        data: { photo: url, status: '2' },
       });
     }
 
