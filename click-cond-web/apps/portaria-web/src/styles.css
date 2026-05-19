@@ -61,6 +61,12 @@ html, body {
   color: var(--text-main) !important;
 }
 
+/* Proteção de contraste para textos sobre imagens */
+.light .keep-white,
+.keep-white {
+  color: #FFFFFF !important;
+}
+
 /* Proteção de contraste para garantir que botões/badges com fundo primário preservem texto branco */
 .light button.bg-accent .text-white,
 .light button.bg-accent,
