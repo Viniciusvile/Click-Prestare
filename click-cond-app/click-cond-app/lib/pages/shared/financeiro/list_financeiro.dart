@@ -1,4 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:click/controllers/controller_financeiro.dart';
 import 'package:click/pages/shared/financeiro/finan_relatorio.dart';
 import 'package:click/pages/shared/financeiro/list_inadimplentes.dart';
@@ -35,6 +42,8 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
   
   Map<String, dynamic> _allLancamentos = {};
   Map<String, dynamic> _filteredLancamentos = {};
+  List<dynamic> _personalLancamentos = [];
+  List<dynamic> _filteredPersonalLancamentos = [];
   
   String tabSelected = "";
   String saldoAtual = '';
@@ -66,6 +75,16 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
   Future<void> loadList() async {
     try {
       setState(() => _isLoading = true);
+      
+      // Carrega dados pessoais caso o síndico seja morador também
+      final dynamic personalData = await apiGetFinanceiroByUser();
+      if (personalData is List) {
+        _personalLancamentos = personalData;
+      } else {
+        _personalLancamentos = [];
+      }
+
+      // Carrega dados gerais do condomínio
       final dynamic locals = await apiGetAllFinanceiro("financeiro", mes, ano);
       
       if (locals is Map) {
@@ -85,12 +104,10 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
             }
           });
         }
-        _applyFilter();
       } else {
-        // Se retornar String (erro), limpa a lista e mantém os totais zerados
         _allLancamentos = {};
-        _applyFilter();
       }
+      _applyFilter();
     } catch (e) {
       if (mounted) displayMessage(context, getText('alert_error'), getText('alert_generic_error'));
     } finally {
@@ -102,15 +119,20 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
     final Map<String, dynamic> filtered = {};
     final query = _searchQuery.toLowerCase();
     
+    // Filtro para lançamentos pessoais
+    _filteredPersonalLancamentos = _personalLancamentos.where((item) {
+      if (query.isEmpty) return true;
+      final nome = (item['nome'] ?? '').toString().toLowerCase();
+      final categoria = (item['categoria'] ?? '').toString().toLowerCase();
+      return nome.contains(query) || categoria.contains(query);
+    }).toList();
+
     _allLancamentos.forEach((date, items) {
       final List<dynamic> matchingItems = (items as List).where((item) {
-        // 1. Filtrar por Modo de Visão
-        final isPersonal = ['água', 'luz', 'internet', 'aluguel', 'condomínio (unidade)'].contains((item['categoria'] ?? '').toString().toLowerCase()) || item['id_apto'] != null;
-        
-        if (_viewMode == FinanceiroViewMode.morador && !isPersonal) return false;
-        if (_viewMode == FinanceiroViewMode.condominio && isPersonal && getUserType() == 'morador') return false;
+        if (_viewMode == FinanceiroViewMode.morador) {
+          return false;
+        }
 
-        // 2. Filtrar por Query de busca
         if (query.isEmpty) return true;
         final nome = (item['nome'] ?? '').toString().toLowerCase();
         final categoria = (item['categoria'] ?? '').toString().toLowerCase();
@@ -187,38 +209,45 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            height: 28,
-                            child: ListView.separated(
-                              controller: _scrollController,
-                              scrollDirection: Axis.horizontal,
-                              itemCount: titlesTabs.length,
-                              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-                              itemBuilder: (_, i) {
-                                final t = titlesTabs[i];
-                                final selected = tabSelected == t['periodo'];
-                                return GestureDetector(
-                                  onTap: selected ? null : () => changeMonth(t['periodo'], t['mes'], t['ano']),
-                                  child: Text(
-                                    t['periodo'],
-                                    style: AppTypography.captionMedium(context).copyWith(
-                                      color: selected ? AppColors.primary : AppColors.textSecondary(context),
-                                      decoration: selected ? TextDecoration.underline : null,
+                          if (_viewMode == FinanceiroViewMode.condominio) ...[
+                            SizedBox(
+                              height: 28,
+                              child: ListView.separated(
+                                controller: _scrollController,
+                                scrollDirection: Axis.horizontal,
+                                itemCount: titlesTabs.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+                                itemBuilder: (_, i) {
+                                  final t = titlesTabs[i];
+                                  final selected = tabSelected == t['periodo'];
+                                  return GestureDetector(
+                                    onTap: selected ? null : () => changeMonth(t['periodo'], t['mes'], t['ano']),
+                                    child: Text(
+                                      t['periodo'],
+                                      style: AppTypography.captionMedium(context).copyWith(
+                                        color: selected ? AppColors.primary : AppColors.textSecondary(context),
+                                        decoration: selected ? TextDecoration.underline : null,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                           const SizedBox(height: AppSpacing.md),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
                           _buildViewToggle(),
-                          const SizedBox(height: AppSpacing.lg),
-                          _DashboardHeader(
-                            saldo: saldoAtual,
-                            receitas: totalReceita,
-                            despesas: totalDespesa,
-                            data: dia,
-                          ),
+                          if (_viewMode == FinanceiroViewMode.condominio) ...[
+                            const SizedBox(height: AppSpacing.lg),
+                            _DashboardHeader(
+                              saldo: saldoAtual,
+                              receitas: totalReceita,
+                              despesas: totalDespesa,
+                              data: dia,
+                            ),
+                          ] else ...[
+                            const SizedBox(height: AppSpacing.lg),
+                            _buildPersonalSummaryCard(),
+                          ],
                           const SizedBox(height: AppSpacing.lg),
                           AppInput(
                             label: 'Pesquisar',
@@ -231,7 +260,7 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
                             },
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          if (isSindico)
+                          if (isSindico && _viewMode == FinanceiroViewMode.condominio)
                             Row(
                               children: [
                                 _CountChip(
@@ -249,51 +278,94 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
                                 ),
                               ],
                             ),
-                          const SizedBox(height: AppSpacing.lg),
+                          if (_viewMode == FinanceiroViewMode.condominio)
+                            const SizedBox(height: AppSpacing.lg),
                         ],
                       ),
                     ),
                   ),
-                  if (_filteredLancamentos.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.circular(16)),
-                        child: Column(
-                          children: [
-                            Icon(PhosphorIcons.magnifyingGlass, size: 48, color: AppColors.textTertiary(context)),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              _searchQuery.isEmpty ? getText('financeiro_sem_lancamentos') : 'Nenhum resultado para a busca',
-                              style: AppTypography.body(context).copyWith(color: AppColors.textSecondary(context)),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                  if (_viewMode == FinanceiroViewMode.condominio) ...[
+                    if (_filteredLancamentos.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.circular(16)),
+                          child: Column(
+                            children: [
+                              Icon(PhosphorIcons.magnifyingGlass, size: 48, color: AppColors.textTertiary(context)),
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                _searchQuery.isEmpty ? getText('financeiro_sem_lancamentos') : 'Nenhum resultado para a busca',
+                                style: AppTypography.body(context).copyWith(color: AppColors.textSecondary(context)),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  for (final data in _filteredLancamentos.keys)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(data.toUpperCase(), 
-                              style: AppTypography.captionMedium(context).copyWith(
-                                color: AppColors.textTertiary(context),
-                                letterSpacing: 1.1,
-                                fontSize: 10
-                              )
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            for (var item in _filteredLancamentos[data])
-                              _LancamentoCard(item: item, onTap: () => _openLancamento(item)),
-                          ],
+                    for (final data in _filteredLancamentos.keys)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(data.toUpperCase(), 
+                                style: AppTypography.captionMedium(context).copyWith(
+                                  color: AppColors.textTertiary(context),
+                                  letterSpacing: 1.1,
+                                  fontSize: 10
+                                )
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              for (var item in _filteredLancamentos[data])
+                                _LancamentoCard(item: item, onTap: () => _openLancamento(item)),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                  ] else ...[
+                    if (_filteredPersonalLancamentos.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          decoration: BoxDecoration(color: AppColors.surface(context), borderRadius: BorderRadius.circular(16)),
+                          child: Column(
+                            children: [
+                              Icon(PhosphorIcons.magnifyingGlass, size: 48, color: AppColors.textTertiary(context)),
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                _searchQuery.isEmpty ? 'Nenhuma cobrança pessoal encontrada' : 'Nenhum resultado para a busca',
+                                style: AppTypography.body(context).copyWith(color: AppColors.textSecondary(context)),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("MINHAS COBRANÇAS", 
+                                style: AppTypography.captionMedium(context).copyWith(
+                                  color: AppColors.textTertiary(context),
+                                  letterSpacing: 1.1,
+                                  fontSize: 10
+                                )
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              ..._filteredPersonalLancamentos.map((item) => _buildPersonalFinanceiroCard(item)).toList(),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
               ),
@@ -386,6 +458,222 @@ class _ListFinanceiroPageState extends State<ListFinanceiro> {
               _applyFilter();
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalSummaryCard() {
+    double totalPendente = 0;
+    for (var item in _personalLancamentos) {
+      if (item['pago'] == 0) {
+        if (item['valor'] != null) {
+          totalPendente += (item['valor'] as num).toDouble();
+        }
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))]
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Total Pendente", style: AppTypography.caption(context).copyWith(color: Colors.white70)),
+          const SizedBox(height: 8),
+          Text("${Singleton.instance.getCurrentMoeda()} ${totalPendente.toStringAsFixed(2)}", style: AppTypography.display(context).copyWith(color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  _uploadComprovante(int id) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'pdf', 'png'],
+      withData: true,
+    );
+
+    if (result != null) {
+      String base64File = "";
+      
+      if (kIsWeb) {
+        base64File = base64Encode(result.files.first.bytes!);
+      } else {
+        final file = io.File(result.files.first.path!);
+        base64File = base64Encode(await file.readAsBytes());
+      }
+      
+      Alert(context: context, title: "Enviando...", desc: "Aguarde um momento", buttons: []).show();
+      bool success = await apiUploadComprovante(id, base64File);
+      Navigator.pop(context);
+      
+      if(success) {
+        loadList();
+        Alert(context: context, title: "Sucesso", desc: "Comprovante enviado para análise!", type: AlertType.success).show();
+      } else {
+        Alert(context: context, title: "Erro", desc: "Falha ao enviar arquivo.", type: AlertType.error).show();
+      }
+    }
+  }
+
+  Widget _buildStatusBadge(dynamic status, int pago) {
+    Color color = Colors.orange;
+    String text = "Pendente";
+
+    final statusInt = status is int ? status : int.tryParse(status.toString()) ?? 0;
+
+    if (pago == 1) {
+      color = Colors.green;
+      text = "Pago";
+    } else if (statusInt == 2) {
+      color = Colors.blue;
+      text = "Verificando";
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.5))),
+      child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildPersonalFinanceiroCard(dynamic item) {
+    bool isPago = item['pago'] == 1;
+    final statusVal = item['status'];
+    final statusInt = statusVal is int ? statusVal : int.tryParse(statusVal.toString()) ?? 0;
+    bool isVerifying = statusInt == 2;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white10)
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item['nome'] ?? '', style: AppTypography.bodyMedium(context)),
+                  Text("Vencimento: ${item['data_vencimento'] ?? ''}", style: AppTypography.caption(context)),
+                ],
+              ),
+              Text(item['valorReal'] ?? '', style: AppTypography.bodyMedium(context).copyWith(fontWeight: FontWeight.bold, color: isPago ? Colors.green : AppColors.textPrimary(context))),
+            ],
+          ),
+          if (!isPago) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (item['pix_copia_cola'] != null && item['pix_copia_cola'].toString().trim().isNotEmpty)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: item['pix_copia_cola'].toString()));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Pix Copia e Cola copiado!"),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      },
+                      icon: const Icon(PhosphorIcons.qrCode, size: 16),
+                      label: const Text(
+                        "Copiar Pix",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                if (item['linha_digitavel'] != null && item['linha_digitavel'].toString().trim().isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: item['linha_digitavel'].toString()));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text("Código de barras copiado!"),
+                            backgroundColor: AppColors.textSecondary(context),
+                          ),
+                        );
+                      },
+                      icon: const Icon(PhosphorIcons.barcode, size: 16),
+                      label: const Text(
+                        "Copiar Código",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary(context),
+                        side: BorderSide(color: AppColors.textSecondary(context).withOpacity(0.3)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+                if (item['url_boleto'] != null && item['url_boleto'].toString().trim().isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => launchUrl(Uri.parse(item['url_boleto'])),
+                      icon: const Icon(PhosphorIcons.filePdf, color: Colors.redAccent, size: 16),
+                      label: const Text(
+                        "Ver Boleto",
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent, width: 0.8),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+          const Divider(height: 24, color: Colors.white10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatusBadge(item['status'], item['pago']),
+              Row(
+                children: [
+                  if (!isPago && !isVerifying &&
+                      (item['pix_copia_cola'] == null || item['pix_copia_cola'].toString().trim().isEmpty) &&
+                      (item['linha_digitavel'] == null || item['linha_digitavel'].toString().trim().isEmpty))
+                    ElevatedButton.icon(
+                      onPressed: () => _uploadComprovante(item['id']),
+                      icon: const Icon(PhosphorIcons.uploadSimple, size: 16),
+                      label: const Text("Comprovante"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                      ),
+                    ),
+                ],
+              )
+            ],
+          )
         ],
       ),
     );

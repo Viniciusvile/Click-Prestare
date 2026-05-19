@@ -577,6 +577,7 @@ export class FinanceiroService implements OnModuleInit {
       id: item.id,
       nome: item.nome,
       tipo: item.tipo,
+      valor: item.valor ? Number(item.valor) : 0,
       valorReal: item.valor ? Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00',
       data_vencimento: item.data_vencimento ? item.data_vencimento.toLocaleDateString('pt-BR') : '',
       data: item.data ? item.data.toLocaleDateString('pt-BR') : '',
