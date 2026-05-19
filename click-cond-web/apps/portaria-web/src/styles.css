@@ -67,6 +67,12 @@ html, body {
   color: #FFFFFF !important;
 }
 
+/* Ajuste do cabeçalho de data do financeiro no Light Mode */
+.light .finance-date-header {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--text-sub) !important;
+}
+
 /* Proteção de contraste para garantir que botões/badges com fundo primário preservem texto branco */
 .light button.bg-accent .text-white,
 .light button.bg-accent,
