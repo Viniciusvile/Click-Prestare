@@ -73,6 +73,15 @@ export class FinanceiroController {
     return this.service.getInadimplenteDetail(Number(idCondominio), apto, bloco);
   }
 
+  @Post('inadimplente/notificar')
+  notifyInadimplente(
+    @Body('id_condominio') idCondominio: string | number,
+    @Body('apto') apto: string,
+    @Body('bloco') bloco: string,
+  ) {
+    return this.service.notifyInadimplente(Number(idCondominio), apto, bloco);
+  }
+
   @Get('grafico/get-all')
   getGrafico(
     @Query('id_condominio') idCondominio: string,

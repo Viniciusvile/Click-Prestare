@@ -424,15 +424,35 @@ export class FinanceiroService implements OnModuleInit {
 
   async getInadimplenteDetail(idCondominio: number, apto: string, bloco: string) {
     if (!this.prisma.isConnected) {
-      return [{ mes: '03', ano: '2026', periodo: 'Março/2026' }, { mes: '04', ano: '2026', periodo: 'Abril/2026' }];
+      return [
+        {
+          mes: '03',
+          ano: '2026',
+          periodo: 'Março/2026',
+          valor: 650,
+          valorString: 'R$ 650,00',
+          nome: `Apto ${apto} Bloco ${bloco} - Ref. 03/2026`,
+          data_vencimento: '10/03/2026',
+          pago: 0
+        },
+        {
+          mes: '04',
+          ano: '2026',
+          periodo: 'Abril/2026',
+          valor: 650,
+          valorString: 'R$ 650,00',
+          nome: `Apto ${apto} Bloco ${bloco} - Ref. 04/2026`,
+          data_vencimento: '10/04/2026',
+          pago: 0
+        }
+      ];
     }
 
     const meses = await this.getAllMeses(idCondominio);
-    const mesesDevendo: any[] = [];
+    const faturasDevendo: any[] = [];
 
     for (const m of meses) {
       const anoCurto = m.ano.slice(-2);
-      // Nomes possiveis gerados no banco legado: MM/YY ou MM/YYYY
       const matchName1 = `Apto ${apto} Bloco ${bloco} - Ref. ${m.mes}/${m.ano}`;
       const matchName2 = `Apto ${apto} Bloco ${bloco} - Ref. ${m.mes}/${anoCurto}`;
 
@@ -443,13 +463,100 @@ export class FinanceiroService implements OnModuleInit {
         },
       });
 
-      // Se não encontrou o lançamento pago, está devendo esse mês
       if (!fin || fin.pago === 0) {
-        mesesDevendo.push(m);
+        const val = fin ? Number(fin.valor) : 650;
+        faturasDevendo.push({
+          mes: m.mes,
+          ano: m.ano,
+          periodo: m.periodo,
+          id: fin?.id ?? null,
+          nome: fin ? fin.nome : `Apto ${apto} Bloco ${bloco} - Ref. ${m.mes}/${m.ano}`,
+          valor: val,
+          valorString: val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+          data_vencimento: fin && fin.data_vencimento ? new Date(fin.data_vencimento).toLocaleDateString('pt-BR') : `10/${m.mes}/${m.ano}`,
+          pago: 0,
+        });
       }
     }
 
-    return mesesDevendo;
+    return faturasDevendo;
+  }
+
+  async notifyInadimplente(idCondominio: number, apto: string, bloco: string) {
+    if (!this.prisma.isConnected) {
+      return { success: true, message: 'Simulado com sucesso (modo offline).' };
+    }
+
+    const pendingFaturas = await this.getInadimplenteDetail(idCondominio, apto, bloco);
+
+    if (pendingFaturas.length === 0) {
+      return { success: false, message: 'Nenhuma fatura em atraso encontrada.' };
+    }
+
+    const moradores = await this.prisma.users.findMany({
+      where: {
+        moradores: {
+          some: {
+            id_condominio: idCondominio,
+            apartamento: {
+              apto,
+              bloco,
+            },
+          },
+        },
+      },
+    });
+
+    const totalDivida = pendingFaturas.reduce((acc, f) => acc + f.valor, 0);
+    const totalFormatted = totalDivida.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    let sentPushCount = 0;
+    let sentEmailCount = 0;
+
+    for (const morador of moradores) {
+      // 1. Enviar Push Notification
+      if (morador.fcm_token) {
+        try {
+          await this.notifications.sendPushNotification(
+            morador.fcm_token,
+            'Lembrete de Inadimplência',
+            `Constatamos ${pendingFaturas.length} fatura(s) pendente(s) para o Apto ${apto} Bloco ${bloco}, totalizando ${totalFormatted}. Regularize pelo App.`,
+            { type: 'financeiro' },
+          );
+          sentPushCount++;
+        } catch (err) {
+          this.logger.error(`Erro ao enviar push notification para ${morador.name}: ${err}`);
+        }
+      }
+
+      // 2. Enviar Email
+      if (morador.email) {
+        try {
+          const maisAntiga = pendingFaturas[0];
+          await this.mail.sendBillingReminder(
+            morador.email,
+            morador.name || 'Morador',
+            pendingFaturas.length > 1 ? `${pendingFaturas.length} faturas pendentes (Acumulado)` : maisAntiga.nome,
+            maisAntiga.data_vencimento,
+            totalFormatted,
+            maisAntiga.pix_copia_cola || undefined,
+          );
+          sentEmailCount++;
+        } catch (err) {
+          this.logger.error(`Erro ao enviar email para ${morador.email}: ${err}`);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      totalFaturas: pendingFaturas.length,
+      totalDivida,
+      totalFormatted,
+      moradoresNotificados: moradores.length,
+      pushEnviados: sentPushCount,
+      emailsEnviados: sentEmailCount,
+    };
   }
 
   // ==========================================

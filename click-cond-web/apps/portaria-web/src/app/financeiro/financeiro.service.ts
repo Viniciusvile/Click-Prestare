@@ -46,6 +46,16 @@ export class FinanceiroApi {
     return this.http.get<any>(url);
   }
 
+  getInadimplenteDetail(apto: string, bloco: string): Observable<any> {
+    const url = `${API_BASE}/financeiro/inadimplente/get?id_condominio=${this.cid}&apto=${apto}&bloco=${bloco}`;
+    return this.http.get<any>(url);
+  }
+
+  notifyInadimplente(apto: string, bloco: string): Observable<any> {
+    const url = `${API_BASE}/financeiro/inadimplente/notificar`;
+    return this.http.post<any>(url, { id_condominio: this.cid, apto, bloco });
+  }
+
   getGrafico(mes: string, ano: string): Observable<any> {
     const url = `${API_BASE}/financeiro/grafico/get-all?id_condominio=${this.cid}&mes=${mes}&ano=${ano}`;
     return this.http.get<any>(url);

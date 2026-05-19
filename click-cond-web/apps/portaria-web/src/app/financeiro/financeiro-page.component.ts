@@ -29,6 +29,13 @@ export class FinanceiroPageComponent implements OnInit {
   readonly modalLancamento = signal(false);
   novoLancamento: any = { nome: '', tipo: 'C', valor: null, data: '', data_vencimento: '', categoria: 'Receitas' };
 
+  readonly modalDetalhe = signal(false);
+  readonly selectedApto = signal<any>(null);
+  readonly faturasSelected = signal<any[]>([]);
+  readonly loadingDetalhe = signal(false);
+  readonly enviandoCobranca = signal(false);
+  readonly cobrancaResultado = signal<any>(null);
+
   // Upload de boleto/comprovante por lançamento
   readonly uploadingId = signal<number | null>(null);
   readonly uploadError = signal<string | null>(null);
@@ -145,6 +152,52 @@ export class FinanceiroPageComponent implements OnInit {
         this.uploadingId.set(null);
         this.uploadError.set(`Falha ao subir ${tipo}: ${e?.error?.message ?? e?.message ?? 'erro'}`);
       },
+    });
+  }
+
+  abrirDetalhesApto(apto: any) {
+    this.selectedApto.set(apto);
+    this.faturasSelected.set([]);
+    this.cobrancaResultado.set(null);
+    this.loadingDetalhe.set(true);
+    this.modalDetalhe.set(true);
+
+    this.api.getInadimplenteDetail(apto.apto, apto.bloco).subscribe({
+      next: (faturas) => {
+        this.faturasSelected.set(faturas || []);
+        this.loadingDetalhe.set(false);
+      },
+      error: () => {
+        this.loadingDetalhe.set(false);
+      }
+    });
+  }
+
+  enviarNotificacaoCobranca() {
+    const apto = this.selectedApto();
+    if (!apto) return;
+
+    this.enviandoCobranca.set(true);
+    this.cobrancaResultado.set(null);
+
+    this.api.notifyInadimplente(apto.apto, apto.bloco).subscribe({
+      next: (res) => {
+        this.enviandoCobranca.set(false);
+        this.cobrancaResultado.set({
+          success: res.success,
+          message: res.message || 'Cobrança enviada com sucesso!',
+          moradoresNotificados: res.moradoresNotificados ?? 0,
+          pushEnviados: res.pushEnviados ?? 0,
+          emailsEnviados: res.emailsEnviados ?? 0,
+        });
+      },
+      error: (err) => {
+        this.enviandoCobranca.set(false);
+        this.cobrancaResultado.set({
+          success: false,
+          message: err?.error?.message ?? 'Falha ao enviar cobrança.'
+        });
+      }
     });
   }
 }
