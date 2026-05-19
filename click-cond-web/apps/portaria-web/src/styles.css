@@ -127,6 +127,26 @@ html, body {
   color: var(--text-muted) !important;
 }
 
+.light .bg-slate-900 {
+  background-color: var(--bg-elevated) !important;
+}
+
+.light .bg-slate-900\/50 {
+  background-color: rgba(10, 22, 40, 0.04) !important;
+}
+
+.light .bg-slate-900\/40 {
+  background-color: rgba(10, 22, 40, 0.02) !important;
+}
+
+.light .bg-slate-950 {
+  background-color: var(--bg-elevated) !important;
+}
+
+.light .hover\:border-white\/10:hover {
+  border-color: rgba(10, 22, 40, 0.15) !important;
+}
+
 /* Scrollbar com cores dinâmicas */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
