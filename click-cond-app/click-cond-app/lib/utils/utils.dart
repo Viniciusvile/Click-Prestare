@@ -39,6 +39,7 @@ displayMessage(BuildContext context, String title, String message) async {
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
           ),
           onPressed: () => Navigator.pop(c, true),
           child: const Text('OK'),
@@ -59,6 +60,7 @@ displayMessageWithReturn(BuildContext context, String title, String message) asy
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
           ),
           onPressed: () => Navigator.pop(c, true),
           child: const Text('OK'),
@@ -75,12 +77,18 @@ showConfirmDialog(BuildContext context, {String? text}) async {
       title: Text(text ?? getText('alert_delete_description')),
       actions: [
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
           onPressed: () => Navigator.pop(c, true),
           child: Text(getText('alert_sim')),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Theme.of(context).primaryColor,
+          ),
           onPressed: () => Navigator.pop(c, false),
           child: Text(
             getText('alert_nao'),
@@ -221,7 +229,10 @@ getPhoto(BuildContext context) async {
       title: Text(getText('alert_photo_choice'), textScaleFactor: 1.0),
       actions: [
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Theme.of(context).primaryColor,
+          ),
           onPressed: () => Navigator.pop(c, "camera"),
           child: Text(
             getText('alert_photo_camera'),
@@ -231,7 +242,9 @@ getPhoto(BuildContext context) async {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor),
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+          ),
           onPressed: () => Navigator.pop(c, "galeria"),
           child: Text(getText('alert_photo_galeria'), textScaleFactor: 1.0),
         ),

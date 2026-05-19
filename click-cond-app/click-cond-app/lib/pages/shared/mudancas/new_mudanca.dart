@@ -74,7 +74,7 @@ class _NewMudancaPageState extends State<NewMudanca> {
   Future<void> loadListAptos() async {
     try {
       setState(() => _isLoading = true);
-      var aptos = await apiGetAll("condominio/aptos");
+      var aptos = await apiGetAll("apartamentos");
       list = aptos;
       listBlocos.clear();
       for (var item in list) {
