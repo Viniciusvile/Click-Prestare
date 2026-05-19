@@ -500,10 +500,8 @@ export class FinanceiroService implements OnModuleInit {
         moradores: {
           some: {
             id_condominio: idCondominio,
-            apartamento: {
-              apto,
-              bloco,
-            },
+            apartamento: apto,
+            bloco: bloco,
           },
         },
       },
