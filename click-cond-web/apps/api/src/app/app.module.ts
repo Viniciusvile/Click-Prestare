@@ -18,6 +18,7 @@ import { AreasSociaisModule } from './areas-sociais/areas-sociais.module';
 import { AssembleiasModule } from './assembleias/assembleias.module';
 import { FinanceiroModule } from './financeiro/financeiro.module';
 import { DocumentosModule } from './documentos/documentos.module';
+import { MudancasModule } from './mudancas/mudancas.module';
 import { MailModule } from './common/mail/mail.module';
 import { StorageModule } from './common/storage/storage.module';
 
@@ -46,6 +47,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     AssembleiasModule,
     FinanceiroModule,
     DocumentosModule,
+    MudancasModule,
   ],
   controllers: [AppController],
   providers: [
