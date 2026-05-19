@@ -329,16 +329,22 @@
 
               <div class="space-y-2">
                 @for (apto of blocoInfo.aptos; track apto.apto) {
-                  <div class="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-900/50 border border-white/5">
-                    <span class="text-slate-300 font-medium">Apartamento {{ apto.apto }}</span>
-                    <span class="text-rose-400 font-mono font-semibold">{{ apto.qtd }} fatura(s) em atraso</span>
+                  <div class="inadimplente-item flex items-center justify-between text-xs p-3 rounded-xl">
+                    <div class="flex items-center gap-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                      <span class="text-slate-200 font-semibold">Apartamento {{ apto.apto }}</span>
+                    </div>
+                    <span class="text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded-md text-[11px] border border-rose-500/10 shrink-0">
+                      {{ apto.qtd }} fatura{{ apto.qtd > 1 ? 's' : '' }} em atraso
+                    </span>
                   </div>
                 }
               </div>
             </div>
 
-            <div class="text-[10px] text-slate-500 text-right pt-2 border-t border-white/5">
-              Total do bloco: {{ blocoInfo.aptos.length }} unidade(s) com pendência
+            <div class="text-xs text-slate-500 text-right pt-3 border-t border-white/5 flex items-center justify-between">
+              <span>Total de inadimplentes</span>
+              <span class="font-bold text-slate-400">{{ blocoInfo.aptos.length }} unidade{{ blocoInfo.aptos.length > 1 ? 's' : '' }}</span>
             </div>
           </div>
         }

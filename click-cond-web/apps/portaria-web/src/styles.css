@@ -136,4 +136,27 @@ html, body {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
+/* Estilo dos itens de inadimplência */
+.inadimplente-item {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+.inadimplente-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.light .inadimplente-item {
+  background-color: #FFFFFF !important;
+  border-color: rgba(10, 22, 40, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+.light .inadimplente-item:hover {
+  background-color: #FFFFFF !important;
+  border-color: rgba(10, 22, 40, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(10, 22, 40, 0.05) !important;
+}
+
 /* Vercel trigger */
