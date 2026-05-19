@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { FinanceiroService } from './financeiro.service';
 import { ReqUser } from '../auth/req-user.decorator';
-import { JwtPayload } from '../auth/jwt-payload.interface';
+import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { Public } from '../auth/public.decorator';
 
 @Controller('financeiro')
