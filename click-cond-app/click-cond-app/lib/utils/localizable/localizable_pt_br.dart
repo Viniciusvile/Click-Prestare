@@ -105,6 +105,8 @@ class Localizable_PtBr {
     LocalizableModel(key: 'lb_ultima_atualizacao', text: 'Última atualização'),
     LocalizableModel(key: 'lb_ciente', text: 'Ciente'),
     LocalizableModel(key: 'lb_pendente', text: 'Pendente'),
+    LocalizableModel(key: 'lb_aprovado', text: 'Aprovado'),
+    LocalizableModel(key: 'lb_recusado', text: 'Recusado'),
     LocalizableModel(key: 'lb_solucionado', text: 'Solucionado'),
     LocalizableModel(key: 'lb_nao_informado', text: 'Não Informado'),
     LocalizableModel(key: 'lb_aceitar', text: 'Aceitar'),

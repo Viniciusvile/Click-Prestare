@@ -105,6 +105,8 @@ class Localizable_Es {
           LocalizableModel(key: 'lb_ultima_atualizacao', text: 'Última actualización'),
           LocalizableModel(key: 'lb_ciente', text: 'Consciente'),
           LocalizableModel(key: 'lb_pendente', text: 'Pendiente'),
+          LocalizableModel(key: 'lb_aprovado', text: 'Aprobado'),
+          LocalizableModel(key: 'lb_recusado', text: 'Rechazado'),
           LocalizableModel(key: 'lb_solucionado', text: 'Resuelto'),
           LocalizableModel(key: 'lb_nao_informado', text: 'No informado'),
           LocalizableModel(key: 'lb_aceitar', text: 'aceptar'),

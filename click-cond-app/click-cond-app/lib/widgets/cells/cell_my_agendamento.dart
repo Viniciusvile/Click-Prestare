@@ -12,6 +12,32 @@ class CellMyAgendamento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String apto = item['apto']?.toString() ?? '';
+    final String blocoRaw = item['bloco']?.toString() ?? '';
+    String blocoText = '';
+    if (blocoRaw.isNotEmpty) {
+      final blocoLower = blocoRaw.toLowerCase();
+      if (blocoLower.contains('bloco') || 
+          blocoLower.contains('bloque') || 
+          blocoLower.contains('block')) {
+        blocoText = blocoRaw;
+      } else {
+        blocoText = '${getText('lb_bloco')} $blocoRaw';
+      }
+    }
+    final String aptoBlocoTitle = '${getText('lb_apto')} $apto $blocoText';
+
+    final String status = item['status']?.toString() ?? 'pendente';
+    String statusText = getText('lb_pendente');
+    Color statusColor = Colors.orange;
+    if (status == 'aprovado') {
+      statusText = getText('lb_aprovado');
+      statusColor = Colors.green;
+    } else if (status == 'recusado') {
+      statusText = getText('lb_recusado');
+      statusColor = Colors.red;
+    }
+
     return Container(
       width: MediaQuery.of(context).size.width,
       // height: 190,
@@ -31,7 +57,7 @@ class CellMyAgendamento extends StatelessWidget {
                         children: [
                           Icon(Icons.house_outlined, size: 20, color: Theme.of(context).hintColor,),
                           SizedBox(width: 5),
-                          LabelDefault(title: '${getText('lb_apto')} '+item['apto']+' ${getText('lb_bloco')}'+item['bloco'], size: 14),
+                          LabelDefault(title: aptoBlocoTitle, size: 14),
                         ],
                       ),
                     ), 
@@ -55,13 +81,13 @@ class CellMyAgendamento extends StatelessWidget {
                       child: Container(
                         height: 100,
                         width: 5,
-                        color: Theme.of(context).primaryColor,
+                        color: statusColor,
                       ),
                     ),
                     SizedBox(width: 10),
                     // CircleAvatar(                      
                     //   radius: 40,
-                    //   backgroundImage: NetworkImage(item['photo'])
+                     //   backgroundImage: NetworkImage(item['photo'])
                     // ),
                     SizedBox(width: 10),
                     SizedBox(
@@ -82,7 +108,7 @@ class CellMyAgendamento extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  LabelDefault(title: "${getText('lb_pendente')}:", size: 18),
+                                  LabelDefault(title: "$statusText:", size: 18, color: statusColor, weight: FontWeight.bold),
                                   SizedBox(width: 5),
                                   LabelDefault(title: item['nomeArea'], size: 18, color: Theme.of(context).primaryColor, weight: FontWeight.bold),
                                 ],

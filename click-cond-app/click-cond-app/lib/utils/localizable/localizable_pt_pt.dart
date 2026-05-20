@@ -105,6 +105,8 @@ class Localizable_PtPt {
     LocalizableModel(key: 'lb_ultima_atualizacao', text: 'Última atualização'),
     LocalizableModel(key: 'lb_ciente', text: 'Cliente'),
     LocalizableModel(key: 'lb_pendente', text: 'Pendente'),
+    LocalizableModel(key: 'lb_aprovado', text: 'Aprovado'),
+    LocalizableModel(key: 'lb_recusado', text: 'Recusado'),
     LocalizableModel(key: 'lb_solucionado', text: 'Resolvido'),
     LocalizableModel(key: 'lb_nao_informado', text: 'Não informado'),
     LocalizableModel(key: 'lb_aceitar', text: 'Óleo'),

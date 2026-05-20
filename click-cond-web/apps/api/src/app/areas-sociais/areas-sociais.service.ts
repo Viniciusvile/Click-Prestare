@@ -1,9 +1,13 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AreasSociaisService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ==========================================
   // GESTÃO DE ÁREAS SOCIAIS
@@ -396,13 +400,47 @@ export class AreasSociaisService {
       novoStatus = statusRaw;
     }
 
-    await this.prisma.areas_Sociais_Agendamentos.update({
+    const agendamento = await this.prisma.areas_Sociais_Agendamentos.update({
       where: { id: Number(id) },
       data: {
         status: novoStatus,
         // se houver coluna de motivo gravamos, senão ignoramos graciosamente
       },
+      include: {
+        user: true,
+        area: true,
+      },
     });
+
+    // Send push notification if the user has an fcm_token
+    if (agendamento && agendamento.user && agendamento.user.fcm_token) {
+      const token = agendamento.user.fcm_token;
+      const areaNome = agendamento.area?.nome ?? 'Área Social';
+      
+      let title = 'Status da Reserva Atualizado';
+      let body = `O status da sua reserva para ${areaNome} mudou para ${novoStatus}.`;
+      
+      if (novoStatus === 'aprovado') {
+        title = 'Reserva Aprovada! 📅';
+        body = `Sua reserva para a área ${areaNome} foi aprovada.`;
+      } else if (novoStatus === 'recusado') {
+        title = 'Reserva Recusada! ❌';
+        body = `Sua reserva para a área ${areaNome} foi recusada.`;
+        if (motivo) {
+          body += ` Motivo: ${motivo}`;
+        }
+      }
+
+      try {
+        await this.notifications.sendPushNotification(token, title, body, {
+          type: 'reserva_status',
+          id: String(agendamento.id),
+          status: novoStatus,
+        });
+      } catch (err) {
+        console.error('Erro ao enviar push notification para agendamento:', err);
+      }
+    }
 
     return { success: true };
   }
