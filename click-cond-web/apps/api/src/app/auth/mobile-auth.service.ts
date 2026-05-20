@@ -103,6 +103,15 @@ export class MobileAuthService {
     const docId = body.doc_identification?.trim() || null;
     const phone = body.phone?.trim() || null;
 
+    if (docId) {
+      const existingCpf = await this.prisma.users.findFirst({
+        where: { cpf: docId }
+      });
+      if (existingCpf) {
+        throw new BadRequestException('Este CPF já está cadastrado no sistema.');
+      }
+    }
+
     let parsedBirth: Date | null = null;
     if (body.date_birth) {
       try {
