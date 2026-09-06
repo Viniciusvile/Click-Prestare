@@ -40,11 +40,18 @@ export class MoradoresController {
   exportExcel(
     @Param('idCondominio', ParseIntPipe) idCondominio: number,
     @ReqUser() user: JwtPayload,
+    @Query('mascarar') mascarar?: string,
+    @Query('finalidade') finalidade?: string,
   ) {
-    // Planilha com o cadastro inteiro do prédio: o vazamento de maior volume
-    // do módulo.
+    // Planilha com o cadastro inteiro do prédio: protegido e auditado conforme LGPD (Art. 46)
     assertOperador(user, 'exportar a lista de moradores');
-    return this.service.exportExcel(idCondominio);
+    const deveMascarar = mascarar !== 'false';
+    return this.service.exportExcel(idCondominio, {
+      mascarar: deveMascarar,
+      finalidade,
+      usuarioNome: user.nome || 'Operador',
+      usuarioEmail: user.email,
+    });
   }
 
   // Síndicos do condomínio (para o admin/porteiro escolher quem vincular como morador).

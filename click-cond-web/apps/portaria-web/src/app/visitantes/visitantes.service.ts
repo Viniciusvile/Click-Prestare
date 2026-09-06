@@ -47,6 +47,7 @@ export interface VisitanteDetalhes {
     data_hora_inicio: string | null;
     data_hora_termino: string | null;
     codigo_acesso: string | null;
+    temPinAtivo?: boolean;
     data_entrada: string | null;
     data_saida: string | null;
     tag_rfid: string | null;

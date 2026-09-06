@@ -11,11 +11,12 @@ import { InputMaskDirective } from '../shared/input-mask.directive';
 import { FacialCaptureComponent } from '../shared/facial-capture.component';
 import { compressImage } from '../shared/image-compress.util';
 import { RealtimeService } from '../shared/realtime.service';
+import { MaskDocPipe } from '../shared/mask-doc.pipe';
 
 @Component({
   selector: 'app-visitantes-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputMaskDirective, RouterLink, FacialCaptureComponent],
+  imports: [CommonModule, FormsModule, InputMaskDirective, RouterLink, FacialCaptureComponent, MaskDocPipe],
   templateUrl: './visitantes-page.component.html',
   styleUrl: './visitantes-page.component.css',
 })
@@ -50,6 +51,7 @@ export class VisitantesPageComponent implements OnInit, OnDestroy {
   readonly search = signal('');
   readonly viewFilter = signal<'todos' | 'ativos' | 'liberados' | 'historico'>('todos');
   readonly pinsRevelados = signal<Set<number>>(new Set());
+  readonly docsRevelados = signal<Set<number>>(new Set());
 
   readonly showValidationModal = signal(false);
 
@@ -77,6 +79,7 @@ export class VisitantesPageComponent implements OnInit, OnDestroy {
   // Imagens capturadas (Base64 ou URL)
   readonly fotoPessoaBase64 = signal<string | null>(null);
   readonly fotoDocumentoBase64 = signal<string | null>(null);
+  readonly lgpdCiente = signal(true);
   // Modal de captura ao vivo pela câmera do facial
   readonly facialModalOpen = signal(false);
 
@@ -919,6 +922,17 @@ export class VisitantesPageComponent implements OnInit, OnDestroy {
       current.add(id);
     }
     this.pinsRevelados.set(current);
+  }
+
+  toggleDoc(id: number, event: Event) {
+    event.stopPropagation();
+    const current = new Set(this.docsRevelados());
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+    this.docsRevelados.set(current);
   }
 
   duracao(v: Visitante | Pessoa): string {

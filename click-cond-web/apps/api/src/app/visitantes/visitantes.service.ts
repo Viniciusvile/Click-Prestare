@@ -1,4 +1,12 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -61,8 +69,10 @@ export function parseLocalTimeToUTCNullable(dateValue: string | Date | undefined
 }
 
 @Injectable()
-export class VisitantesService {
+export class VisitantesService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(VisitantesService.name);
+  private retencaoTimer?: NodeJS.Timeout;
+  private retencaoInterval?: NodeJS.Timeout;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -73,6 +83,59 @@ export class VisitantesService {
     private readonly tenant: TenantAccessService,
     private readonly realtime: RealtimeGateway,
   ) {}
+
+  onModuleInit() {
+    if (process.env['NODE_ENV'] === 'test') return;
+    // Dispara rotina diária de retenção/expurgo LGPD (Art. 15 e 16)
+    this.retencaoTimer = setTimeout(() => void this.tickRetencaoDadosVisitantes(), 5 * 60 * 1000);
+    this.retencaoInterval = setInterval(() => void this.tickRetencaoDadosVisitantes(), 24 * 60 * 60 * 1000);
+  }
+
+  onModuleDestroy() {
+    if (this.retencaoTimer) clearTimeout(this.retencaoTimer);
+    if (this.retencaoInterval) clearInterval(this.retencaoInterval);
+  }
+
+  /**
+   * Ciclo de vida de retenção de dados pessoais (Art. 15 e 16 da LGPD):
+   * Visitas com data_saida anterior a 180 dias têm suas fotos de rosto e fotos de documentos
+   * expurgadas do banco (setadas para null), preservando apenas o registro histórico da visita.
+   */
+  async tickRetencaoDadosVisitantes(): Promise<number> {
+    if (!this.prisma.isConnected) return 0;
+    try {
+      const limiteRetencao = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+      const resultado = await this.prisma.visitantes.updateMany({
+        where: {
+          data_saida: { lte: limiteRetencao },
+          OR: [
+            { foto_pessoa: { not: null } },
+            { foto_documento: { not: null } },
+          ],
+        },
+        data: {
+          foto_pessoa: null,
+          foto_documento: null,
+        },
+      });
+
+      if (resultado.count > 0) {
+        this.logger.log(`[LGPD Retenção] Expurgadas fotos de ${resultado.count} visitas encerradas há mais de 180 dias.`);
+        await this.auditoria.registrar({
+          id_condominio: 0,
+          usuario_nome: 'Sistema (Rotina LGPD)',
+          acao: 'DELETE',
+          modulo: 'visitantes',
+          descricao: `Expurgo automático de fotografias e biometria de ${resultado.count} visitas encerradas há mais de 180 dias.`,
+          detalhes: { totalExpurgados: resultado.count, prazoDias: 180 },
+        });
+      }
+      return resultado.count;
+    } catch (e: any) {
+      this.logger.warn(`[LGPD Retenção] Erro na rotina de expurgo: ${e?.message ?? e}`);
+      return 0;
+    }
+  }
 
   private fireFacialSync(idVisitante: number) {
     this.facial
@@ -660,7 +723,7 @@ export class VisitantesService {
         data_saida: principal.data_saida?.toISOString() ?? null,
         data_hora_inicio: principal.data_hora_inicio?.toISOString() ?? null,
         data_hora_termino: principal.data_hora_termino?.toISOString() ?? null,
-        codigo_acesso: temPinAtivo ? principal.codigo_acesso : null,
+        codigo_acesso: null, // Sanitizado conforme LGPD (Art. 46): credencial física nunca deve ser exposta na listagem
 
         created_at: principal.created_at.toISOString(),
         // Portaria remota: estado da autorização do registro principal.
@@ -1454,7 +1517,8 @@ export class VisitantesService {
       apto_bloco: v.apartamento?.bloco ?? null,
       morador_nome: v.criadoPor?.name ?? 'Morador',
       status_vigencia: status,
-      codigo_acesso: v.codigo_acesso,
+      codigo_acesso: null, // Sanitizado conforme LGPD
+      temPinAtivo: !!v.codigo_acesso,
       data_entrada: v.data_entrada,
     };
   }
@@ -1761,7 +1825,8 @@ export class VisitantesService {
         criadoPor: v.criadoPor?.name ?? null,
         data_hora_inicio: v.data_hora_inicio?.toISOString() ?? null,
         data_hora_termino: v.data_hora_termino?.toISOString() ?? null,
-        codigo_acesso: v.codigo_acesso,
+        codigo_acesso: null,
+        temPinAtivo: !!v.codigo_acesso,
         data_entrada: v.data_entrada?.toISOString() ?? null,
         data_saida: v.data_saida?.toISOString() ?? null,
         created_at: v.created_at.toISOString(),

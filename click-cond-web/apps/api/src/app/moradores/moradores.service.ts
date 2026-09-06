@@ -1157,13 +1157,45 @@ export class MoradoresService {
     return { ok: true };
   }
 
-  async exportExcel(idCondominio: number) {
+  async exportExcel(
+    idCondominio: number,
+    options?: { mascarar?: boolean; finalidade?: string; usuarioNome?: string; usuarioEmail?: string; ip?: string },
+  ) {
     const list = await this.findAll(idCondominio);
+    const deveMascarar = options?.mascarar !== false; // padrão true para cumprir minimização LGPD
+    const finalidade = options?.finalidade || 'Não informada';
+
+    // Registra trilha de auditoria formal da exportação (Art. 46 e Art. 6º, X LGPD)
+    void this.auditoria.registrar({
+      id_condominio: idCondominio,
+      usuario_nome: options?.usuarioNome || 'Operador',
+      usuario_email: options?.usuarioEmail,
+      acao: 'STATUS',
+      modulo: 'moradores',
+      descricao: `Exportação em massa da lista de moradores (${list.length} registros). Finalidade: ${finalidade}. Documentos mascarados: ${deveMascarar ? 'Sim' : 'Não'}.`,
+      detalhes: {
+        totalRegistros: list.length,
+        finalidade,
+        mascarado: deveMascarar,
+      },
+      ip: options?.ip,
+    });
+
+    const formatDoc = (doc?: string | null) => {
+      if (!doc) return '';
+      if (!deveMascarar) return doc;
+      const digits = doc.replace(/\D/g, '');
+      if (digits.length === 11) return `${digits.slice(0, 3)}.***.***-${digits.slice(9)}`;
+      if (digits.length === 14) return `${digits.slice(0, 2)}.***.***/${digits.slice(8, 12)}-${digits.slice(12)}`;
+      if (digits.length > 4) return `${digits.slice(0, 2)}.***.**-${digits.slice(-2)}`;
+      return doc;
+    };
+
     try {
       const xlsx = require('xlsx');
       const ws = xlsx.utils.json_to_sheet(list.map(m => ({
         'Nome Completo': m.nome,
-        'Documento': m.documento || '',
+        'Documento': formatDoc(m.documento),
         'E-mail': m.email || '',
         'Telefone': m.telefone || '',
         'Quadra/Bloco': m.bloco || '',
@@ -1176,7 +1208,7 @@ export class MoradoresService {
       return { base64, filename: `moradores_condominio_${idCondominio}.xlsx` };
     } catch {
       const csv = ['Nome Completo,Documento,E-mail,Telefone,Quadra/Bloco,Lote/Apto,Vínculo']
-        .concat(list.map(m => `"${m.nome}","${m.documento||''}","${m.email||''}","${m.telefone||''}","${m.bloco||''}","${m.apartamento||''}","${m.tipo||''}"`))
+        .concat(list.map(m => `"${m.nome}","${formatDoc(m.documento)}","${m.email||''}","${m.telefone||''}","${m.bloco||''}","${m.apartamento||''}","${m.tipo||''}"`))
         .join('\n');
       return { base64: Buffer.from(csv).toString('base64'), filename: `moradores_condominio_${idCondominio}.csv` };
     }

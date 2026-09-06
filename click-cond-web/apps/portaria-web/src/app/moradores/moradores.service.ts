@@ -88,8 +88,11 @@ export class MoradoresApi {
     return this.http.get<MoradorAtividade>(`${this.base}/${id}/atividade`);
   }
 
-  exportExcel(): Observable<{ base64: string; filename: string }> {
-    return this.http.get<{ base64: string; filename: string }>(`${this.base}/export-excel`);
+  exportExcel(options?: { mascarar?: boolean; finalidade?: string }): Observable<{ base64: string; filename: string }> {
+    let params: any = {};
+    if (options?.mascarar !== undefined) params.mascarar = String(options.mascarar);
+    if (options?.finalidade) params.finalidade = options.finalidade;
+    return this.http.get<{ base64: string; filename: string }>(`${this.base}/export-excel`, { params });
   }
 
   importBulk(linhas: any[]): Observable<{ ok: boolean; total: number; criados: any[] }> {

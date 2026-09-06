@@ -15,13 +15,14 @@ import { AuthService } from '../auth/auth.service';
 import { ToastService } from '../shared/toast.service';
 
 import { compressImage } from '../shared/image-compress.util';
+import { MaskDocPipe } from '../shared/mask-doc.pipe';
 
 declare var require: any;
 
 @Component({
   selector: 'app-moradores-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputMaskDirective, EnrollCaptureComponent, FacialCaptureComponent],
+  imports: [CommonModule, FormsModule, InputMaskDirective, EnrollCaptureComponent, FacialCaptureComponent, MaskDocPipe],
   templateUrl: './moradores-page.component.html',
 })
 export class MoradoresPageComponent implements OnInit {
@@ -43,6 +44,19 @@ export class MoradoresPageComponent implements OnInit {
         this.pagina.set(1);
       });
     });
+  }
+
+  readonly docsRevelados = signal<Set<number>>(new Set());
+
+  toggleDoc(id: number, event: Event) {
+    event.stopPropagation();
+    const current = new Set(this.docsRevelados());
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+    this.docsRevelados.set(current);
   }
 
   readonly selectedMorador = signal<Morador | null>(null);
@@ -636,15 +650,45 @@ export class MoradoresPageComponent implements OnInit {
     }
   }
 
+  // Modal de Exportação com Controle e Auditoria LGPD
+  readonly showExportModal = signal(false);
+  readonly exportMascarar = signal(true);
+  readonly exportFinalidade = signal('Atualização cadastral interna');
+  readonly exporting = signal(false);
+
+  abrirModalExportar() {
+    this.exportMascarar.set(true);
+    this.exportFinalidade.set('Atualização cadastral interna');
+    this.showExportModal.set(true);
+  }
+
+  fecharModalExportar() {
+    this.showExportModal.set(false);
+  }
+
   exportarPlanilha() {
-    this.api.exportExcel().subscribe({
+    this.abrirModalExportar();
+  }
+
+  confirmarExportar() {
+    this.exporting.set(true);
+    this.api.exportExcel({
+      mascarar: this.exportMascarar(),
+      finalidade: this.exportFinalidade(),
+    }).subscribe({
       next: (res) => {
+        this.exporting.set(false);
+        this.showExportModal.set(false);
         const link = document.createElement('a');
         link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${res.base64}`;
         link.download = res.filename || 'moradores.xlsx';
         link.click();
+        this.toast.success('Planilha exportada com sucesso e evento registrado em auditoria.');
       },
-      error: () => this.toast.error('Erro ao exportar planilha'),
+      error: () => {
+        this.exporting.set(false);
+        this.toast.error('Erro ao exportar planilha');
+      },
     });
   }
 
